@@ -1,3 +1,5 @@
+import time
+
 import requests
 
 DEFAULT_RABBIT_HOST = 'localhost'
@@ -10,6 +12,8 @@ DEFAULT_RABBIT_PASSWORD = 'guest'
 WARN_QUEUE_SIZE = 2
 ARCHIVE_QUEUE_SIZE = 15
 DEL_QUEUE_SIZE = 20
+
+POLLING_INTERVAL = 2
 
 class PulseManagementAPI(object):
     def __init__(self, host=DEFAULT_RABBIT_HOST, management_port=DEFAULT_RABBIT_MANAGEMENT_PORT, vhost=DEFAULT_RABBIT_VHOST,
@@ -42,8 +46,26 @@ class PulseManagementAPI(object):
     def vhosts(self):
         return self._api_request('vhosts')
 
+class PulseGuardian(object):
+
+    def __init__(self, api, warn_queue_size=WARN_QUEUE_SIZE, archive_queue_size=ARCHIVE_QUEUE_SIZE, del_queue_size=DEL_QUEUE_SIZE):
+        self.api = api
+
+        self.warn_queue_size = warn_queue_size
+        self.archive_queue_size = archive_queue_size
+        self.del_queue_size = del_queue_size
+
+    def guard(self):
+        while True:
+            for queue in api.queues(vhost=DEFAULT_RABBIT_VHOST):
+                if queue['messages_ready'] > self.warn_queue_size:
+                    print "Warn queue '{}' owner. Queue size = {} ; warn_queue_size = {}".format(queue['name'], queue['messages_ready'], self.warn_queue_size)
+
+            # Sleeping
+            time.sleep(POLLING_INTERVAL)
 
 if __name__ == '__main__':
     api = PulseManagementAPI()
-    for queue in api.queues(vhost=DEFAULT_RABBIT_VHOST):
-        print "Queue '{}' : {} messages".format(queue['name'], queue['messages_ready'])
+    pulse_guardian = PulseGuardian(api)
+
+    pulse_guardian.guard()
