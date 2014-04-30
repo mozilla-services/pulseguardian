@@ -17,12 +17,11 @@
 
     <body>
 
-        <div class="container">
+        {% include 'header.html' %}
 
-            {% block body %}
-            {% endblock %}
-            
-        </div>
+        {% block body %}
+        {% endblock %}
+        
 
         <!-- JS files -->
         <script src="/static/js/jquery.min.js"></script>

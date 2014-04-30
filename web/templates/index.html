@@ -3,62 +3,63 @@
         
 {% block body %}
 
-{% include 'header.html' %}
+<div class="container">
 
-<div>
-    <h2>
-        Sign-up for a consumer account...
-    </h2>
+    <div class="col-md-6">
+        <h2>
+            Sign-up for a consumer account...
+        </h2>
 
 
-    <form role="form" action="/signup" method="post">
-        <div class="form-group">
-            <label>Email</label>
-            <input type="email" placeholder="Your email" class="form-control"/>
-        </div>
+        <form role="form" action="/signup" method="post">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" placeholder="Your email" class="form-control"/>
+            </div>
 
-        <div class="form-group">
-            <label>Username</label>
-            <input type="username" placeholder="Username" class="form-control"/>
-        </div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="username" placeholder="Username" class="form-control"/>
+            </div>
 
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" placeholder="Password" class="form-control"/>
-        </div>
-    
-        <button type="submit" role="button" class="btn btn-default form-control">
-            Sign-up
-        </button>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" placeholder="Password" class="form-control"/>
+            </div>
+        
+            <button type="submit" role="button" class="btn btn-default form-control">
+                Sign-up
+            </button>
 
-    </form>
+        </form>
 
+
+    </div>
+
+
+    <div class="col-md-6">
+        <h2>
+            .. or login
+        </h2>
+
+
+        <form role="form" action="/login" method="post">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" placeholder="Your email" class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="Password" class="form-control">
+            </div>
+
+            <button type="submit" role="button" class="btn btn-default form-control">
+                Login
+            </button>
+
+        </form>
+    </div>
 
 </div>
-
-
-<div>
-    <h2>
-        .. or login
-    </h2>
-
-
-    <form role="form" action="/login" method="post">
-        <div class="form-group">
-            <label>Email</label>
-            <input type="email" name="email" placeholder="Your email" class="form-control">
-        </div>
-
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" name="password" placeholder="Password" class="form-control">
-        </div>
-
-        <button type="submit" role="button" class="btn btn-default form-control">
-            Login
-        </button>
-
-    </form>
-</div>
-
 {% endblock %}
