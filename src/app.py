@@ -7,7 +7,7 @@ from flask import Flask, render_template, session, g, redirect, request
 
 app = Flask(__name__)
 
-from model.base import db_session, init_db
+from model.base import db_session, init_db, clear_db
 from model.user import User
 
 import config
@@ -15,7 +15,11 @@ import config
 # Initializing the web app and the database
 app = Flask(__name__)
 app.secret_key = config.secret_key
+
+# Initializing the databse
 init_db()
+# Clearing the database from old data
+clear_db()
 
 # Dummy test user
 if User.query.filter(User.email == 'dummy@email.com').first() is None:

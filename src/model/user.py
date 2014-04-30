@@ -1,12 +1,9 @@
 import os
 import hashlib
 
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, Boolean
 
 from base import Base, db_session, init_db
- 
-def generate_salt():
-    return os.urandom(16).encode('base_64')
 
 def hash_password(password, salt):
     return hashlib.sha512(salt + password).hexdigest()
@@ -20,14 +17,19 @@ class User(Base):
     secret_hash = Column(String)
     salt = Column(String)
 
+    activation_token = Column(String)
+    activated = Column(Boolean)
+
     def valid_password(self, password):
 	    return hash_password(password, self.salt) == self.secret_hash
 
     @staticmethod
     def new_user(email, username, password):
-        user = User(email=email, username=username)
+        token = os.urandom(16).encode('base_64')
+        user = User(email=email, username=username, activation_token=token, activated=False)
 
-        user.salt = generate_salt()
+        # Encrypting password
+        user.salt = os.urandom(16).encode('base_64')
         user.secret_hash = hash_password(password, user.salt)
 
         return user
