@@ -1,32 +1,55 @@
-<!doctype html>
-<html>
+{% extends 'base.html' %}
 
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>Pulse Guardian</title>
-        <meta name="description" content="Pulse Guardian">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        
+{% block body %}
+
+<h1>
+    Pulse Guardian
+    <small>Protecting your queues</small>
+</h1>
+
+<div>
+    <h2>
+        Sign-up for a consumer account.
+    </h2>
 
 
-        <!-- Bootstrap CSS-->
-        <link rel="stylesheet" href="/static/css/bootstrap.min.css">
-
-        <link rel="stylesheet" href="/static/css/main.css">
-    
-    </head>
-
-    <body>
-
-        <div class="container">
-            <h2>Pulse Guardian <small>Protecting your queues</small></h2>
-            <p>
-            	Just some HTML boilerplate.
-        	</p>
+    <form role="form" action="/signup">
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" placeholder="Your email" class="form-control"/>
         </div>
-        <!-- JS files -->
-        <script src="/static/js/jquery.min.js"></script>
-        <script src="/static/js/bootstrap.min.js"></script>
-    </body>
 
-</html>
+        <div class="form-group">
+            <label>Username</label>
+            <input type="username" placeholder="Username" class="form-control"/>
+        </div>
+
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" placeholder="Password" class="form-control"/>
+        </div>
+    </form>
+</div>
+
+
+<div>
+    <h2>
+        .. or login
+    </h2>
+
+
+    <form role="form" action="/login">
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" placeholder="Your email" class="form-control"/>
+        </div>
+
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" placeholder="Password" class="form-control"/>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
