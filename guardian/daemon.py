@@ -63,7 +63,6 @@ class PulseGuardian(object):
             for queue in api.queues(vhost=DEFAULT_RABBIT_VHOST):
                 q_size, q_name = queue['messages_ready'], queue['name']
 
-
                 if q_size > self.del_queue_size:
                     logging.warning("Queue '{}' is going to be deleted. Queue size = {} ; del_queue_size = {}".format(q_name, q_size, self.del_queue_size))
                     # Send mail here
