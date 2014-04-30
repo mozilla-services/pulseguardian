@@ -48,6 +48,10 @@ def load_user():
     if session.get('logged_in'):
         g.user = User.query.filter(User.email == session['logged_in']).first()
 
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    db_session.remove()
+
 # Views
 
 @app.route("/")
@@ -58,29 +62,35 @@ def index():
 
 @app.route("/signup", methods=['POST'])
 def signup():
-    return render_template('signup.html')
+    email, username, password = request.form['email'], request.form['username'], request.form['password']
+    if User.query.filter(User.email == email).first():
+        return render_template('index.html', signup_error="A user with the same email already exists")
+
+    if User.query.filter(User.username == username).first():
+        return render_template('index.html', signup_error="A user with the same username already exists")
+
+    user = User.new_user(email=email, username=username, password=password)
+    db_session.add(user)
+    db_session.commit()
+
+    # Send email here
+    return render_template('confirm.html')
 
 @app.route("/login", methods=['POST'])
 def login():
-    print 'ok', request.form
     email, password = request.form['email'], request.form['password']
-    print 'got params'
     user = User.query.filter(User.email == email).first()
-    print user
     if user and user.valid_password(password):
         session['logged_in'] = email
         return redirect('/')
     else:
-        return redirect('/')
+        return render_template('index.html', login_error="User doesn't exist or incorrect password")
 
 @app.route("/logout", methods=['GET'])
 def logout():
     del session['logged_in']
     return redirect('/')
 
-@app.teardown_appcontext
-def shutdown_session(exception=None):
-    db_session.remove()
 
 if __name__ == "__main__":
     app.run(debug=True)

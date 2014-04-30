@@ -2,64 +2,72 @@
 
         
 {% block body %}
+<div class="col-md-6">
+    <h2>
+        Sign-up for a consumer account...
+    </h2>
 
-<div class="container">
-
-    <div class="col-md-6">
-        <h2>
-            Sign-up for a consumer account...
-        </h2>
-
-
-        <form role="form" action="/signup" method="post">
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" placeholder="Your email" class="form-control"/>
-            </div>
-
-            <div class="form-group">
-                <label>Username</label>
-                <input type="username" placeholder="Username" class="form-control"/>
-            </div>
-
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" placeholder="Password" class="form-control"/>
-            </div>
-        
-            <button type="submit" role="button" class="btn btn-default form-control">
-                Sign-up
-            </button>
-
-        </form>
+    {% if signup_error %}
+        <div class="alert alert-danger">
+            {{signup_error}}
+        </div>
+    {% endif %}
 
 
-    </div>
+    <form role="form" action="/signup" method="post">
+        <div class="form-group">
+            <label>Email</label>
+            <input name="email" type="email" placeholder="Your email" class="form-control"/>
+        </div>
+
+        <div class="form-group">
+            <label>Username</label>
+            <input name="username" type="username" placeholder="Username" class="form-control"/>
+        </div>
+
+        <div class="form-group">
+            <label>Password</label>
+            <input name="password" type="password" placeholder="Password" class="form-control"/>
+        </div>
+    
+        <button type="submit" role="button" class="btn btn-default form-control">
+            Sign-up
+        </button>
+
+    </form>
 
 
-    <div class="col-md-6">
-        <h2>
-            .. or login
-        </h2>
+</div>
 
 
-        <form role="form" action="/login" method="post">
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" name="email" placeholder="Your email" class="form-control">
-            </div>
+<div class="col-md-6">
+    <h2>
+        .. or login
+    </h2>
 
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" placeholder="Password" class="form-control">
-            </div>
 
-            <button type="submit" role="button" class="btn btn-default form-control">
-                Login
-            </button>
 
-        </form>
-    </div>
+    {% if login_error %}
+        <div class="alert alert-danger">
+            {{login_error}}
+        </div>
+    {% endif %}
 
+    <form role="form" action="/login" method="post">
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="Your email" class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" name="password" placeholder="Password" class="form-control">
+        </div>
+
+        <button type="submit" role="button" class="btn btn-default form-control">
+            Login
+        </button>
+
+    </form>
 </div>
 {% endblock %}
