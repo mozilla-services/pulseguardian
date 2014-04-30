@@ -43,7 +43,6 @@ if __name__ == '__main__':
     assert not user.valid_password('dummyPassword')
 
     db_session.add(user)
-
     db_session.commit()
 
     assert user in User.query.all()

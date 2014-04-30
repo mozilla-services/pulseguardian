@@ -3,14 +3,11 @@
         
 {% block body %}
 
-<h1>
-    Pulse Guardian
-    <small>Protecting your queues</small>
-</h1>
+{% include 'header.html' %}
 
 <div>
     <h2>
-        Sign-up for a consumer account.
+        Sign-up for a consumer account...
     </h2>
 
 
@@ -29,7 +26,14 @@
             <label>Password</label>
             <input type="password" placeholder="Password" class="form-control"/>
         </div>
+    
+        <button type="submit" role="button" class="btn btn-default form-control">
+            Sign-up
+        </button>
+
     </form>
+
+
 </div>
 
 
@@ -49,6 +53,12 @@
             <label>Password</label>
             <input type="password" placeholder="Password" class="form-control"/>
         </div>
+
+
+        <button type="submit" role="button" class="btn btn-default form-control">
+            Login
+        </button>
+
     </form>
 </div>
 
