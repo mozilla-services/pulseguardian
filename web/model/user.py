@@ -33,8 +33,7 @@ class User(Base):
         return user
 
     def __repr__(self):
-		return "<User(email='%s', password='%s')>" % (
-		                    self.email, self.fullemail, self.password)
+		return "<User(email='{}', username='{}')>".format(self.email, self.username)
 
 if __name__ == '__main__':
     init_db()
