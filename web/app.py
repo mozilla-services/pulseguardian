@@ -5,6 +5,8 @@ from functools import wraps
 
 from flask import Flask, render_template, session, g, redirect, request
 
+app = Flask(__name__)
+
 from model.base import db_session, init_db
 from model.user import User
 
@@ -16,9 +18,10 @@ app.secret_key = config.secret_key
 init_db()
 
 # Dummy test user
-dummy_usr = User.new_user(email='dummy@email.com', username='dummy', password='dummypassword')
-db_session.add(dummy_usr)
-db_session.commit()
+if User.query.filter(User.email == 'dummy@email.com').first() is None:
+    dummy_usr = User.new_user(email='dummy@email.com', username='dummy', password='dummypassword')
+    db_session.add(dummy_usr)
+    db_session.commit()
 
 # Decorators and instructions used to inject info into the context or restrict access to some pages
 def requires_login(f):
@@ -59,13 +62,21 @@ def signup():
 
 @app.route("/login", methods=['POST'])
 def login():
-    email, password = request.args['email'], request.args['password']
-    user = User.query.filter(User.email == email)
-    if user.valid_password(password):
+    print 'ok', request.form
+    email, password = request.form['email'], request.form['password']
+    print 'got params'
+    user = User.query.filter(User.email == email).first()
+    print user
+    if user and user.valid_password(password):
         session['logged_in'] = email
         return redirect('/')
     else:
-        return redirect('/login')
+        return redirect('/')
+
+@app.route("/logout", methods=['GET'])
+def logout():
+    del session['logged_in']
+    return redirect('/')
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
