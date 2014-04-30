@@ -1,4 +1,25 @@
-<h1>
-    <span class="text-info">Pulse Guardian</span>
-    <small>Protecting your queues</small>
-</h1>
+<div class="header">
+    <a href="/">
+        <h1 class="sitename"><span class="glyphicon glyphicon-tower icon"></span> PulseGuardian</h1>
+    </a>
+
+    {% if user %}
+        <span class="logout right-link">
+            <a href="/logout"><span class="glyphicon glyphicon-remove"></span> Logout</a>
+        </span>
+
+        <a href="/profile">
+            <span class="username right-link">
+                    <span class="glyphicon glyphicon-user"></span> {{user.username}}
+            </span>
+        </a>
+    {% else %}
+        <span class="login right-link">
+            <a href="/login"><span class="glyphicon glyphicon-user"></span> Login</a>
+        </span>
+        <span class="login right-link">
+            <a href="/signup"><span class="glyphicon glyphicon-pencil"></span> Sign up</a>
+        </span>
+    {% endif %}
+</div>
+
