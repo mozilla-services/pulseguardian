@@ -10,7 +10,7 @@ app = Flask(__name__)
 import config
 from model.base import db_session, init_db
 from model.user import User
-from guardian.guardian import PulseManagementAPI, PulseManagementException
+from management import PulseManagementAPI, PulseManagementException
 
 from sendemail import sendemail
 
