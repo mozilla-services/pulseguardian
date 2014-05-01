@@ -1,4 +1,6 @@
+from urllib import quote
 import json
+
 import requests
 
 DEFAULT_RABBIT_HOST = 'localhost'
@@ -41,23 +43,38 @@ class PulseManagementAPI(object):
 
     def queues(self, vhost=None):
         if vhost:
+            vhost = quote(vhost, '')
             return self._api_request('queues/{}'.format(vhost))
         else:
             return self._api_request('queues')
     
     def queue(self, vhost, queue):
+        vhost = quote(vhost, '')
+        queue = quote(queue, '')
         return self._api_request('queues/{}/{}'.format(vhost, queue))
+
+    def delete_queue(self, vhost, queue):
+        vhost = quote(vhost, '')
+        queue = quote(queue, '')
+        self._api_request('queues/{}/{}'.format(vhost, queue), method='DELETE')
+
+    def delete_all_queues(self):
+        for queue_data in self.queues():
+            self.delete_queue(queue_data['vhost'], queue_data['name'])
 
     # Users
 
     def user(self, username):
+        username = quote(username, '')
         return self._api_request('users/{}'.format(username))
 
     def create_user(self, username, password, tags='monitoring'):
+        username = quote(username, '')
         data = dict(password=password, tags=tags)
         self._api_request('users/{}'.format(username), method='PUT', data=data)
 
     def delete_user(self, username):
+        username = quote(username, '')
         self._api_request('users/{}'.format(username), method='DELETE')
 
     # Channels
@@ -66,6 +83,7 @@ class PulseManagementAPI(object):
         return self._api_request('channels')
     
     def channel(self, channel):
+        channel = quote(channel, '')
         return self._api_request('channels/{}'.format(channel))
 
     # Misc
