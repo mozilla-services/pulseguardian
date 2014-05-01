@@ -25,7 +25,7 @@ class User(Base):
 
     @staticmethod
     def new_user(email, username, password):
-        token = os.urandom(16).encode('base_64')
+        token = os.urandom(16).encode('hex')
         user = User(email=email, username=username, activation_token=token, activated=False)
 
         # Encrypting password

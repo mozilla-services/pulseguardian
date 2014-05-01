@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+        
+{% block body %}
+<div class="col-md-6">
+    <h2>
+        Sign-up for a consumer account...
+    </h2>
+
+    {% if error %}
+        <div class="alert alert-danger">
+            {{error}}
+        </div>
+    {% else %}
+        <div>
+            Your account have been successfully activated ! You can now login to the service using the username and password that you supplied.
+        </div>
+    {% endif %}
+
+
+{% endblock %}

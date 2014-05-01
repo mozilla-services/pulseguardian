@@ -83,11 +83,11 @@ def signup():
     sendemail(subject="Activate your Pulse account", from_addr=config.email_from, to_addrs=[user.email],
               username=config.email_account, password=config.email_password,
               html_data=render_template('activation_email.html', user=user, activation_link=activation_link))
-    
+
     return render_template('confirm.html')
 
 
-@app.route("/activate/<email>/<activation_token>", methods=['POST'])
+@app.route("/activate/<email>/<activation_token>")
 def activate(email, activation_token):
     user = User.query.filter(User.email == email).first()
 
@@ -96,24 +96,27 @@ def activate(email, activation_token):
     elif user.activated:
         return render_template('activate.html', error="Requested user is already activated")
     elif user.activation_token != activation_token:
-        return render_template('activate.html', error="Wrong activation token")
+        return render_template('activate.html', error="Wrong activation token " + user.activation_token)
     else:
         user.activated = True
         db_session.add(user)
         db_session.commit()
         
-    # Send email here
-    return render_template('confirm.html')
+    return render_template('activate.html')
 
 @app.route("/login", methods=['POST'])
 def login():
     email, password = request.form['email'], request.form['password']
     user = User.query.filter(User.email == email).first()
-    if user and user.valid_password(password):
+
+
+    if user is None or not user.valid_password(password):
+        return render_template('index.html', email=email, login_error="User doesn't exist or incorrect password")
+    elif not user.activated:
+        return render_template('index.html', email=email, login_error="User account isn't activated. Please check your emails.")
+    else:
         session['logged_in'] = email
         return redirect('/')
-    else:
-        return render_template('index.html', login_error="User doesn't exist or incorrect password")
 
 @app.route("/logout", methods=['GET'])
 def logout():
