@@ -78,8 +78,12 @@ def signup():
     db_session.commit()
 
     # Sending the activation email
-    sendemail.sendemail(from_addr=config.email_from, to_addrs=[user.email], username=config.email_account,
-                        password=config.email_password, html_data=render_template('activation_mail.html', user=user))
+    # TODO : add hostname to the activation link
+    activation_link = '/activate/{}/{}'.format(user.email, user.activation_token)
+    sendemail(subject="Activate your Pulse account", from_addr=config.email_from, to_addrs=[user.email],
+              username=config.email_account, password=config.email_password,
+              html_data=render_template('activation_email.html', user=user, activation_link=activation_link))
+    
     return render_template('confirm.html')
 
 
