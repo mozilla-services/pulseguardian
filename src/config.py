@@ -1,1 +1,4 @@
-secret_key = '\xa7\xa9{\x8a!\x06\xf1\x10\x85p\xddk\xde\xe9\x86D\xe5\x14\xe3\xbc\xa5K\xbd2'
+secret_key = None # Secret key goes here
+email_account = 'automation@mozilla.com'
+email_password = None # Email's password goes here
+email_from = 'Mozilla A-Team <auto-tools@mozilla.com>'
