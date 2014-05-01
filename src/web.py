@@ -7,25 +7,24 @@ from flask import Flask, render_template, session, g, redirect, request
 
 app = Flask(__name__)
 
+import config
 from model.base import db_session, init_db, clear_db
 from model.user import User
 
-import config
+from sendemail import sendemail
 
 # Initializing the web app and the database
 app = Flask(__name__)
 app.secret_key = config.secret_key
 
-# Initializing the databse
-init_db()
 # Clearing the database from old data
 clear_db()
-
+# Initializing the databse
+init_db()
 # Dummy test user
-if User.query.filter(User.email == 'dummy@email.com').first() is None:
-    dummy_usr = User.new_user(email='dummy@email.com', username='dummy', password='dummypassword')
-    db_session.add(dummy_usr)
-    db_session.commit()
+dummy_usr = User.new_user(email='dummy@email.com', username='dummy', password='dummypassword')
+db_session.add(dummy_usr)
+db_session.commit()
 
 # Decorators and instructions used to inject info into the context or restrict access to some pages
 def requires_login(f):
@@ -48,7 +47,7 @@ def inject_user():
 
 @app.before_request
 def load_user():
-    """ Injects the current logged-in user (if any) to the request context """
+    """ Loads the currently logged-in user (if any) to the request context """
     if session.get('logged_in'):
         g.user = User.query.filter(User.email == session['logged_in']).first()
 
@@ -62,11 +61,12 @@ def shutdown_session(exception=None):
 def index():
     return render_template('index.html')
 
-# Login / Signup
+# Login / Signup / Activate user
 
 @app.route("/signup", methods=['POST'])
 def signup():
     email, username, password = request.form['email'], request.form['username'], request.form['password']
+
     if User.query.filter(User.email == email).first():
         return render_template('index.html', signup_error="A user with the same email already exists")
 
@@ -77,6 +77,27 @@ def signup():
     db_session.add(user)
     db_session.commit()
 
+    # Sending the activation email
+    sendemail.sendemail(from_addr=config.email_from, to_addrs=[user.email], username=config.email_account,
+                        password=config.email_password, html_data=render_template('activation_mail.html', user=user))
+    return render_template('confirm.html')
+
+
+@app.route("/activate/<email>/<activation_token>", methods=['POST'])
+def activate(email, activation_token):
+    user = User.query.filter(User.email == email).first()
+
+    if user is None:
+        return render_template('activate.html', error="No user with the given email")
+    elif user.activated:
+        return render_template('activate.html', error="Requested user is already activated")
+    elif user.activation_token != activation_token:
+        return render_template('activate.html', error="Wrong activation token")
+    else:
+        user.activated = True
+        db_session.add(user)
+        db_session.commit()
+        
     # Send email here
     return render_template('confirm.html')
 
