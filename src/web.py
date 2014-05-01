@@ -8,8 +8,9 @@ from flask import Flask, render_template, session, g, redirect, request
 app = Flask(__name__)
 
 import config
-from model.base import db_session, init_db, clear_db
+from model.base import db_session, init_db
 from model.user import User
+from guardian.guardian import PulseManagementAPI, PulseManagementException
 
 from sendemail import sendemail
 
@@ -17,16 +18,30 @@ from sendemail import sendemail
 app = Flask(__name__)
 app.secret_key = config.secret_key
 
-# Clearing the database from old data
-clear_db()
+pulse_management = PulseManagementAPI()
+
 # Initializing the databse
 init_db()
+
+# Removing all pulse users created by the web app
+for user in User.query.all():
+    try:
+        pulse_management.delete_user(user.username)
+    except PulseManagementException:
+        pass
+        #print ". {} in the db but not on pulse".format(user.username)
+
+# Clearing the database from old data
+User.query.delete()
+
+
 # Dummy test user
 dummy_usr = User.new_user(email='dummy@email.com', username='dummy', password='dummypassword')
 db_session.add(dummy_usr)
 db_session.commit()
 
 # Decorators and instructions used to inject info into the context or restrict access to some pages
+
 def requires_login(f):
     """  Decorator for views that requires the user to be logged-in """
     @wraps(f)
@@ -67,6 +82,8 @@ def index():
 def signup():
     email, username, password = request.form['email'], request.form['username'], request.form['password']
 
+    # TODO : Add some safeguards as some admin users may exist in rabbitmq but not in our db ?
+
     if User.query.filter(User.email == email).first():
         return render_template('index.html', signup_error="A user with the same email already exists")
 
@@ -98,7 +115,11 @@ def activate(email, activation_token):
     elif user.activation_token != activation_token:
         return render_template('activate.html', error="Wrong activation token " + user.activation_token)
     else:
+        # Activating the user account
         user.activated = True
+        # Creating the appropriate rabbitmq user
+        pulse_management.create_user(username=user.username, password=user.password)
+
         db_session.add(user)
         db_session.commit()
         

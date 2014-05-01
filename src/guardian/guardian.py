@@ -28,13 +28,13 @@ class PulseManagementAPI(object):
         self.host = host
         self.management_port = management_port
         self.vhost = vhost
-        self.user = user
-        self.password = password
+        self.management_user = user
+        self.management_password = password
     
     def _api_request(self, path, method='GET', data=None):
         session = requests.Session()
         request = requests.Request(method, 'http://{}:{}/api/{}'.format(self.host, self.management_port, path),
-                                   auth=(self.user, self.password), data=json.dumps(data)).prepare()
+                                   auth=(self.management_user, self.management_password), data=json.dumps(data)).prepare()
         request.headers['Content-type'] = 'application/json'
         response = session.send(request)
 
@@ -58,9 +58,15 @@ class PulseManagementAPI(object):
     def vhosts(self):
         return self._api_request('vhosts')
 
+    def user(self, username):
+        return self._api_request('users/{}'.format(username))
+
     def create_user(self, username, password, tags='monitoring'):
         data = dict(password=password, tags=tags)
         self._api_request('users/{}'.format(username), method='PUT', data=data)
+
+    def delete_user(self, username):
+        self._api_request('users/{}'.format(username), method='DELETE')
 
 class PulseGuardian(object):
 
@@ -94,8 +100,19 @@ class PulseGuardian(object):
 
 if __name__ == '__main__':
     api = PulseManagementAPI()
-    pulse_guardian = PulseGuardian(api)
 
     api.create_user('testuser', 'testpass')
+    
+    user_info = api.user('testuser')
+    assert user_info['name'] == 'testuser'
+    assert user_info['tags'] == 'monitoring'
+    api.delete_user('testuser')
 
+    try:
+        api.user('testuser')
+        assert False
+    except PulseManagementException:
+        pass
+
+    pulse_guardian = PulseGuardian(api)
     pulse_guardian.guard()

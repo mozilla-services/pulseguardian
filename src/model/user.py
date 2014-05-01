@@ -14,6 +14,9 @@ class User(Base):
     username = Column(String)
     email = Column(String, primary_key=True)
 
+    # Only stored temporarly
+    password = Column(String)
+
     secret_hash = Column(String)
     salt = Column(String)
 
@@ -27,6 +30,9 @@ class User(Base):
     def new_user(email, username, password):
         token = os.urandom(16).encode('hex')
         user = User(email=email, username=username, activation_token=token, activated=False)
+
+        # Temporarly storing the password, removed at activation
+        user.password = password
 
         # Encrypting password
         user.salt = os.urandom(16).encode('base_64')
