@@ -37,6 +37,8 @@ class PulseManagementAPI(object):
         except ValueError:
             raise PulseManagementException("Error when calling '{} {}' with data={}. Received : {}".format(method, path, data, response.content))
 
+    # Queues
+
     def queues(self, vhost=None):
         if vhost:
             return self._api_request('queues/{}'.format(vhost))
@@ -46,8 +48,7 @@ class PulseManagementAPI(object):
     def queue(self, vhost, queue):
         return self._api_request('queues/{}/{}'.format(vhost, queue))
 
-    def vhosts(self):
-        return self._api_request('vhosts')
+    # Users
 
     def user(self, username):
         return self._api_request('users/{}'.format(username))
@@ -58,6 +59,26 @@ class PulseManagementAPI(object):
 
     def delete_user(self, username):
         self._api_request('users/{}'.format(username), method='DELETE')
+
+    # Channels
+
+    def channels(self):
+        return self._api_request('channels')
+    
+    def channel(self, channel):
+        return self._api_request('channels/{}'.format(channel))
+
+    # Misc
+
+    def queue_owner(self, queue_data):
+        queue = self.queue(vhost=queue_data['vhost'], queue=queue_data['name'])
+        
+        if queue['consumers'] < 1:
+            return None
+
+        channel_name = queue['consumer_details'][0]['channel_details']['name']
+        channel = self.channel(channel_name)
+        return channel['user']
 
 if __name__ == '__main__':
     api = PulseManagementAPI()
