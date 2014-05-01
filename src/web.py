@@ -29,11 +29,9 @@ for user in User.query.all():
         pulse_management.delete_user(user.username)
     except PulseManagementException:
         pass
-        #print ". {} in the db but not on pulse".format(user.username)
 
 # Clearing the database from old data
 User.query.delete()
-
 
 # Dummy test user
 dummy_usr = User.new_user(email='dummy@email.com', username='dummy', password='dummypassword')
@@ -96,7 +94,7 @@ def signup():
 
     # Sending the activation email
     # TODO : add hostname to the activation link
-    activation_link = '/activate/{}/{}'.format(user.email, user.activation_token)
+    activation_link = '{}/activate/{}/{}'.format(config.hostname, user.email, user.activation_token)
     sendemail(subject="Activate your Pulse account", from_addr=config.email_from, to_addrs=[user.email],
               username=config.email_account, password=config.email_password,
               html_data=render_template('activation_email.html', user=user, activation_link=activation_link))
