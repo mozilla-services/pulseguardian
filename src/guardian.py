@@ -27,6 +27,13 @@ class PulseGuardian(object):
     def monitor_queues(self, queues):
         for queue_data in queues:
             q_size, q_name, q_vhost = queue_data['messages_ready'], queue_data['name'], queue_data['vhost']
+
+            # If a queue is over the deletion size, regardless of it having an owner or not, we delete it
+            if q_size > self.del_queue_size:
+                logging.warning("Queue '{}' is going to be deleted. Queue size = {} ; del_queue_size = {}".format(q_name, q_size, self.del_queue_size))
+                self.api.delete_queue(vhost=q_vhost, queue=q_name)
+                continue
+                
             # print q_name, q_size
             queue = Queue.query.filter(Queue.name == q_name).first()
 
@@ -36,6 +43,7 @@ class PulseGuardian(object):
                 queue = Queue(name=q_name, owner=None)
                 db_session.add(queue)
                 db_session.commit()
+
 
             # If we don't know who created the queue
             if queue.owner is None:
@@ -63,10 +71,7 @@ class PulseGuardian(object):
                 db_session.commit()
 
             # print q_size, queue
-            if q_size > self.del_queue_size:
-                logging.warning("Queue '{}' is going to be deleted. Queue size = {} ; del_queue_size = {}".format(q_name, q_size, self.del_queue_size))
-                self.api.delete_queue(vhost=q_vhost, queue=q_name)
-            elif q_size > self.warn_queue_size and not q_name in self.warned:
+            if q_size > self.warn_queue_size and not q_name in self.warned:
                 logging.warning("Should warn'{}' owner. Queue size = {} ; warn_queue_size = {}".format(q_name, q_size, self.warn_queue_size))
                 self.warned.add(q_name)
                 # TODO : Send mail here
