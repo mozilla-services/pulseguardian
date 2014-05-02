@@ -2,8 +2,10 @@ import os
 import hashlib
 
 from sqlalchemy import Column, String, Boolean
+from sqlalchemy.orm import relationship
 
 from base import Base, db_session, init_db
+from queue import Queue
 
 def hash_password(password, salt):
     return hashlib.sha512(salt + password).hexdigest()
@@ -22,6 +24,8 @@ class User(Base):
 
     activation_token = Column(String)
     activated = Column(Boolean)
+
+    queues = relationship(Queue, backref='owner')
 
     def valid_password(self, password):
 	    return hash_password(password, self.salt) == self.secret_hash
@@ -43,8 +47,12 @@ class User(Base):
     def __repr__(self):
 		return "<User(email='{}', username='{}')>".format(self.email, self.username)
 
+    __str__ = __repr__
+
 if __name__ == '__main__':
     init_db()
+
+    User.query.delete()
 
     user = User.new_user(email='dummy@email.com', username='dummy', password='dummypassword')
     assert user.valid_password('dummypassword')
