@@ -11,9 +11,11 @@ from mozillapulse import consumers, publishers
 from mozillapulse.messages.base import GenericMessage
 
 from management import PulseManagementAPI
-from guardian import PulseGuardian
+from guardian import PulseGuardian, DEL_QUEUE_SIZE, WARN_QUEUE_SIZE
 
 from model.user import User
+from model.queue import Queue
+from model.base import db_session
 
 # Default RabbitMQ host settings are as defined in the accompanying
 # vagrant puppet files.
@@ -83,7 +85,7 @@ class PulseTestMixin(object):
 
     def setUp(self):
         self.management_api = PulseManagementAPI()
-        self.guardian = GuardianProcess(self.management_api)
+        self.guardian = PulseGuardian(self.management_api)
 
     def tearDown(self):
         self.terminate_proc()
@@ -118,72 +120,71 @@ class PulseTestMixin(object):
         self.assertEqual(msg.data, received_payload)
 
     def test_durable(self):
-        self.guardian.start()
-
-        publisher = self.publisher(**pulse_cfg)
-        for i in xrange(20):
-            msg = self._build_message(i)
-            publisher.publish(msg)
+        self.management_api.delete_all_queues()
 
         consumer_cfg = pulse_cfg.copy()
         consumer_cfg['applabel'] = str(uuid.uuid1())
 
+        # Configure / Create the test user to be used for message consumption
         consumer_cfg['user'], consumer_cfg['password'] = CONSUMER_USER, CONSUMER_PASSWORD
         username, password = consumer_cfg['user'], consumer_cfg['password']
-
-
         user = User.query.filter(User.username == username).first()
         if user is None:
             user = User.new_user(username=username, email='akachkach@mozilla.com', password=password)
             user.activate(self.management_api)
+            db_session.add(user)
+            db_session.commit()
 
+        publisher = self.publisher(**pulse_cfg)
+        
+        # Publish some messages
+        for i in xrange(10):
+            msg = self._build_message(0)
+            publisher.publish(msg)
+
+        # Start the consumer
         self.proc = ConsumerSubprocess(self.consumer, consumer_cfg, True)
         self.proc.start()
-
         self._wait_for_queue(consumer_cfg)
+
+        # Monitor the queues, this should create the queue object and assign it to the user
+        for i in xrange(10):
+            self.guardian.monitor_queues(self.management_api.queues())
+            time.sleep(0.2)
+
+        user = User
+
         self.terminate_proc()
 
         # Queue should still exist.
         self._wait_for_queue(consumer_cfg)
 
+        # Get the queue's object
+        user = User.query.filter(User.email == user.email).first()
+        print user.queues
+        q_name = self.management_api.queues()[0]['name']
+        queue = Queue.query.filter(Queue.name == q_name).first()
+        print queue
+
         # Queue multiple messages while no consumer exists.
-        for i in xrange(20):
-            msg = self._build_message('2')
+        for i in xrange(2000):
+            msg = self._build_message(i)
             publisher.publish(msg)
 
-        # Message should be immediately available when a new consumer is
-        # created and hooked up to the original queue.
+        print self.management_api.queues()
+
+
+        # Creating a consumer and sleeping
         self.proc = ConsumerSubprocess(self.consumer, consumer_cfg, True)
         self.proc.start()
-        self._get_verify_msg(msg)
-        time.sleep(100)
+        self.guardian.monitor_queues(self.management_api.queues())
+        # Monitor the queues, this should create the queue object and assign it to the user
+        for i in xrange(10):
+            self.guardian.monitor_queues(self.management_api.queues())
+            time.sleep(0.2)
+
         self.terminate_proc()
 
-        msg = self._build_message('3')
-        publisher.publish(msg)
-
-        self.guardian.terminate()
-        self.guardian.join()
-
-        # # Purge messages and add a new one.
-        # consumer = self.consumer(**consumer_cfg)
-        # consumer.configure(topic='#', callback=lambda x, y: None)
-        # consumer.purge_existing_messages()
-        # msg = self._build_message('4')
-        # publisher.publish(msg)
-
-        # # When a new consumer reads from the original queue, only the last
-        # # message should be available.
-        # self.proc = ConsumerSubprocess(self.consumer, consumer_cfg, True)
-        # self.proc.start()
-        # self._get_verify_msg(msg)
-        # self.terminate_proc()
-
-        # # Delete the queue.
-        # consumer = self.consumer(**consumer_cfg)
-        # consumer.configure(topic='#', callback=lambda x, y: None)
-        # consumer.delete_queue()
-        # self._wait_for_queue(consumer_cfg, False)
 
 
 class TestMessage(GenericMessage):
