@@ -77,6 +77,22 @@ class PulseManagementAPI(object):
         username = quote(username, '')
         self._api_request('users/{}'.format(username), method='DELETE')
 
+    # Permissions
+    
+    def permissions(self):
+        return self._api_request('permissions')
+
+    def permission(self, username, vhost):
+        username = quote(username, '')
+        vhost = quote(vhost, '')
+        return self._api_request('permissions/{}/{}'.format(vhost, username))
+
+    def set_permission(self, username, vhost, configure='', write='', read=''):
+        username = quote(username, '')
+        vhost = quote(vhost, '')
+        data = dict(configure=configure, write=write, read=read)
+        self._api_request('permissions/{}/{}'.format(vhost, username), method='PUT', data=data)
+
     # Channels
 
     def channels(self):
