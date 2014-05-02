@@ -10,6 +10,7 @@ app = Flask(__name__)
 import config
 from model.base import db_session, init_db
 from model.user import User
+from model.queue import Queue
 from management import PulseManagementAPI, PulseManagementException
 
 from sendemail import sendemail
@@ -32,11 +33,13 @@ for user in User.query.all():
 
 # Clearing the database from old data
 User.query.delete()
+Queue.query.delete()
 
 # Dummy test user
-dummy_usr = User.new_user(email='dummy@email.com', username='dummy', password='dummypassword')
+dummy_usr = User.new_user(email='ahmed.kachach@gmail.com', username='dummy', password='dummy')
 db_session.add(dummy_usr)
 db_session.commit()
+pulse_management.create_user('dummy', 'dummy')
 
 # Decorators and instructions used to inject info into the context or restrict access to some pages
 
