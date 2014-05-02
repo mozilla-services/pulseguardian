@@ -9,15 +9,23 @@ import uuid
 
 from mozillapulse import consumers, publishers
 from mozillapulse.messages.base import GenericMessage
-# from mozillapulse.publishers import PulseTestPublisher
+
+from management import PulseManagementAPI
+from guardian import PulseGuardian
+
+from model.user import User
 
 # Default RabbitMQ host settings are as defined in the accompanying
 # vagrant puppet files.
 DEFAULT_RABBIT_HOST = 'localhost'
 DEFAULT_RABBIT_PORT = 5672
 DEFAULT_RABBIT_VHOST = '/'
-DEFAULT_RABBIT_USER = 'dummy'
-DEFAULT_RABBIT_PASSWORD = 'dummy'
+DEFAULT_RABBIT_USER = 'guest'
+DEFAULT_RABBIT_PASSWORD = 'guest'
+
+CONSUMER_USER = 'guardtest'
+CONSUMER_PASSWORD = 'guardtest'
+
 
 # Global pulse configuration.
 pulse_cfg = {}
@@ -42,6 +50,16 @@ class ConsumerSubprocess(multiprocessing.Process):
         consumer.listen()
 
 
+class GuardianProcess(multiprocessing.Process):
+
+    def __init__(self, management_api):
+        multiprocessing.Process.__init__(self)
+        self.management_api = management_api
+        self.guardian = PulseGuardian(self.management_api)
+
+    def run(self):
+        self.guardian.guard()
+
 class PulseTestMixin(object):
 
     """Launches a consumer in a separate process and publishes a message in
@@ -62,6 +80,10 @@ class PulseTestMixin(object):
 
     def _build_message(self, msg_id):
         raise NotImplementedError()
+
+    def setUp(self):
+        self.management_api = PulseManagementAPI()
+        self.guardian = GuardianProcess(self.management_api)
 
     def tearDown(self):
         self.terminate_proc()
@@ -96,12 +118,25 @@ class PulseTestMixin(object):
         self.assertEqual(msg.data, received_payload)
 
     def test_durable(self):
-        msg = self._build_message('1')
+        self.guardian.start()
+
         publisher = self.publisher(**pulse_cfg)
-        publisher.publish(msg)
+        for i in xrange(20):
+            msg = self._build_message(i)
+            publisher.publish(msg)
 
         consumer_cfg = pulse_cfg.copy()
         consumer_cfg['applabel'] = str(uuid.uuid1())
+
+        consumer_cfg['user'], consumer_cfg['password'] = CONSUMER_USER, CONSUMER_PASSWORD
+        username, password = consumer_cfg['user'], consumer_cfg['password']
+
+
+        user = User.query.filter(User.username == username).first()
+        if user is None:
+            user = User.new_user(username=username, email='akachkach@mozilla.com', password=password)
+            user.activate(self.management_api)
+
         self.proc = ConsumerSubprocess(self.consumer, consumer_cfg, True)
         self.proc.start()
 
@@ -126,6 +161,9 @@ class PulseTestMixin(object):
 
         msg = self._build_message('3')
         publisher.publish(msg)
+
+        self.guardian.terminate()
+        self.guardian.join()
 
         # # Purge messages and add a new one.
         # consumer = self.consumer(**consumer_cfg)
@@ -154,7 +192,7 @@ class TestMessage(GenericMessage):
         super(TestMessage, self).__init__()
         self.routing_parts.append('test')
 
-class TestCode(PulseTestMixin, unittest.TestCase):
+class GuardianTest(PulseTestMixin, unittest.TestCase):
 
     consumer = consumers.PulseTestConsumer
     publisher = publishers.PulseTestPublisher
@@ -198,8 +236,3 @@ if __name__ == '__main__':
                       % DEFAULT_RABBIT_PASSWORD)
     (opts, args) = parser.parse_args()
     main(opts.__dict__)
-
-    # publisher = PulseTestPublisher()
-    # for i in xrange(10):
-    #     msg = TestMessage()
-    #     publisher.publish(msg)
