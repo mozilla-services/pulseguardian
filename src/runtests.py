@@ -164,17 +164,26 @@ class PulseTestMixin(object):
         self.assertTrue(len(user.queues) > 0)
 
         # Queue multiple messages while no consumer exists.
-        for i in xrange(2000):
+        for i in xrange(DEL_QUEUE_SIZE + 1):
             msg = self._build_message(i)
             publisher.publish(msg)
 
+        # Wait some time for published messages to be taken into account
+        for i in xrange(10):
+            time.sleep(0.2)
+            queues_to_delete = [q_data for q_data in self.management_api.queues() if q_data['messages_ready'] > DEL_QUEUE_SIZE]
+            if queues_to_delete:
+                break
+                
+        self.assertTrue(len(queues_to_delete) > 0)
 
         # Monitor the queues, this should create the queue object and assign it to the user
         for i in xrange(20):
             self.guardian.monitor_queues(self.management_api.queues())
             time.sleep(0.2)
 
-
+        queues_to_delete = [q_data for q_data in self.management_api.queues() if q_data['messages_ready'] > DEL_QUEUE_SIZE]
+        self.assertTrue(len(queues_to_delete) == 0)
 
 
 class TestMessage(GenericMessage):

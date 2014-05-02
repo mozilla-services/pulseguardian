@@ -26,7 +26,7 @@ class PulseGuardian(object):
 
     def monitor_queues(self, queues):
         for queue_data in queues:
-            q_size, q_name = queue_data['messages_ready'], queue_data['name']
+            q_size, q_name, q_vhost = queue_data['messages_ready'], queue_data['name'], queue_data['vhost']
             # print q_name, q_size
             queue = Queue.query.filter(Queue.name == q_name).first()
 
@@ -62,13 +62,14 @@ class PulseGuardian(object):
                 db_session.add(queue)
                 db_session.commit()
 
+            # print q_size, queue
             if q_size > self.del_queue_size:
                 logging.warning("Queue '{}' is going to be deleted. Queue size = {} ; del_queue_size = {}".format(q_name, q_size, self.del_queue_size))
-                # Send mail here
+                self.api.delete_queue(vhost=q_vhost, queue=q_name)
             elif q_size > self.warn_queue_size and not q_name in self.warned:
                 logging.warning("Should warn'{}' owner. Queue size = {} ; warn_queue_size = {}".format(q_name, q_size, self.warn_queue_size))
-                # Delete queue here
                 self.warned.add(q_name)
+                # TODO : Send mail here
             elif q_size <= self.warn_queue_size and q_name in self.warned:
                 logging.warning("Queue '{}' was in warning zone but is OK now".format(q_name, q_size, self.del_queue_size))
                 # When a warned queue gets out of the warning threshold, it can get warned again
