@@ -96,7 +96,6 @@ def signup():
     db_session.commit()
 
     # Sending the activation email
-    # TODO : add hostname to the activation link
     activation_link = '{}/activate/{}/{}'.format(config.hostname, user.email, user.activation_token)
     sendemail(subject="Activate your Pulse account", from_addr=config.email_from, to_addrs=[user.email],
               username=config.email_account, password=config.email_password,
@@ -116,10 +115,8 @@ def activate(email, activation_token):
     elif user.activation_token != activation_token:
         return render_template('activate.html', error="Wrong activation token " + user.activation_token)
     else:
-        # Activating the user account
-        user.activated = True
-        # Creating the appropriate rabbitmq user
-        pulse_management.create_user(username=user.username, password=user.password)
+        # Activating the user account, which will also create a Pulse account with the same username/password
+        user.activate(pulse_management)
 
         db_session.add(user)
         db_session.commit()
