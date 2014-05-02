@@ -34,7 +34,8 @@ class User(Base):
         self.activated = True
         # Creating the appropriate rabbitmq user
         management_api.create_user(username=self.username, password=self.password)
-        management_api.set_permission(username=self.username, vhost='/', read='.*')
+        # TODO : remove configure and write permissions while letting users create queues ?
+        management_api.set_permission(username=self.username, vhost='/', read='.*', configure='.*', write='.*')
         # Removing the user's password as it's no longer needed
         self.password = None
 

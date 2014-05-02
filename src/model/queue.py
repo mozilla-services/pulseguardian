@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ForeignKey
+from sqlalchemy import Column, String, Boolean, ForeignKey
 
 from base import Base
 
@@ -6,7 +6,6 @@ class Queue(Base):
     __tablename__ = 'queues'
 
     name = Column(String, primary_key=True)
-
     owner_id = Column(String, ForeignKey('users.email'))
     
 
