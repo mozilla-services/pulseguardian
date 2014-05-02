@@ -152,38 +152,28 @@ class PulseTestMixin(object):
             self.guardian.monitor_queues(self.management_api.queues())
             time.sleep(0.2)
 
-        user = User
-
+        # Terminate the consumer process
         self.terminate_proc()
 
         # Queue should still exist.
         self._wait_for_queue(consumer_cfg)
 
         # Get the queue's object
-        user = User.query.filter(User.email == user.email).first()
-        print user.queues
-        q_name = self.management_api.queues()[0]['name']
-        queue = Queue.query.filter(Queue.name == q_name).first()
-        print queue
+        db_session.refresh(user)
+
+        self.assertTrue(len(user.queues) > 0)
 
         # Queue multiple messages while no consumer exists.
         for i in xrange(2000):
             msg = self._build_message(i)
             publisher.publish(msg)
 
-        print self.management_api.queues()
 
-
-        # Creating a consumer and sleeping
-        self.proc = ConsumerSubprocess(self.consumer, consumer_cfg, True)
-        self.proc.start()
-        self.guardian.monitor_queues(self.management_api.queues())
         # Monitor the queues, this should create the queue object and assign it to the user
-        for i in xrange(10):
+        for i in xrange(20):
             self.guardian.monitor_queues(self.management_api.queues())
             time.sleep(0.2)
 
-        self.terminate_proc()
 
 
 
