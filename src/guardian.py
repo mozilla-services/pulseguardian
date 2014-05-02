@@ -11,7 +11,7 @@ import config
 WARN_QUEUE_SIZE = 2
 ARCHIVE_QUEUE_SIZE = 15
 DEL_QUEUE_SIZE = 20
-POLLING_INTERVAL = 2
+POLLING_INTERVAL = 0.5
 
 class PulseGuardian(object):
 
@@ -27,19 +27,23 @@ class PulseGuardian(object):
     def monitor_queues(self, queues):
         for queue_data in queues:
             q_size, q_name = queue_data['messages_ready'], queue_data['name']
-
+            # print q_name, q_size
             queue = Queue.query.filter(Queue.name == q_name).first()
 
             # If the queue doesn't exist, we create it
             if queue is None:
+                logging.warning(". New queue '{}' encountred. Adding to the databse.".format(q_name))
                 queue = Queue(name=q_name, owner=None)
                 db_session.add(queue)
                 db_session.commit()
 
             # If we don't know who created the queue
             if queue.owner is None:
+                # logging.warning('. Queue "{}" owner unknown.'.format(q_name))
+
                 # If no client is currently consuming the queue, we just skip it
                 if queue_data['consumers'] == 0:
+                    # logging.warning(". Queue '{}' skipped (no owner, no current consumer).".format(q_name))
                     continue
 
                 # Otherwise we look for its user
@@ -49,11 +53,12 @@ class PulseGuardian(object):
 
                 # If the queue was created by a user that isn't in the pulseguardian database, we skip the queue
                 if user is None:
+                    logging.warning(". Queue '{}' owner, {}, isn't in the pulse guardian db. Skipping the queue.".format(q_name, owner_name))
                     continue
 
                 # We assign the user to the queue
+                logging.warning(". Assigning queue '{}'  to user {}.".format(q_name, user))
                 queue.owner = user
-
                 db_session.add(queue)
                 db_session.commit()
 
@@ -65,6 +70,7 @@ class PulseGuardian(object):
                 # Delete queue here
                 self.warned.add(q_name)
             elif q_size <= self.warn_queue_size and q_name in self.warned:
+                logging.warning("Queue '{}' was in warning zone but is OK now".format(q_name, q_size, self.del_queue_size))
                 # When a warned queue gets out of the warning threshold, it can get warned again
                 self.warned.remove(q_name)
 
