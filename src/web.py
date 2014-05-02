@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from functools import wraps
 
 from flask import Flask, render_template, session, g, redirect, request
@@ -11,7 +8,7 @@ import config
 from model.base import db_session, init_db
 from model.user import User
 from model.queue import Queue
-from management import PulseManagementAPI, PulseManagementException
+from management import PulseManagementAPI
 
 from sendemail import sendemail
 
@@ -23,23 +20,6 @@ pulse_management = PulseManagementAPI()
 
 # Initializing the databse
 init_db()
-
-# Removing all pulse users created by the web app
-for user in User.query.all():
-    try:
-        pulse_management.delete_user(user.username)
-    except PulseManagementException:
-        pass
-
-# Clearing the database from old data
-User.query.delete()
-Queue.query.delete()
-
-# Dummy test user
-dummy_usr = User.new_user(email='ahmed.kachach@gmail.com', username='dummy', password='dummy')
-db_session.add(dummy_usr)
-db_session.commit()
-pulse_management.create_user('dummy', 'dummy')
 
 # Decorators and instructions used to inject info into the context or restrict access to some pages
 
