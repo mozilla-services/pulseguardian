@@ -56,7 +56,7 @@ class GuardianProcess(multiprocessing.Process):
     def __init__(self, management_api):
         multiprocessing.Process.__init__(self)
         self.management_api = management_api
-        self.guardian = PulseGuardian(self.management_api)
+        self.guardian = PulseGuardian(self.management_api, emails=False)
 
     def run(self):
         self.guardian.guard()
@@ -84,7 +84,7 @@ class PulseTestMixin(object):
 
     def setUp(self):
         self.management_api = PulseManagementAPI()
-        self.guardian = PulseGuardian(self.management_api)
+        self.guardian = PulseGuardian(self.management_api, emails=False)
 
     def tearDown(self):
         self.terminate_proc()

@@ -40,10 +40,10 @@ class PulseGuardian(object):
             # If a queue is over the deletion size, regardless of it having an owner or not, we delete it
             if q_size > self.del_queue_size:
                 logging.warning("Queue '{}' is going to be deleted. Queue size = {} ; del_queue_size = {}".format(q_name, q_size, self.del_queue_size))
-                self.api.delete_queue(vhost=q_vhost, queue=q_name)
                 # NOTE : this won't send mails to a queue that overflows the first time we see it (no owner), may refactor it
                 if queue.owner and self.emails:
-                    self.warning_email(queue.owner, queue_data)
+                    self.deletion_email(queue.owner, queue_data)
+                self.api.delete_queue(vhost=q_vhost, queue=q_name)
                 continue
 
             # If we don't know who created the queue
@@ -83,16 +83,20 @@ class PulseGuardian(object):
                 self.warned.remove(q_name)
 
     def warning_email(self, user, queue_data):
+        exchange = 'could not be determined'
         detailed_data = self.api.queue(vhost=queue_data['vhost'], queue=queue_data['name'])
-        exchange = detailed_data['incoming'][0]['exchange']['name']
+        if detailed_data['incoming']:
+            exchange = detailed_data['incoming'][0]['exchange']['name']
         sendemail(subject="Pulse : Overgrowing queue warning", from_addr=config.email_from, to_addrs=[user.email],
                   username=config.email_account, password=config.email_password,
                   text_data="Warning. Your queue '{}' on the exchange '{}' is overgrowing.\
                    Make sure your clients are running correctly.".format(queue_data['name'], exchange))
 
     def deletion_email(self, user, queue_data):
+        exchange = 'could not be determined'
         detailed_data = self.api.queue(vhost=queue_data['vhost'], queue=queue_data['name'])
-        exchange = detailed_data['incoming'][0]['exchange']['name']
+        if detailed_data['incoming']:
+            exchange = detailed_data['incoming'][0]['exchange']['name']
         sendemail(subject="Pulse : Deleted an overgrowing queue", from_addr=config.email_from, to_addrs=[user.email],
                   username=config.email_account, password=config.email_password,
                   text_data="Your queue '{}' on the exchange '{}' has been deleted because it exceeded the unread messages limit.\n\
