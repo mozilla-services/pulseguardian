@@ -14,7 +14,6 @@ from management import PulseManagementAPI
 from guardian import PulseGuardian, DEL_QUEUE_SIZE, WARN_QUEUE_SIZE
 
 from model.user import User
-from model.queue import Queue
 from model.base import db_session
 
 # Default RabbitMQ host settings are as defined in the accompanying
@@ -27,7 +26,7 @@ DEFAULT_RABBIT_PASSWORD = 'guest'
 
 CONSUMER_USER = 'guardtest'
 CONSUMER_PASSWORD = 'guardtest'
-
+CONSUMER_EMAIL = 'akachkach@mozilla.com'
 
 # Global pulse configuration.
 pulse_cfg = {}
@@ -119,7 +118,7 @@ class PulseTestMixin(object):
             received_payload[k.encode('ascii')] = v.encode('ascii')
         self.assertEqual(msg.data, received_payload)
 
-    def test_durable(self):
+    def test_warning(self):
         self.management_api.delete_all_queues()
 
         consumer_cfg = pulse_cfg.copy()
@@ -130,7 +129,65 @@ class PulseTestMixin(object):
         username, password = consumer_cfg['user'], consumer_cfg['password']
         user = User.query.filter(User.username == username).first()
         if user is None:
-            user = User.new_user(username=username, email='akachkach@mozilla.com', password=password)
+            user = User.new_user(username=username, email=CONSUMER_EMAIL, password=password)
+            user.activate(self.management_api)
+            db_session.add(user)
+            db_session.commit()
+
+        publisher = self.publisher(**pulse_cfg)
+        
+        # Publish some messages
+        for i in xrange(10):
+            msg = self._build_message(0)
+            publisher.publish(msg)
+
+        # Start the consumer
+        self.proc = ConsumerSubprocess(self.consumer, consumer_cfg, True)
+        self.proc.start()
+        self._wait_for_queue(consumer_cfg)
+
+        # Monitor the queues, this should create the queue object and assign it to the user
+        for i in xrange(10):
+            self.guardian.monitor_queues(self.management_api.queues())
+            time.sleep(0.2)
+
+        # Terminate the consumer process
+        self.terminate_proc()
+
+        # Queue should still exist.
+        self._wait_for_queue(consumer_cfg)
+
+        # Get the queue's object
+        db_session.refresh(user)
+
+        self.assertTrue(len(self.guardian.warned) == 0)
+
+        # Queue multiple messages while no consumer exists.
+        for i in xrange(WARN_QUEUE_SIZE + 1):
+            msg = self._build_message(i)
+            publisher.publish(msg)
+
+
+        # Monitor the queues, this should detect queues that should be warned
+        for i in xrange(20):
+            self.guardian.monitor_queues(self.management_api.queues())
+            time.sleep(0.2)
+
+        self.assertTrue(len(self.guardian.warned) > 0)
+
+
+    def test_delete(self):
+        self.management_api.delete_all_queues()
+
+        consumer_cfg = pulse_cfg.copy()
+        consumer_cfg['applabel'] = str(uuid.uuid1())
+
+        # Configure / Create the test user to be used for message consumption
+        consumer_cfg['user'], consumer_cfg['password'] = CONSUMER_USER, CONSUMER_PASSWORD
+        username, password = consumer_cfg['user'], consumer_cfg['password']
+        user = User.query.filter(User.username == username).first()
+        if user is None:
+            user = User.new_user(username=username, email=CONSUMER_EMAIL, password=password)
             user.activate(self.management_api)
             db_session.add(user)
             db_session.commit()
@@ -174,7 +231,7 @@ class PulseTestMixin(object):
             queues_to_delete = [q_data for q_data in self.management_api.queues() if q_data['messages_ready'] > DEL_QUEUE_SIZE]
             if queues_to_delete:
                 break
-                
+
         self.assertTrue(len(queues_to_delete) > 0)
 
         # Monitor the queues, this should create the queue object and assign it to the user
@@ -184,7 +241,6 @@ class PulseTestMixin(object):
 
         queues_to_delete = [q_data for q_data in self.management_api.queues() if q_data['messages_ready'] > DEL_QUEUE_SIZE]
         self.assertTrue(len(queues_to_delete) == 0)
-
 
 class TestMessage(GenericMessage):
 
