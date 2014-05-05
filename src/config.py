@@ -6,3 +6,7 @@ hostname = 'http://localhost:5000'
 mysql_user = 'root'
 mysql_password = ''
 mysql_dbname = 'pulseguardian'
+warn_queue_size = 20
+archive_queue_size = 150
+del_queue_size = 200
+polling_interval = 0.5
