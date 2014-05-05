@@ -35,11 +35,9 @@ def requires_login(f):
 
 @app.context_processor
 def inject_user():
-    """ Injects a 'user' variable in templates' context when a user is logged-in """
-    if session.get('logged_in', None):
-        return dict(user=User.query.filter(User.email == session['logged_in']).first())
-    else:
-        return dict(user=None)
+    """ Injects a user and configuration in templates' context """
+    user = User.query.filter(User.email == session['logged_in']).first()
+    return dict(user=user, config=config)
 
 @app.before_request
 def load_user():
@@ -59,10 +57,10 @@ def index():
     else:
         return render_template('index.html')
 
-
 @app.route("/profile")
 def profile():
-    return render_template('profile.html')  
+    users = User.query.all()
+    return render_template('profile.html', users=users)  
 
 # Login / Signup / Activate user
 

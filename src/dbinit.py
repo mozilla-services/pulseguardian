@@ -20,7 +20,12 @@ User.query.delete()
 Queue.query.delete()
 
 # Dummy test user
-dummy_usr = User.new_user(email='dummy@dummy.com', username='dummy', password='dummy')
-dummy_usr.activate(pulse_management)
-db_session.add(dummy_usr)
+dummy_user = User.new_user(email='dummy@dummy.com', username='dummy', password='dummy')
+dummy_user.activate(pulse_management)
+db_session.add(dummy_user)
+db_session.commit()
+
+# And a dummy queue
+dummy_queue = Queue(name='iamadummyqueue', size=2, owner=dummy_user)
+db_session.add(dummy_queue)
 db_session.commit()

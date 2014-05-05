@@ -240,6 +240,7 @@ class PulseTestMixin(object):
             if queues_to_delete:
                 break
 
+        # Tests that there are some queues that should be deleted
         self.assertTrue(len(queues_to_delete) > 0)
 
         # Monitor the queues, this should create the queue object and assign it to the user
@@ -247,6 +248,7 @@ class PulseTestMixin(object):
             self.guardian.monitor_queues(self.management_api.queues())
             time.sleep(0.2)
 
+        # Tests that there all the queues that has to be deleted were taken care of
         queues_to_delete = [q_data for q_data in self.management_api.queues() if q_data['messages_ready'] > DEL_QUEUE_SIZE]
         self.assertTrue(len(queues_to_delete) == 0)
 
