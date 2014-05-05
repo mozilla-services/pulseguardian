@@ -16,8 +16,8 @@ for user in User.query.all():
         pass
 
 # Clearing the database from old data
-User.query.delete()
 Queue.query.delete()
+User.query.delete()
 
 # Dummy test user
 dummy_user = User.new_user(email='dummy@dummy.com', username='dummy', password='dummy')
@@ -28,4 +28,10 @@ db_session.commit()
 # And a dummy queue
 dummy_queue = Queue(name='iamadummyqueue', size=2, owner=dummy_user)
 db_session.add(dummy_queue)
+db_session.commit()
+
+# Test admin user
+admin = User.new_user(email='admin@admin.com', username='admin', password='admin', admin=True)
+admin.activate(pulse_management)
+db_session.add(admin)
 db_session.commit()
