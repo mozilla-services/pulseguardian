@@ -8,14 +8,10 @@ from management import PulseManagementAPI
 from sendemail import sendemail
 import config
 
-WARN_QUEUE_SIZE = 2
-ARCHIVE_QUEUE_SIZE = 15
-DEL_QUEUE_SIZE = 20
-POLLING_INTERVAL = 0.5
-
 class PulseGuardian(object):
 
-    def __init__(self, api, emails=True, warn_queue_size=WARN_QUEUE_SIZE, archive_queue_size=ARCHIVE_QUEUE_SIZE, del_queue_size=DEL_QUEUE_SIZE):
+    def __init__(self, api, emails=True, warn_queue_size=config.warn_queue_size, archive_queue_size=config.archive_queue_size,
+                 del_queue_size=config.del_queue_size):
         self.api = api
 
         self.emails = emails
