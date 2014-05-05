@@ -17,8 +17,7 @@ from model.user import User
 from model.base import db_session
 import config
 
-# Default RabbitMQ host settings are as defined in the accompanying
-# vagrant puppet files.
+# Default RabbitMQ host settings
 DEFAULT_RABBIT_HOST = 'localhost'
 DEFAULT_RABBIT_PORT = 5672
 DEFAULT_RABBIT_VHOST = '/'
@@ -27,10 +26,10 @@ DEFAULT_RABBIT_PASSWORD = 'guest'
 
 CONSUMER_USER = 'guardtest'
 CONSUMER_PASSWORD = 'guardtest'
-CONSUMER_EMAIL = 'akachkach@mozilla.com'
+CONSUMER_EMAIL = 'guardtest@guardtest.com'
 
 # Global pulse configuration.
-pulse_cfg = {}
+pulse_cfg = dict()
 
 class ConsumerSubprocess(multiprocessing.Process):
 
