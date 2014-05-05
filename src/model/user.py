@@ -24,6 +24,7 @@ class User(Base):
 
     activation_token = Column(String(100))
     activated = Column(Boolean)
+    admin = Column(Boolean)
 
     queues = relationship(Queue, backref='owner', cascade='save-update, merge, delete')
 
@@ -43,12 +44,12 @@ class User(Base):
         db_session.commit()
 
     @staticmethod
-    def new_user(email, username, password):
+    def new_user(email, username, password, admin=False):
         username = username.lower()
         password = password.lower()
 
         token = os.urandom(16).encode('hex')
-        user = User(email=email, username=username, activation_token=token, activated=False)
+        user = User(email=email, username=username, activation_token=token, admin=admin, activated=False)
 
         # Temporarly storing the password, removed at activation
         user.password = password
