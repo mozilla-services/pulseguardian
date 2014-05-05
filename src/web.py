@@ -36,7 +36,7 @@ def requires_login(f):
 @app.context_processor
 def inject_user():
     """ Injects a user and configuration in templates' context """
-    user = User.query.filter(User.email == session['logged_in']).first()
+    user = User.query.filter(User.email == session.get('logged_in')).first()
     return dict(user=user, config=config)
 
 @app.before_request
