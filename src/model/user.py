@@ -25,7 +25,7 @@ class User(Base):
     activation_token = Column(String(100))
     activated = Column(Boolean)
 
-    queues = relationship(Queue, backref='owner')
+    queues = relationship(Queue, backref='owner', cascade='save-update, merge, delete')
 
     def valid_password(self, password):
 	    return hash_password(password, self.salt) == self.secret_hash

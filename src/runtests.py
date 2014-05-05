@@ -160,7 +160,8 @@ class PulseTestMixin(object):
         # Get the queue's object
         db_session.refresh(user)
 
-        self.assertTrue(len(self.guardian.warned) == 0)
+        # No warned queue
+        self.assertTrue(len([q for q in user.queues if q.warned]) == 0)
 
         # Queue multiple messages while no consumer exists.
         for i in xrange(WARN_QUEUE_SIZE + 1):
@@ -173,7 +174,14 @@ class PulseTestMixin(object):
             self.guardian.monitor_queues(self.management_api.queues())
             time.sleep(0.2)
 
-        self.assertTrue(len(self.guardian.warned) > 0)
+        # Refreshing the user's queues state
+        db_session.refresh(user)
+
+        self.assertTrue(len([q for q in user.queues if q.warned]) > 0)
+
+        # Deleting the test user (should delete all his queues too)
+        db_session.delete(user)
+        db_session.commit()
 
 
     def test_delete(self):
@@ -227,7 +235,7 @@ class PulseTestMixin(object):
 
         # Wait some time for published messages to be taken into account
         for i in xrange(10):
-            time.sleep(0.2)
+            time.sleep(0.3)
             queues_to_delete = [q_data for q_data in self.management_api.queues() if q_data['messages_ready'] > DEL_QUEUE_SIZE]
             if queues_to_delete:
                 break
@@ -241,6 +249,10 @@ class PulseTestMixin(object):
 
         queues_to_delete = [q_data for q_data in self.management_api.queues() if q_data['messages_ready'] > DEL_QUEUE_SIZE]
         self.assertTrue(len(queues_to_delete) == 0)
+
+        # Deleting the test user (should delete all his queues too)
+        db_session.delete(user)
+        db_session.commit()
 
 class TestMessage(GenericMessage):
 

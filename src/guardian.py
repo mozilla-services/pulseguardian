@@ -23,8 +23,6 @@ class PulseGuardian(object):
         self.archive_queue_size = archive_queue_size
         self.del_queue_size = del_queue_size
 
-        self.warned = set()
-
     def monitor_queues(self, queues):
         for queue_data in queues:
             q_size, q_name, q_vhost = queue_data['messages_ready'], queue_data['name'], queue_data['vhost']
@@ -36,6 +34,9 @@ class PulseGuardian(object):
                 queue = Queue(name=q_name, owner=None)
                 db_session.add(queue)
                 db_session.commit()
+
+            # Updating the saved queue size
+            queue.size = q_size
 
             # If a queue is over the deletion size, regardless of it having an owner or not, we delete it
             if q_size > self.del_queue_size:
@@ -68,19 +69,21 @@ class PulseGuardian(object):
                 # We assign the user to the queue
                 logging.warning(". Assigning queue '{}'  to user {}.".format(q_name, user))
                 queue.owner = user
-                db_session.add(queue)
-                db_session.commit()
 
             # print q_size, queue
-            if q_size > self.warn_queue_size and not q_name in self.warned:
-                logging.warning("Should warn'{}' owner. Queue size = {} ; warn_queue_size = {}".format(q_name, q_size, self.warn_queue_size))
-                self.warned.add(q_name)
+            if q_size > self.warn_queue_size and not queue.warned:
+                logging.warning("Warning queue '{}' owner. Queue size = {} ; warn_queue_size = {}".format(q_name, q_size, self.warn_queue_size))
+                queue.warned = True
                 if self.emails:
                     self.warning_email(queue.owner, queue_data)
-            elif q_size <= self.warn_queue_size and q_name in self.warned:
+            elif q_size <= self.warn_queue_size and queue.warned:
                 logging.warning("Queue '{}' was in warning zone but is OK now".format(q_name, q_size, self.del_queue_size))
                 # When a warned queue gets out of the warning threshold, it can get warned again
-                self.warned.remove(q_name)
+                queue.warned = False
+
+            # Commiting changes to the queue
+            db_session.add(queue)
+            db_session.commit()
 
     def warning_email(self, user, queue_data):
         exchange = 'could not be determined'
