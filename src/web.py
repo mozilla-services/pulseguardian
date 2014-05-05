@@ -44,8 +44,7 @@ def inject_user():
 @app.before_request
 def load_user():
     """ Loads the currently logged-in user (if any) to the request context """
-    if session.get('logged_in'):
-        g.user = User.query.filter(User.email == session['logged_in']).first()
+    g.user = User.query.filter(User.email == session.get('logged_in')).first()
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
@@ -55,7 +54,15 @@ def shutdown_session(exception=None):
 
 @app.route("/")
 def index():
-    return render_template('index.html')
+    if g.user:
+        return redirect('/profile')
+    else:
+        return render_template('index.html')
+
+
+@app.route("/profile")
+def profile():
+    return render_template('profile.html')  
 
 # Login / Signup / Activate user
 

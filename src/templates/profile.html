@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+        
+{% block body %}
+
+<h2>
+    Profile : {{user.username}}
+</h2>
+
+<div>
+    <h3>Queues</h3>
+    <ul>
+        {% for queue in user.queues %}
+        <li>
+            {{queue.name}}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
+{% endblock %}
