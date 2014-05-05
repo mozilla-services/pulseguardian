@@ -6,15 +6,16 @@ import multiprocessing
 import time
 import unittest
 import uuid
+import sys
 
 from mozillapulse import consumers, publishers
 from mozillapulse.messages.base import GenericMessage
 
 from management import PulseManagementAPI
-from guardian import PulseGuardian, DEL_QUEUE_SIZE, WARN_QUEUE_SIZE
-
+from guardian import PulseGuardian
 from model.user import User
 from model.base import db_session
+import config
 
 # Default RabbitMQ host settings are as defined in the accompanying
 # vagrant puppet files.
@@ -164,7 +165,7 @@ class PulseTestMixin(object):
         self.assertTrue(len([q for q in user.queues if q.warned]) == 0)
 
         # Queue multiple messages while no consumer exists.
-        for i in xrange(WARN_QUEUE_SIZE + 1):
+        for i in xrange(config.warn_queue_size + 1):
             msg = self._build_message(i)
             publisher.publish(msg)
 
@@ -229,14 +230,14 @@ class PulseTestMixin(object):
         self.assertTrue(len(user.queues) > 0)
 
         # Queue multiple messages while no consumer exists.
-        for i in xrange(DEL_QUEUE_SIZE + 1):
+        for i in xrange(config.del_queue_size + 1):
             msg = self._build_message(i)
             publisher.publish(msg)
 
         # Wait some time for published messages to be taken into account
         for i in xrange(10):
             time.sleep(0.3)
-            queues_to_delete = [q_data for q_data in self.management_api.queues() if q_data['messages_ready'] > DEL_QUEUE_SIZE]
+            queues_to_delete = [q_data for q_data in self.management_api.queues() if q_data['messages_ready'] > config.del_queue_size]
             if queues_to_delete:
                 break
 
@@ -249,7 +250,7 @@ class PulseTestMixin(object):
             time.sleep(0.2)
 
         # Tests that there all the queues that has to be deleted were taken care of
-        queues_to_delete = [q_data for q_data in self.management_api.queues() if q_data['messages_ready'] > DEL_QUEUE_SIZE]
+        queues_to_delete = [q_data for q_data in self.management_api.queues() if q_data['messages_ready'] > config.del_queue_size]
         self.assertTrue(len(queues_to_delete) == 0)
 
         # Deleting the test user (should delete all his queues too)
@@ -278,7 +279,7 @@ class GuardianTest(PulseTestMixin, unittest.TestCase):
 def main(pulse_opts):
     global pulse_cfg
     pulse_cfg.update(pulse_opts)
-    unittest.main()
+    unittest.main(argv=sys.argv[0:1])
 
 
 if __name__ == '__main__':
