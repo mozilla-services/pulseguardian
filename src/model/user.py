@@ -13,16 +13,16 @@ def hash_password(password, salt):
 class User(Base):
     __tablename__ = 'users'
 
-    username = Column(String, unique=True)
-    email = Column(String, primary_key=True)
+    username = Column(String(100), unique=True)
+    email = Column(String(100), primary_key=True)
 
     # Only stored temporarly
-    password = Column(String)
+    password = Column(String(100))
 
-    secret_hash = Column(String)
-    salt = Column(String)
+    secret_hash = Column(String(200))
+    salt = Column(String(100))
 
-    activation_token = Column(String)
+    activation_token = Column(String(100))
     activated = Column(Boolean)
 
     queues = relationship(Queue, backref='owner')
@@ -46,7 +46,7 @@ class User(Base):
     def new_user(email, username, password):
         username = username.lower()
         password = password.lower()
-        
+
         token = os.urandom(16).encode('hex')
         user = User(email=email, username=username, activation_token=token, activated=False)
 

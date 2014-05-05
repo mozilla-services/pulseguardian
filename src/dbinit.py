@@ -3,7 +3,6 @@ from model.user import User
 from model.queue import Queue
 from management import PulseManagementAPI, PulseManagementException
 
-
 pulse_management = PulseManagementAPI()
 
 # Initializing the databse schema
