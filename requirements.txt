@@ -2,3 +2,5 @@ flask
 requests
 mozillapulse
 sqlalchemy
+MySQLdb
+
