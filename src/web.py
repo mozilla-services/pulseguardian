@@ -1,6 +1,6 @@
 from functools import wraps
 
-from flask import Flask, render_template, session, g, redirect, request
+from flask import Flask, render_template, session, g, redirect, request, jsonify
 
 app = Flask(__name__)
 
@@ -8,7 +8,7 @@ import config
 from model.base import db_session, init_db
 from model.user import User
 from model.queue import Queue
-from management import PulseManagementAPI
+from management import PulseManagementAPI, PulseManagementException
 
 from sendemail import sendemail
 
@@ -37,7 +37,7 @@ def requires_login(f):
 def inject_user():
     """ Injects a user and configuration in templates' context """
     user = User.query.filter(User.email == session.get('logged_in')).first()
-    return dict(user=user, config=config)
+    return dict(cur_user=user, config=config)
 
 @app.before_request
 def load_user():
@@ -61,6 +61,24 @@ def index():
 def profile():
     users = User.query.all()
     return render_template('profile.html', users=users)  
+
+# API
+
+@app.route("/queue/<queue_name>", methods=['DELETE'])
+def delete_queue(queue_name):
+
+    queue = Queue.query.get(queue_name)
+    if queue:
+        db_session.delete(queue)
+        db_session.commit()
+        try:
+            pulse_management.delete_queue(vhost='/', queue=queue.name)
+            return jsonify(ok=True)
+        except PulseManagementException:
+            app.logger.warning("Couldn't delete the queue '{}' on rabbitmq".format(queue_name))
+
+    return jsonify(ok=False)
+
 
 # Login / Signup / Activate user
 

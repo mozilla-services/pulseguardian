@@ -77,3 +77,25 @@ a:href {
 .header .username {
   font-weight: bold;
 }
+
+#error-bar {
+  margin-top: 10px;
+  /* Hidden by default*/
+  display: none;
+}
+
+/* Profile */
+
+.queues .delete {
+  color: #e10809;
+  cursor: pointer;
+  float: right;
+}
+
+.queues .delete:hover {
+  color: #e52e38;
+}
+
+.user {
+  border-bottom: 1px dashed #d5d7df;
+}

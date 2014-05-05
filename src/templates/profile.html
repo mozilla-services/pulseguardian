@@ -2,31 +2,35 @@
 
         
 {% block body %}
-{% set inspected_users = users if user.admin else [user] %}
+{% set inspected_users = users if cur_user.admin else [cur_user] %}
 
 {% for user in inspected_users %}
-    <h2 class="text-primary">
-        <small>Profile:</small> {{user.username}}
-    </h2>
-
-    <div>
+    <div class="user" data-email="{{user.email}}">
+        <h2 class="text-primary">
+            <small>Profile:</small> {{user.username}}
+        </h2>
+    
         <h3>Queues</h3>
 
         {% if user.queues %}
-        <ul class="list-group">
+        <ul class="list-group queues">
             {% for queue in user.queues %}
-            <li class="list-group-item">
+            <li class="list-group-item queue" data-queue-name="{{queue.name}}">
+                {% if cur_user.admin or user == cur_user %}
+                    <span class="glyphicon glyphicon-remove delete"></span>
+                {% endif %}
                 <h4>{{queue.name}} <small>{{queue.size}} messages</small></h4> 
-            </li>
 
-            <div class="progress">
-            {% set fill_perc = 100 * queue.size / config.del_queue_size %}
-            {% set bar_class = 'progress-bar-danger' if queue.size > config.warn_queue_size else '' %}
-            <div class="progress-bar {{bar_class}}" role="progressbar" aria-valuenow="{{queue.size}}" aria-valuemin="0" aria-valuemax="{{config.del_queue_size}}"
-                   style="width: {{fill_perc}}%;">
-                {{fill_perc}}%
-              </div>
-            </div>
+                {% set fill_perc = 100 * queue.size / config.del_queue_size %}
+                {% set bar_class = 'progress-bar-danger' if queue.size > config.warn_queue_size else '' %}
+                <div class="progress">
+                    <div class="progress-bar {{bar_class}}" role="progressbar" aria-valuenow="{{queue.size}}" aria-valuemin="0"
+                         aria-valuemax="{{config.del_queue_size}}" style="width: {{fill_perc}}%;">
+                        {{fill_perc}}%
+                    </div>
+                </div>
+
+            </li>
             {% endfor %}
         </ul>
         {% else %}
@@ -38,4 +42,8 @@
 {% endfor %}
 
 
+{% endblock %}
+
+{% block javascript %}
+<script type="text/javascript" src="/static/js/profile.js"></script>
 {% endblock %}
