@@ -19,6 +19,9 @@ class PulseGuardian(object):
         self.archive_queue_size = archive_queue_size
         self.del_queue_size = del_queue_size
 
+        self.warned_queues = set()
+        self.deleted_queues = set()
+
     def monitor_queues(self, queues):
         for queue_data in queues:
             q_size, q_name, q_vhost = queue_data['messages_ready'], queue_data['name'], queue_data['vhost']
@@ -37,19 +40,21 @@ class PulseGuardian(object):
             # If a queue is over the deletion size, regardless of it having an owner or not, we delete it
             if q_size > self.del_queue_size:
                 logging.warning("Queue '{}' is going to be deleted. Queue size = {} ; del_queue_size = {}".format(q_name, q_size, self.del_queue_size))
-                # NOTE : this won't send mails to a queue that overflows the first time we see it (no owner), may refactor it
+                self.deleted_queues.add(queue.name)
+                self.api.delete_queue(vhost=q_vhost, queue=q_name)
                 if queue.owner and self.emails:
                     self.deletion_email(queue.owner, queue_data)
-                self.api.delete_queue(vhost=q_vhost, queue=q_name)
+                db_session.delete(queue)
+                db_session.commit()
                 continue
 
             # If we don't know who created the queue
             if queue.owner is None:
-                # logging.warning('. Queue "{}" owner unknown.'.format(q_name))
+                # logging.info('. Queue "{}" owner unknown.'.format(q_name))
 
                 # If no client is currently consuming the queue, we just skip it
                 if queue_data['consumers'] == 0:
-                    # logging.warning(". Queue '{}' skipped (no owner, no current consumer).".format(q_name))
+                    # logging.info(". Queue '{}' skipped (no owner, no current consumer).".format(q_name))
                     continue
 
                 # Otherwise we look for its user
@@ -70,6 +75,7 @@ class PulseGuardian(object):
             if q_size > self.warn_queue_size and not queue.warned:
                 logging.warning("Warning queue '{}' owner. Queue size = {} ; warn_queue_size = {}".format(q_name, q_size, self.warn_queue_size))
                 queue.warned = True
+                self.warned_queues.add(queue.name)
                 if self.emails:
                     self.warning_email(queue.owner, queue_data)
             elif q_size <= self.warn_queue_size and queue.warned:
@@ -104,11 +110,9 @@ class PulseGuardian(object):
     def guard(self):
         while True:
             queues = self.api.queues()
-            
             self.monitor_queues(queues)
-
             # Sleeping
-            time.sleep(POLLING_INTERVAL)
+            time.sleep(config.polling_interval)
 
 if __name__ == '__main__':
     init_db()

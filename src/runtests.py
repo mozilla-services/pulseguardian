@@ -32,7 +32,6 @@ CONSUMER_EMAIL = 'akachkach@mozilla.com'
 # Global pulse configuration.
 pulse_cfg = {}
 
-
 class ConsumerSubprocess(multiprocessing.Process):
 
     def __init__(self, consumer_class, config, durable=False):
@@ -62,26 +61,24 @@ class GuardianProcess(multiprocessing.Process):
     def run(self):
         self.guardian.guard()
 
-class PulseTestMixin(object):
+class GuardianTest(unittest.TestCase):
 
-    """Launches a consumer in a separate process and publishes a message in
-    the main process.  The consumer will send the received message back
-    to the main process for validation.  We use processes instead of threads
-    since it's easier to kill a process (the listen() call cannot be
-    terminated otherwise).
+    """Launches a consumer process that creates a queue then disconnects,
+    and then floods the exchange with messages and checks that PulseGuardian
+    warns the queue's owner and deletes the queue if it get's over the maximum size
     """
 
+    consumer = consumers.PulseTestConsumer
+    publisher = publishers.PulseTestPublisher
+
     proc = None
-
-    # Override these.
-    consumer = None
-    publisher = None
-
     QUEUE_CHECK_PERIOD = 0.05
     QUEUE_CHECK_ATTEMPTS = 4000
 
     def _build_message(self, msg_id):
-        raise NotImplementedError()
+        msg = TestMessage()
+        msg.set_data('id', msg_id)
+        return msg
 
     def setUp(self):
         self.management_api = PulseManagementAPI()
@@ -161,24 +158,36 @@ class PulseTestMixin(object):
         # Get the queue's object
         db_session.refresh(user)
 
-        # No warned queue
-        self.assertTrue(len([q for q in user.queues if q.warned]) == 0)
-
         # Queue multiple messages while no consumer exists.
         for i in xrange(config.warn_queue_size + 1):
             msg = self._build_message(i)
             publisher.publish(msg)
 
+        # Wait for messages to be taken into account and get the warned messages if any
+        for i in xrange(10):
+            time.sleep(0.3)
+            queues_to_warn = {q_data['name'] for q_data in self.management_api.queues()
+                          if config.warn_queue_size < q_data['messages_ready'] <= config.del_queue_size}
+            if queues_to_warn:
+                break
+
+        # Test that no queue have been warned at the beginning of the process 
+        self.assertTrue(not any(q.warned for q in user.queues))
+        # ... but some queues should be
+        self.assertGreater(len(queues_to_warn), 0)
 
         # Monitor the queues, this should detect queues that should be warned
-        for i in xrange(20):
-            self.guardian.monitor_queues(self.management_api.queues())
-            time.sleep(0.2)
+        self.guardian.monitor_queues(self.management_api.queues())
 
         # Refreshing the user's queues state
         db_session.refresh(user)
 
-        self.assertTrue(len([q for q in user.queues if q.warned]) > 0)
+        # Test that the queues that had to be "warned" were
+        self.assertTrue(all(q.warned for q in user.queues if q in queues_to_warn))
+        # The queues that needed to be warned haven't been deleted
+        queues_to_warn_bis = {q_data['name'] for q_data in self.management_api.queues()
+                              if config.warn_queue_size < q_data['messages_ready'] <= config.del_queue_size}
+        self.assertEqual(queues_to_warn_bis, queues_to_warn)
 
         # Deleting the test user (should delete all his queues too)
         db_session.delete(user)
@@ -237,7 +246,8 @@ class PulseTestMixin(object):
         # Wait some time for published messages to be taken into account
         for i in xrange(10):
             time.sleep(0.3)
-            queues_to_delete = [q_data for q_data in self.management_api.queues() if q_data['messages_ready'] > config.del_queue_size]
+            queues_to_delete = {q_data['name'] for q_data in self.management_api.queues()
+                                if q_data['messages_ready'] > config.del_queue_size}
             if queues_to_delete:
                 break
 
@@ -249,8 +259,12 @@ class PulseTestMixin(object):
             self.guardian.monitor_queues(self.management_api.queues())
             time.sleep(0.2)
 
-        # Tests that there all the queues that has to be deleted were taken care of
-        queues_to_delete = [q_data for q_data in self.management_api.queues() if q_data['messages_ready'] > config.del_queue_size]
+        # Tests that the queues that had to be deleted were deleted
+        self.assertTrue(not any(q in queues_to_delete for q in self.management_api.queues()))
+        # And that those were deleted by guardian
+        self.assertEqual(queues_to_delete, self.guardian.deleted_queues)
+        # And no queue have overgrown
+        queues_to_delete = [q_data['name'] for q_data in self.management_api.queues() if q_data['messages_ready'] > config.del_queue_size]
         self.assertTrue(len(queues_to_delete) == 0)
 
         # Deleting the test user (should delete all his queues too)
@@ -262,19 +276,6 @@ class TestMessage(GenericMessage):
     def __init__(self):
         super(TestMessage, self).__init__()
         self.routing_parts.append('test')
-
-class GuardianTest(PulseTestMixin, unittest.TestCase):
-
-    consumer = consumers.PulseTestConsumer
-    publisher = publishers.PulseTestPublisher
-
-    def _build_message(self, msg_id):
-        msg = TestMessage()
-        msg.set_data('id', msg_id)
-        # msg.set_data('when', '1369685091')
-        # msg.set_data('who', 'somedev@mozilla.com')
-        return msg
-
 
 def main(pulse_opts):
     global pulse_cfg
