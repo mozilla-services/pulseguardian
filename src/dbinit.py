@@ -4,10 +4,9 @@ from model.queue import Queue
 from management import PulseManagementAPI, PulseManagementException
 
 
-# Initializing the web app and the database
 pulse_management = PulseManagementAPI()
 
-# Initializing the databse
+# Initializing the databse schema
 init_db()
 
 # Removing all pulse users created by the web app
@@ -22,7 +21,7 @@ User.query.delete()
 Queue.query.delete()
 
 # Dummy test user
-dummy_usr = User.new_user(email='ahmed.kachach@gmail.com', username='dummy', password='dummy')
+dummy_usr = User.new_user(email='dummy@dummy.com', username='dummy', password='dummy')
 dummy_usr.activate(pulse_management)
 db_session.add(dummy_usr)
 db_session.commit()

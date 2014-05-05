@@ -13,7 +13,7 @@ def hash_password(password, salt):
 class User(Base):
     __tablename__ = 'users'
 
-    username = Column(String)
+    username = Column(String, unique=True)
     email = Column(String, primary_key=True)
 
     # Only stored temporarly
@@ -44,6 +44,9 @@ class User(Base):
 
     @staticmethod
     def new_user(email, username, password):
+        username = username.lower()
+        password = password.lower()
+        
         token = os.urandom(16).encode('hex')
         user = User(email=email, username=username, activation_token=token, activated=False)
 
