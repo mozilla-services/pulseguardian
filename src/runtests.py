@@ -50,17 +50,6 @@ class ConsumerSubprocess(multiprocessing.Process):
         consumer.configure(topic='#', callback=cb)
         consumer.listen()
 
-
-class GuardianProcess(multiprocessing.Process):
-
-    def __init__(self, management_api):
-        multiprocessing.Process.__init__(self)
-        self.management_api = management_api
-        self.guardian = PulseGuardian(self.management_api, emails=False)
-
-    def run(self):
-        self.guardian.guard()
-
 class GuardianTest(unittest.TestCase):
 
     """Launches a consumer process that creates a queue then disconnects,
