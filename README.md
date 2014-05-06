@@ -27,6 +27,7 @@ A system to manage Pulse: creates users and handle overgrowing queues. More info
 
 Make sure rabbitmq-server is running before you run.
 
+* Initialize the db and create some dummy data with: `python src/dbinit.py`
 * Run the Pulse Guardian daemon with: `python src/guardian.py`
 * Run the web app (for development) with: `python src/web.py`
 * For production, the web app can be run with [gunicorn](https://www.digitalocean.com/community/articles/how-to-deploy-python-wsgi-apps-using-gunicorn-http-server-behind-nginx) and such.
