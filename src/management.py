@@ -53,6 +53,11 @@ class PulseManagementAPI(object):
         queue = quote(queue, '')
         return self._api_request('queues/{}/{}'.format(vhost, queue))
 
+    def purge_queue(self, vhost, queue):
+        vhost = quote(vhost, '')
+        queue = quote(queue, '')
+        return self._api_request('/api/queues/{}/{}/contents'.format(vhost, queue))
+
     def delete_queue(self, vhost, queue):
         vhost = quote(vhost, '')
         queue = quote(queue, '')
@@ -101,6 +106,28 @@ class PulseManagementAPI(object):
     def channel(self, channel):
         channel = quote(channel, '')
         return self._api_request('channels/{}'.format(channel))
+
+    # Exchanges
+
+    def exchanges(self, vhost=None):
+        if vhost:
+            vhost = quote(vhost, '')
+            return self._api_request('exchanges/{}'.format(vhost))
+        else:
+            return self._api_request('exchanges')
+
+    def exchange(self, vhost, name):
+        vhost = quote(vhost, '')
+        name = quote(name, '')
+        return self._api_request('exchanges/{}/{}'.format(vhost, name))
+
+    def create_exchange(self, vhost, name, type="direct", auto_delete=False, durable=True, internal=False, arguments=None):
+        arguments = arguments or list()
+        vhost = quote(vhost, '')
+        name = quote(name, '')
+        
+        data = dict(type=type, auto_delete=auto_delete, durable=durable, internal=internal, arguments=arguments)
+        self._api_request('exchanges/{}/{}'.format(vhost, name), method='PUT', data=data)
 
     # Misc
 
