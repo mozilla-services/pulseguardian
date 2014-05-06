@@ -9,12 +9,15 @@ DEFAULT_RABBIT_VHOST = '/'
 DEFAULT_RABBIT_USER = 'guest'
 DEFAULT_RABBIT_PASSWORD = 'guest'
 
+
 class PulseManagementException(Exception):
     pass
 
+
 class PulseManagementAPI(object):
 
-    def __init__(self, host=DEFAULT_RABBIT_HOST, management_port=DEFAULT_RABBIT_MANAGEMENT_PORT, vhost=DEFAULT_RABBIT_VHOST,
+    def __init__(
+        self, host=DEFAULT_RABBIT_HOST, management_port=DEFAULT_RABBIT_MANAGEMENT_PORT, vhost=DEFAULT_RABBIT_VHOST,
         user=DEFAULT_RABBIT_USER, password=DEFAULT_RABBIT_PASSWORD):
 
         self.host = host
@@ -22,11 +25,13 @@ class PulseManagementAPI(object):
         self.vhost = vhost
         self.management_user = user
         self.management_password = password
-    
+
     def _api_request(self, path, method='GET', data=None):
         session = requests.Session()
-        request = requests.Request(method, 'http://{}:{}/api/{}'.format(self.host, self.management_port, path),
-                                   auth=(self.management_user, self.management_password), data=json.dumps(data)).prepare()
+        request = requests.Request(
+            method, 'http://{}:{}/api/{}'.format(
+                self.host, self.management_port, path),
+            auth=(self.management_user, self.management_password), data=json.dumps(data)).prepare()
         request.headers['Content-type'] = 'application/json'
         response = session.send(request)
 
@@ -36,7 +41,8 @@ class PulseManagementAPI(object):
         try:
             return response.json()
         except ValueError:
-            raise PulseManagementException("Error when calling '{} {}' with data={}. Received : {}".format(method, path, data, response.content))
+            raise PulseManagementException(
+                "Error when calling '{} {}' with data={}. Received : {}".format(method, path, data, response.content))
 
     # Queues
 
@@ -46,7 +52,7 @@ class PulseManagementAPI(object):
             return self._api_request('queues/{}'.format(vhost))
         else:
             return self._api_request('queues')
-    
+
     def queue(self, vhost, queue):
         vhost = quote(vhost, '')
         queue = quote(queue, '')
@@ -92,7 +98,7 @@ class PulseManagementAPI(object):
         self._api_request('users/{}'.format(username), method='DELETE')
 
     # Permissions
-    
+
     def permissions(self):
         return self._api_request('permissions')
 
@@ -105,13 +111,14 @@ class PulseManagementAPI(object):
         username = quote(username, '')
         vhost = quote(vhost, '')
         data = dict(configure=configure, write=write, read=read)
-        self._api_request('permissions/{}/{}'.format(vhost, username), method='PUT', data=data)
+        self._api_request('permissions/{}/{}'.format(
+            vhost, username), method='PUT', data=data)
 
     # Channels
 
     def channels(self):
         return self._api_request('channels')
-    
+
     def channel(self, channel):
         channel = quote(channel, '')
         return self._api_request('channels/{}'.format(channel))
@@ -135,14 +142,16 @@ class PulseManagementAPI(object):
         vhost = quote(vhost, '')
         name = quote(name, '')
 
-        data = dict(type=type, auto_delete=auto_delete, durable=durable, internal=internal, arguments=arguments)
-        self._api_request('exchanges/{}/{}'.format(vhost, name), method='PUT', data=data)
+        data = dict(type=type, auto_delete=auto_delete,
+                    durable=durable, internal=internal, arguments=arguments)
+        self._api_request('exchanges/{}/{}'.format(
+            vhost, name), method='PUT', data=data)
 
     # Misc
 
     def queue_owner(self, queue_data):
         queue = self.queue(vhost=queue_data['vhost'], queue=queue_data['name'])
-        
+
         if queue['consumers'] < 1:
             return None
 
