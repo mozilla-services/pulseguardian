@@ -14,7 +14,7 @@ from sendemail import sendemail
 
 # Initializing the web app and the database
 app = Flask(__name__)
-app.secret_key = config.secret_key
+app.secret_key = config.flask_secret_key
 
 pulse_management = PulseManagementAPI()
 

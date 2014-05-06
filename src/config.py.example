@@ -1,0 +1,17 @@
+# Web app
+hostname = 'http://localhost:5000'
+flask_secret_key = None # Should be generated randomly
+
+# Mail
+email_account = 'automation@mozilla.com'
+email_password = None # Email's password goes here
+email_from = 'Mozilla A-Team <auto-tools@mozilla.com>'
+
+# Database
+sqlalchemy_engine = 'mysql://root@localhost/pulseguardian'
+
+# PulseGuardian
+warn_queue_size = 2000
+archive_queue_size = 1500
+del_queue_size = 8000
+polling_interval = 5

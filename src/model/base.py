@@ -6,9 +6,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
 import config
-
-db_signature = 'mysql://{}:{}@localhost/{}'.format(config.mysql_user, config.mysql_password, config.mysql_dbname)
-engine = create_engine(db_signature, convert_unicode=True)
+engine = create_engine(config.sqlalchemy_engine, convert_unicode=True)
 db_session = scoped_session(sessionmaker(autocommit=False,
                                          autoflush=False,
                                          bind=engine))
