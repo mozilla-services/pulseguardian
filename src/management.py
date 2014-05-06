@@ -4,7 +4,6 @@ import json
 import requests
 
 DEFAULT_RABBIT_HOST = 'localhost'
-DEFAULT_RABBIT_PORT = 5672
 DEFAULT_RABBIT_MANAGEMENT_PORT = 15672
 DEFAULT_RABBIT_VHOST = '/'
 DEFAULT_RABBIT_USER = 'guest'
@@ -150,19 +149,3 @@ class PulseManagementAPI(object):
         channel_name = queue['consumer_details'][0]['channel_details']['name']
         channel = self.channel(channel_name)
         return channel['user']
-
-if __name__ == '__main__':
-    api = PulseManagementAPI()
-
-    api.create_user('testuser', 'testpass')
-    
-    user_info = api.user('testuser')
-    assert user_info['name'] == 'testuser'
-    assert user_info['tags'] == 'monitoring'
-    api.delete_user('testuser')
-
-    try:
-        api.user('testuser')
-        assert False
-    except PulseManagementException:
-        pass
