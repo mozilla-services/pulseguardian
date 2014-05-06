@@ -8,7 +8,7 @@
 <body>
 
     <p>
-        Someone (probably you) signed-up for a <strong>Pulse</strong> consumer account with the email '  {{user.email}}' and the username '{{user.username}}'.
+        Someone, probably you, signed-up for a <strong>Pulse</strong> consumer account with the email '{{user.email}}' and the username '{{user.username}}'.
     </p>
 
     <p>
@@ -16,7 +16,7 @@
     </p>
 
 
-    <p>(Visit <em>#/activate/{{user.email}}/{{user.activation_token}}</em> if the above link doesn't work)</p>
+    <p>(Visit <em>{{activation_link}}</em> if the above link doesn't work.)</p>
 
 </body>
 </html>

@@ -1,6 +1,7 @@
 # Web app
 hostname = 'http://localhost:5000'
 flask_secret_key = None # Should be generated randomly
+flask_debug_mode = True
 
 # Mail
 email_account = 'automation@mozilla.com'

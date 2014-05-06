@@ -90,27 +90,30 @@ def delete_queue(queue_name):
 
 @app.route("/signup", methods=['POST'])
 def signup():
-    email, username, password = request.form[
-        'email'], request.form['username'], request.form['password']
+    email= request.form['email']
+    username = request.form['username']
+    password = request.form['password']
+    password_confirmation = request.form['password-confirmation']
 
     # TODO : Add some safeguards as some admin users may exist in rabbitmq but
     # not in our db ?
-
+    errors = []
     if User.query.filter(User.email == email).first():
-        return render_template('index.html', signup_error="A user with the same \
-                               email already exists")
-
+        errors.append("A user with the same email already exists")
     if User.query.filter(User.username == username).first():
-        return render_template('index.html', signup_error="A user with the same \
-                               username already exists")
+        errors.append("A user with the same username already exists")
+    if password != password_confirmation:
+        errors.append("Password confirmation doesn't match")
+    if errors:
+        signup_error = "{}.".format(', '.join(errors))
+        return render_template('index.html', signup_error=signup_error)
 
     user = User.new_user(email=email, username=username, password=password)
     db_session.add(user)
     db_session.commit()
 
     # Sending the activation email
-    activation_link = '{}/activate/{}/{}'.format(
-        config.hostname, user.email, user.activation_token)
+    activation_link = '{}/activate/{}/{}'.format(config.hostname, user.email, user.activation_token)
     sendemail(
         subject="Activate your Pulse account", from_addr=config.email_from, to_addrs=[user.email],
         username=config.email_account, password=config.email_password,
@@ -146,9 +149,11 @@ def login():
     user = User.query.filter(User.email == email).first()
 
     if user is None or not user.valid_password(password):
-        return render_template('index.html', email=email, login_error="User doesn't exist or incorrect password")
+        return render_template('index.html', email=email,
+                               login_error="User doesn't exist or incorrect password")
     elif not user.activated:
-        return render_template('index.html', email=email, login_error="User account isn't activated. Please check your emails.")
+        return render_template('index.html', email=email,
+                               login_error="User account isn't activated. Please check your emails.")
     else:
         session['logged_in'] = email
         return redirect('/')
@@ -161,4 +166,4 @@ def logout():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=config.flask_debug_mode)

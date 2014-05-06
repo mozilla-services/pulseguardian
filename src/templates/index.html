@@ -4,7 +4,7 @@
 {% block body %}
 <div class="col-md-6">
     <h2>
-        Sign-up for a consumer account...
+        Sign up for a consumer account
     </h2>
 
     {% if signup_error %}
@@ -29,6 +29,11 @@
             <label>Password</label>
             <input name="password" type="password" placeholder="Password" class="form-control"/>
         </div>
+
+        <div class="form-group">
+            <label>Password confirmation</label>
+            <input name="password-confirmation" type="password" placeholder="Password confirmation" class="form-control"/>
+        </div>
     
         <button type="submit" role="button" class="btn btn-default form-control">
             Sign-up
@@ -42,7 +47,7 @@
 
 <div class="col-md-6">
     <h2>
-        .. or login
+        Already signed up? Login
     </h2>
 
 
@@ -56,7 +61,7 @@
     <form role="form" action="/login" method="post">
         <div class="form-group">
             <label>Email</label>
-            <input type="email" name="email" placeholder="Your email" value="{{email}}" class="form-control">
+            <input type="email" name="email" placeholder="Email" value="{{email}}" class="form-control">
         </div>
 
         <div class="form-group">
