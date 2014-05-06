@@ -58,6 +58,16 @@ class PulseManagementAPI(object):
         queue = quote(queue, '')
         return self._api_request('/api/queues/{}/{}/contents'.format(vhost, queue))
 
+    def queue_messages(self, vhost, queue, count, truncate=None, requeue=True, encoding='auto'):
+        vhost = quote(vhost, '')
+        queue = quote(queue, '')
+
+        data = dict(count=count, requeue=requeue, encoding=encoding)
+        if truncate:
+            data['truncate'] = truncate
+
+        return self._api_request('/api/queues/{}/{}/get'.format(vhost, queue), method='POST', data=data)
+
     def delete_queue(self, vhost, queue):
         vhost = quote(vhost, '')
         queue = quote(queue, '')
@@ -125,7 +135,7 @@ class PulseManagementAPI(object):
         arguments = arguments or list()
         vhost = quote(vhost, '')
         name = quote(name, '')
-        
+
         data = dict(type=type, auto_delete=auto_delete, durable=durable, internal=internal, arguments=arguments)
         self._api_request('exchanges/{}/{}'.format(vhost, name), method='PUT', data=data)
 
