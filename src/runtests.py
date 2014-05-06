@@ -1,7 +1,6 @@
 # Any copyright is dedicated to the Public Domain.
 # http://creativecommons.org/publicdomain/zero/1.0/
 
-import Queue
 import multiprocessing
 import time
 import unittest
@@ -14,6 +13,7 @@ from mozillapulse.messages.base import GenericMessage
 from management import PulseManagementAPI
 from guardian import PulseGuardian
 from model.user import User
+from model.queue import Queue
 from model.base import db_session
 import config
 
@@ -31,6 +31,7 @@ CONSUMER_EMAIL = 'guardtest@guardtest.com'
 # Global pulse configuration.
 pulse_cfg = dict()
 
+
 class ConsumerSubprocess(multiprocessing.Process):
 
     def __init__(self, consumer_class, config, durable=False):
@@ -42,12 +43,14 @@ class ConsumerSubprocess(multiprocessing.Process):
 
     def run(self):
         queue = self.queue
+
         def cb(body, message):
             queue.put(body)
             message.ack()
         consumer = self.consumer_class(durable=self.durable, **self.config)
         consumer.configure(topic='#', callback=cb)
         consumer.listen()
+
 
 class GuardianTest(unittest.TestCase):
 
@@ -121,7 +124,7 @@ class GuardianTest(unittest.TestCase):
             db_session.commit()
 
         publisher = self.publisher(**pulse_cfg)
-        
+
         # Publish some messages
         for i in xrange(10):
             msg = self._build_message(0)
@@ -155,11 +158,11 @@ class GuardianTest(unittest.TestCase):
         for i in xrange(10):
             time.sleep(0.3)
             queues_to_warn = {q_data['name'] for q_data in self.management_api.queues()
-                          if config.warn_queue_size < q_data['messages_ready'] <= config.del_queue_size}
+                              if config.warn_queue_size < q_data['messages_ready'] <= config.del_queue_size}
             if queues_to_warn:
                 break
 
-        # Test that no queue have been warned at the beginning of the process 
+        # Test that no queue have been warned at the beginning of the process
         self.assertTrue(not any(q.warned for q in user.queues))
         # ... but some queues should be
         self.assertGreater(len(queues_to_warn), 0)
@@ -181,7 +184,6 @@ class GuardianTest(unittest.TestCase):
         db_session.delete(user)
         db_session.commit()
 
-
     def test_delete(self):
         self.management_api.delete_all_queues()
 
@@ -199,7 +201,7 @@ class GuardianTest(unittest.TestCase):
             db_session.commit()
 
         publisher = self.publisher(**pulse_cfg)
-        
+
         # Publish some messages
         for i in xrange(10):
             msg = self._build_message(0)
@@ -252,18 +254,48 @@ class GuardianTest(unittest.TestCase):
         # And that those were deleted by guardian
         self.assertEqual(queues_to_delete, self.guardian.deleted_queues)
         # And no queue have overgrown
-        queues_to_delete = [q_data['name'] for q_data in self.management_api.queues() if q_data['messages_ready'] > config.del_queue_size]
+        queues_to_delete = [q_data['name'] for q_data in self.management_api.queues()
+                            if q_data['messages_ready'] > config.del_queue_size]
         self.assertTrue(len(queues_to_delete) == 0)
 
         # Deleting the test user (should delete all his queues too)
         db_session.delete(user)
         db_session.commit()
 
+
+class ModelTest(unittest.TestCase):
+
+    """Tests the underlying model (users and queues)
+    """
+
+    def setUp(self):
+        Queue.query.delete()
+        User.query.delete()
+
+    def tearDown(self):
+        Queue.query.delete()
+        User.query.delete()
+
+    def test_user(self):
+        user = User.new_user(email='dummy@email.com',
+                             username='dummy', password='dummypassword')
+        self.assertTrue(user.valid_password('dummypassword'))
+        self.assertFalse(user.valid_password('dummyPassword'))
+
+        db_session.add(user)
+        db_session.commit()
+
+        self.assertIn(user, User.query.all())
+        self.assertEqual(User.query.filter(User.username == 'dummy').first(), user)
+        self.assertIsNone(User.query.filter(User.username == 'DOMMY').first())
+
+
 class TestMessage(GenericMessage):
 
     def __init__(self):
         super(TestMessage, self).__init__()
         self.routing_parts.append('test')
+
 
 def main(pulse_opts):
     global pulse_cfg
