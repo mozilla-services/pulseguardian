@@ -26,7 +26,7 @@ def requires_login(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get('logged_in', None):
-            return redirect('/login')
+            return redirect('/')
         else:
             return f(*args, **kwargs)
     return decorated_function
@@ -61,6 +61,7 @@ def index():
 
 
 @app.route("/profile")
+@requires_login
 def profile():
     users = User.query.all()
     return render_template('profile.html', users=users)
@@ -96,10 +97,12 @@ def signup():
     # not in our db ?
 
     if User.query.filter(User.email == email).first():
-        return render_template('index.html', signup_error="A user with the same email already exists")
+        return render_template('index.html', signup_error="A user with the same \
+                               email already exists")
 
     if User.query.filter(User.username == username).first():
-        return render_template('index.html', signup_error="A user with the same username already exists")
+        return render_template('index.html', signup_error="A user with the same \
+                               username already exists")
 
     user = User.new_user(email=email, username=username, password=password)
     db_session.add(user)
