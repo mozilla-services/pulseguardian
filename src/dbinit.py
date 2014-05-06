@@ -8,6 +8,7 @@ from management import PulseManagementAPI, PulseManagementException
 
 pulse_management = PulseManagementAPI()
 
+
 def init_and_clear_db():
     # Initializing the database schema
     init_db()
@@ -25,9 +26,11 @@ def init_and_clear_db():
 
     logging.info('Finished initializing database')
 
+
 def dummy_data():
     # Dummy test user
-    dummy_user = User.new_user(email='dummy@dummy.com', username='dummy', password='dummy')
+    dummy_user = User.new_user(
+        email='dummy@dummy.com', username='dummy', password='dummy')
     dummy_user.activate(pulse_management)
     db_session.add(dummy_user)
     db_session.commit()
@@ -38,7 +41,8 @@ def dummy_data():
     db_session.commit()
 
     # Test admin user
-    admin = User.new_user(email='admin@admin.com', username='admin', password='admin', admin=True)
+    admin = User.new_user(
+        email='admin@admin.com', username='admin', password='admin', admin=True)
     admin.activate(pulse_management)
     db_session.add(admin)
     db_session.commit()

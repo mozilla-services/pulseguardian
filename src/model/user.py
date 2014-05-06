@@ -4,11 +4,13 @@ import hashlib
 from sqlalchemy import Column, String, Boolean
 from sqlalchemy.orm import relationship
 
-from base import Base, db_session, init_db
+from base import Base, db_session
 from queue import Queue
+
 
 def hash_password(password, salt):
     return hashlib.sha512(salt + password).hexdigest()
+
 
 class User(Base):
     __tablename__ = 'users'
@@ -26,17 +28,21 @@ class User(Base):
     activated = Column(Boolean)
     admin = Column(Boolean)
 
-    queues = relationship(Queue, backref='owner', cascade='save-update, merge, delete')
+    queues = relationship(
+        Queue, backref='owner', cascade='save-update, merge, delete')
 
     def valid_password(self, password):
-	    return hash_password(password, self.salt) == self.secret_hash
+        return hash_password(password, self.salt) == self.secret_hash
 
     def activate(self, management_api):
         self.activated = True
         # Creating the appropriate rabbitmq user
-        management_api.create_user(username=self.username, password=self.password)
-        # TODO : remove configure and write permissions while letting users create queues ?
-        management_api.set_permission(username=self.username, vhost='/', read='.*', configure='.*', write='.*')
+        management_api.create_user(
+            username=self.username, password=self.password)
+        # TODO : remove configure and write permissions while letting users
+        # create queues ?
+        management_api.set_permission(username=self.username, vhost='/',
+                                      read='.*', configure='.*', write='.*')
         # Removing the user's password as it's no longer needed
         self.password = None
 
@@ -49,7 +55,8 @@ class User(Base):
         password = password.lower()
 
         token = os.urandom(16).encode('hex')
-        user = User(email=email, username=username, activation_token=token, admin=admin, activated=False)
+        user = User(email=email, username=username,
+                    activation_token=token, admin=admin, activated=False)
 
         # Temporarly storing the password, removed at activation
         user.password = password
@@ -61,22 +68,6 @@ class User(Base):
         return user
 
     def __repr__(self):
-		return "<User(email='{}', username='{}')>".format(self.email, self.username)
+        return "<User(email='{}', username='{}')>".format(self.email, self.username)
 
     __str__ = __repr__
-
-if __name__ == '__main__':
-    init_db()
-
-    User.query.delete()
-
-    user = User.new_user(email='dummy@email.com', username='dummy', password='dummypassword')
-    assert user.valid_password('dummypassword')
-    assert not user.valid_password('dummyPassword')
-
-    db_session.add(user)
-    db_session.commit()
-
-    assert user in User.query.all()
-    assert User.query.filter(User.username == 'dummy').first() == user
-    assert User.query.filter(User.username == 'DOMMY').first() is None

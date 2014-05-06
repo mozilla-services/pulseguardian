@@ -11,9 +11,9 @@ import config
 
 class PulseGuardian(object):
 
-    def __init__(
-        self, api, emails=True, warn_queue_size=config.warn_queue_size, archive_queue_size=config.archive_queue_size,
-        del_queue_size=config.del_queue_size):
+    def __init__(self, api, emails=True, warn_queue_size=config.warn_queue_size,
+                 archive_queue_size=config.archive_queue_size,
+                 del_queue_size=config.del_queue_size):
         self.api = api
 
         self.emails = emails
@@ -44,7 +44,7 @@ class PulseGuardian(object):
             # If a queue is over the deletion size, regardless of it having an
             # owner or not, we delete it
             if q_size > self.del_queue_size:
-                logging.warning("Queue '{}' is going to be deleted. Queue size = {} ; del_queue_size = {}".format(
+                logging.warning("Queue '{}' deleted. Queue size = {}; del_queue_size = {}".format(
                     q_name, q_size, self.del_queue_size))
                 self.deleted_queues.add(queue.name)
                 self.api.delete_queue(vhost=q_vhost, queue=q_name)
@@ -73,7 +73,7 @@ class PulseGuardian(object):
                 # pulseguardian database, we skip the queue
                 if user is None:
                     logging.warning(
-                        ". Queue '{}' owner, {}, isn't in the pulse guardian db. Skipping the queue.".format(q_name, owner_name))
+                        ". Queue '{}' owner, {}, isn't in the db. Skipping the queue.".format(q_name, owner_name))
                     continue
 
                 # We assign the user to the queue

@@ -9,7 +9,7 @@ email_password = None # Email's password goes here
 email_from = 'Mozilla A-Team <auto-tools@mozilla.com>'
 
 # Database
-sqlalchemy_engine = 'mysql://root@localhost/pulseguardian'
+sqlalchemy_engine_url = 'mysql://root@localhost/pulseguardian'
 
 # RabbitMQ
 rabbit_host = 'localhost'
@@ -23,3 +23,6 @@ warn_queue_size = 2000
 archive_queue_size = 1500
 del_queue_size = 8000
 polling_interval = 5
+
+# Testing
+sqlalchemy_test_engine_url = 'sqlite:///tmp/pulseguardian.db'

@@ -16,10 +16,8 @@ class PulseManagementException(Exception):
 
 class PulseManagementAPI(object):
 
-    def __init__(
-        self, host=DEFAULT_RABBIT_HOST, management_port=DEFAULT_RABBIT_MANAGEMENT_PORT, vhost=DEFAULT_RABBIT_VHOST,
-        user=DEFAULT_RABBIT_USER, password=DEFAULT_RABBIT_PASSWORD):
-
+    def __init__(self, host=DEFAULT_RABBIT_HOST, management_port=DEFAULT_RABBIT_MANAGEMENT_PORT,
+                 vhost=DEFAULT_RABBIT_VHOST, user=DEFAULT_RABBIT_USER, password=DEFAULT_RABBIT_PASSWORD):
         self.host = host
         self.management_port = management_port
         self.vhost = vhost
@@ -137,7 +135,8 @@ class PulseManagementAPI(object):
         name = quote(name, '')
         return self._api_request('exchanges/{}/{}'.format(vhost, name))
 
-    def create_exchange(self, vhost, name, type="direct", auto_delete=False, durable=True, internal=False, arguments=None):
+    def create_exchange(self, vhost, name, type="direct", auto_delete=False, durable=True,
+                        internal=False, arguments=None):
         arguments = arguments or list()
         vhost = quote(vhost, '')
         name = quote(name, '')

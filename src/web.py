@@ -19,8 +19,11 @@ pulse_management = PulseManagementAPI()
 # Initializing the databse
 init_db()
 
+
 # Decorators and instructions used to inject info into the context or
 # restrict access to some pages
+
+
 def requires_login(f):
     """  Decorator for views that requires the user to be logged-in """
     @wraps(f)
@@ -90,7 +93,7 @@ def delete_queue(queue_name):
 
 @app.route("/signup", methods=['POST'])
 def signup():
-    email= request.form['email']
+    email = request.form['email']
     username = request.form['username']
     password = request.form['password']
     password_confirmation = request.form['password-confirmation']

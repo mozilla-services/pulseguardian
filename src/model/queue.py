@@ -2,6 +2,7 @@ from sqlalchemy import Column, String, Integer, Boolean, ForeignKey
 
 from base import Base
 
+
 class Queue(Base):
     __tablename__ = 'queues'
 
