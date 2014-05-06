@@ -10,6 +10,13 @@ email_from = 'Mozilla A-Team <auto-tools@mozilla.com>'
 # Database
 sqlalchemy_engine = 'mysql://root@localhost/pulseguardian'
 
+# RabbitMQ
+rabbit_host = 'localhost'
+rabbit_management_port = 15672
+rabbit_vhost = '/'
+rabbit_user = 'guest'
+rabbit_password = 'guest'
+
 # PulseGuardian
 warn_queue_size = 2000
 archive_queue_size = 1500

@@ -115,9 +115,7 @@ class PulseGuardian(object):
             time.sleep(config.polling_interval)
 
 if __name__ == '__main__':
-    init_db()
-
-    api = PulseManagementAPI()
+    api = PulseManagementAPI(host=config.rabbit_host, management_port=config.rabbit_management_port, vhost=config.rabbit_vhost,
+                             user=config.rabbit_user, password=config.rabbit_password)
     pulse_guardian = PulseGuardian(api)
-
     pulse_guardian.guard()
