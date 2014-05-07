@@ -23,12 +23,12 @@ $(document).ready(function() {
             url: '/queue/' + queue_name,
             type: 'DELETE',
             success: function(result) {
-                if (result.ok) {
-                    $(queue).slideUp(300);
-                } else {
-                    error_bar.text("Couldn't delete queue '" + queue_name + "'");
+                if (!result.ok) {
+                    error_bar.text("Couldn't delete queue '" + queue_name + "' in Pulse");
                     error_bar.show(300).delay(3000).hide(300);
                 }
+
+                $(queue).slideUp(300);
             }
         });
     })

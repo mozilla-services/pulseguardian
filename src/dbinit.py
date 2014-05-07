@@ -56,7 +56,7 @@ def dummy_data():
     db_session.add(dummy_queue)
     db_session.commit()
 
-    dummy_queue = Queue(name='dummy-deletion-queue', size=config.del_queue_size + 10000, owner=users[2])
+    dummy_queue = Queue(name='dummy-deletion-queue', size=int(config.del_queue_size * 1.2), owner=users[2])
     db_session.add(dummy_queue)
     db_session.commit()
 

@@ -1,21 +1,7 @@
 {% extends 'base.html' %}
 
-
-{% block body %}
-{% set inspected_users = users if cur_user.admin else [cur_user] %}
-
-<a href="#" class="autoreload">
-    <span class="glyphicon glyphicon-refresh"></span> Auto-reload
-</a>
-
-{% for user in inspected_users %}
+{% macro queues_information(user) %}
     <div class="user" data-email="{{user.email}}">
-        <h2 class="text-primary">
-            <small>Profile:</small> {{user.username}}
-        </h2>
-
-        <h3>Queues</h3>
-
         {% if user.queues %}
         <ul class="list-group queues">
         {% for queue in user.queues %}
@@ -50,8 +36,33 @@
         </p>
         {% endif %}
     </div>
-{% endfor %}
+{% endmacro %}
 
+
+
+{% block body %}
+
+<a href="#" class="autoreload">
+    <span class="glyphicon glyphicon-refresh"></span> Auto-reload
+</a>
+
+{% if cur_user.admin %}
+    <h2>Users</h2>
+
+    {% for user in users %}
+        <h3 class="text-primary">
+            {{user.username}} <small>{{user.email}}</small>
+        </h3>
+        {{ queues_information(user) }}
+    {% endfor %}
+
+{% else %}
+    <h2 class="text-primary">
+        Profile <small>{{cur_user.username}}</small>
+    </h2>
+    <h3>Queues</h3>
+    {{ queues_information(cur_user) }}
+{% endif %}
 
 {% endblock %}
 
