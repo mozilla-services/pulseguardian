@@ -26,14 +26,14 @@ class PulseGuardian(object):
 
     def monitor_queues(self, queues):
         for queue_data in queues:
-            q_size, q_name, q_vhost = queue_data[
-                'messages_ready'], queue_data['name'], queue_data['vhost']
+            q_size, q_name, q_vhost = (queue_data['messages_ready'],
+                                       queue_data['name'], queue_data['vhost'])
             queue = Queue.query.filter(Queue.name == q_name).first()
 
             # If the queue doesn't exist, we create it
             if queue is None:
-                logging.warning(
-                    ". New queue '{}' encountred. Adding to the databse.".format(q_name))
+                logging.warning(". New queue '{}' encountered. "
+                                "Adding to the database.".format(q_name))
                 queue = Queue(name=q_name, owner=None)
                 db_session.add(queue)
                 db_session.commit()
@@ -83,7 +83,7 @@ class PulseGuardian(object):
 
             # print q_size, queue
             if q_size > self.warn_queue_size and not queue.warned:
-                logging.warning("Warning queue '{}' owner. Queue size = {} ; warn_queue_size = {}".format(
+                logging.warning("Warning queue '{}' owner. Queue size = {}; warn_queue_size = {}".format(
                     q_name, q_size, self.warn_queue_size))
                 queue.warned = True
                 self.warned_queues.add(queue.name)
@@ -106,11 +106,20 @@ class PulseGuardian(object):
             vhost=queue_data['vhost'], queue=queue_data['name'])
         if detailed_data['incoming']:
             exchange = detailed_data['incoming'][0]['exchange']['name']
-        sendemail(
-            subject="Pulse : Overgrowing queue warning", from_addr=config.email_from, to_addrs=[user.email],
-            username=config.email_account, password=config.email_password,
-            text_data="Warning. Your queue '{}' on the exchange '{}' is overgrowing.\
-                   Make sure your clients are running correctly.".format(queue_data['name'], exchange))
+
+        subject = 'Pulse warning: queue "{}" is overgrowing'.format(
+            queue_data['name'])
+        body = '''Warning: your queue "{}" on exchange "{}" is
+overgrowing ({} ready messages).
+
+Make sure your clients are running correctly. The queue will be automatically
+deleted when it exceeds {} messages.
+'''.format(queue_data['name'], exchange, queue_data['messages_ready'],
+           self.del_queue_size)
+
+        sendemail(subject=subject, from_addr=config.email_from,
+                  to_addrs=[user.email], username=config.email_account,
+                  password=config.email_password, text_data=body)
 
     def deletion_email(self, user, queue_data):
         exchange = 'could not be determined'
@@ -135,8 +144,10 @@ if __name__ == '__main__':
     # Initializing the databse
     init_db()
 
-    api = PulseManagementAPI(
-        host=config.rabbit_host, management_port=config.rabbit_management_port, vhost=config.rabbit_vhost,
-        user=config.rabbit_user, password=config.rabbit_password)
+    api = PulseManagementAPI(host=config.rabbit_host,
+                             management_port=config.rabbit_management_port,
+                             vhost=config.rabbit_vhost,
+                             user=config.rabbit_user,
+                             password=config.rabbit_password)
     pulse_guardian = PulseGuardian(api)
     pulse_guardian.guard()
