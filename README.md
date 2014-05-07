@@ -12,7 +12,7 @@ A system to manage Pulse: creates users and handle overgrowing queues. More info
 ## Setup
 
 * Clone the repository and cd into it
-* Create and activatea virtualenv:
+* Create and activate a virtualenv:
 ```
   virtualenv venv
   source venv/bin/activate
@@ -25,7 +25,7 @@ A system to manage Pulse: creates users and handle overgrowing queues. More info
 
 ## Usage
 
-Make sure rabbitmq-server is running before you run.
+Make sure `rabbitmq-server` is running before you run the following:
 
 * Initialize the db with: `python src/dbinit.py`. *WARNING:* this removes any existing data the app might have previously stored in the databse.
 * Optional: Generate some dummy data (dummy user account, admin account): `python src/dbinit.py --dummy`
