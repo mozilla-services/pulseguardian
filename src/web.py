@@ -74,9 +74,9 @@ def profile():
 
 @app.route("/queue/<queue_name>", methods=['DELETE'])
 def delete_queue(queue_name):
-
     queue = Queue.query.get(queue_name)
-    if queue:
+
+    if queue and g.user and queue.owner == g.user or g.user.admin:
         db_session.delete(queue)
         db_session.commit()
         try:
