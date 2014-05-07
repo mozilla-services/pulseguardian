@@ -104,6 +104,7 @@ a:hover, a:active, a:focus {
 .autoreload {
     color: #30a53c;
     float: right;
+    margin-top: 20px;
 }
 .autoreload:focus {
     color: #3cba2e;
