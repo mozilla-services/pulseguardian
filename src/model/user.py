@@ -63,9 +63,7 @@ class User(Base):
             Initializes a new user, generating a salt and encrypting
             his password. Then creates a
         """
-        username = username.lower()
-        password = password.lower()
-
+        email = email.lower()
         token = os.urandom(16).encode('hex')
         user = User(email=email, username=username,
                     activation_token=token, admin=admin, activated=False)

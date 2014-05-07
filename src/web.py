@@ -150,6 +150,10 @@ def activate(email, activation_token):
 @app.route("/login", methods=['POST'])
 def login():
     email, password = request.form['email'], request.form['password']
+
+    # Emails are case-insensitive and stored lower-case
+    email = email.lower()
+
     user = User.query.filter(User.email == email).first()
 
     if user is None or not user.valid_password(password):

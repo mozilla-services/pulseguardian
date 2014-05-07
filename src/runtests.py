@@ -283,15 +283,18 @@ class ModelTest(unittest.TestCase):
         User.query.delete()
 
     def test_user(self):
-        user = User.new_user(email='dummy@email.com',
-                             username='dummy', password='dummypassword')
-        self.assertTrue(user.valid_password('dummypassword'))
-        self.assertFalse(user.valid_password('dummyPassword'))
+        user = User.new_user(email='dUmMy@EmAil.com',
+                             username='dummy', password='DummyPassword')
+        self.assertTrue(user.valid_password('DummyPassword'))
+        self.assertFalse(user.valid_password('dummypassword'))
+        self.assertFalse(user.valid_password('DUMMYPASSWORD'))
 
         db_session.add(user)
         db_session.commit()
 
         self.assertIn(user, User.query.all())
+        # Emails are normalized by putting them lower-case
+        self.assertEqual(User.query.filter(User.email == 'dummy@email.com').first(), user)
         self.assertEqual(User.query.filter(User.username == 'dummy').first(), user)
         self.assertIsNone(User.query.filter(User.username == 'DOMMY').first())
 
