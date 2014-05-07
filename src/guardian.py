@@ -24,6 +24,18 @@ class PulseGuardian(object):
         self.warned_queues = set()
         self.deleted_queues = set()
 
+    def delete_zombie_queues(self, queues):
+        db_queues = Queue.query.all()
+
+        # Filtering queues that are in the database but no longer on RabbitMQ
+        alive_queues_names = {q['name'] for q in queues}
+        zombie_queues = {q for q in db_queues if not q.name in alive_queues_names}
+
+        # Deleting those queues
+        for queue in zombie_queues:
+            db_session.delete(queue)
+        db_session.commit()
+
     def monitor_queues(self, queues):
         for queue_data in queues:
             q_size, q_name, q_vhost = (queue_data['messages_ready'],
@@ -138,7 +150,10 @@ deleted when it exceeds {} messages.
     def guard(self):
         while True:
             queues = self.api.queues()
+
             self.monitor_queues(queues)
+            self.delete_zombie_queues(queues)
+
             # Sleeping
             time.sleep(config.polling_interval)
 
