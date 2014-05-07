@@ -46,10 +46,10 @@ class PulseGuardian(object):
             if q_size > self.del_queue_size:
                 logging.warning("Queue '{}' deleted. Queue size = {}; del_queue_size = {}".format(
                     q_name, q_size, self.del_queue_size))
+                if queue.owner:
+                    self.deletion_email(queue.owner, queue_data)
                 self.deleted_queues.add(queue.name)
                 self.api.delete_queue(vhost=q_vhost, queue=q_name)
-                if queue.owner and self.emails:
-                    self.deletion_email(queue.owner, queue_data)
                 db_session.delete(queue)
                 db_session.commit()
                 continue
@@ -102,15 +102,16 @@ class PulseGuardian(object):
 
     def warning_email(self, user, queue_data):
         exchange = 'could not be determined'
-        detailed_data = self.api.queue(
-            vhost=queue_data['vhost'], queue=queue_data['name'])
+        detailed_data = self.api.queue(vhost=queue_data['vhost'], queue=queue_data['name'])
         if detailed_data['incoming']:
             exchange = detailed_data['incoming'][0]['exchange']['name']
-        sendemail(
-            subject="Pulse : Overgrowing queue warning", from_addr=config.email_from, to_addrs=[user.email],
-            username=config.email_account, password=config.email_password,
-            text_data="Warning. Your queue '{}' on the exchange '{}' is overgrowing.\
-                   Make sure your clients are running correctly.".format(queue_data['name'], exchange))
+
+        text_data="Warning. Your queue '{}' on the exchange '{}' is overgrowing.\n\
+                   Make sure your clients are running correctly.".format(queue_data['name'], exchange)
+        if self.emails:
+            sendemail(subject="Pulse : Overgrowing queue warning", from_addr=config.email_from,
+                      to_addrs=[user.email], username=config.email_account,
+                      password=config.email_password, text_data=text_data)
 
     def deletion_email(self, user, queue_data):
         exchange = 'could not be determined'
@@ -118,11 +119,13 @@ class PulseGuardian(object):
             vhost=queue_data['vhost'], queue=queue_data['name'])
         if detailed_data['incoming']:
             exchange = detailed_data['incoming'][0]['exchange']['name']
-        sendemail(
-            subject="Pulse : Deleted an overgrowing queue", from_addr=config.email_from, to_addrs=[user.email],
-            username=config.email_account, password=config.email_password,
-            text_data="Your queue '{}' on the exchange '{}' has been deleted because it exceeded the unread messages limit.\n\
-                  Make sure your clients are running correctly and delete unused queues.".format(queue_data['name'], exchange))
+
+        text_data = "Your queue '{}' on the exchange '{}' has been deleted because it exceeded the unread messages limit.\n\
+                  Make sure your clients are running correctly and delete unused queues.".format(queue_data['name'], exchange)
+        if self.emails:
+            sendemail(subject="Pulse : Deleted an overgrowing queue", from_addr=config.email_from,
+                      to_addrs=[user.email], username=config.email_account,
+                      password=config.email_password, text_data=text_data)
 
     def guard(self):
         while True:
