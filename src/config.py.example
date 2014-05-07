@@ -1,5 +1,6 @@
 # Web app
-hostname = 'http://localhost:5000'
+flask_host = 'localhost'
+flask_port = 5000
 flask_secret_key = None # Should be generated randomly
 flask_debug_mode = True
 
@@ -23,6 +24,3 @@ warn_queue_size = 2000
 archive_queue_size = 1500
 del_queue_size = 8000
 polling_interval = 5
-
-# Testing
-sqlalchemy_test_engine_url = 'sqlite:///tmp/pulseguardian.db'

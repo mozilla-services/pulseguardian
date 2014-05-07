@@ -116,7 +116,8 @@ def signup():
     db_session.commit()
 
     # Sending the activation email
-    activation_link = '{}/activate/{}/{}'.format(config.hostname, user.email, user.activation_token)
+    activation_link = 'http://{}:{}/activate/{}/{}'.format(config.flask_host, config.flask_port,
+                                                           user.email, user.activation_token)
     sendemail(
         subject="Activate your Pulse account", from_addr=config.email_from, to_addrs=[user.email],
         username=config.email_account, password=config.email_password,
@@ -169,4 +170,4 @@ def logout():
 
 
 if __name__ == "__main__":
-    app.run(debug=config.flask_debug_mode)
+    app.run(host=config.flask_host, port=config.flask_port, debug=config.flask_debug_mode)
