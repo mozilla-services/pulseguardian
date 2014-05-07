@@ -5,6 +5,7 @@ from model.base import db_session, init_db
 from model.user import User
 from model.queue import Queue
 from management import PulseManagementAPI, PulseManagementException
+import config
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -31,17 +32,34 @@ def init_and_clear_db():
 
 
 def dummy_data():
-    # Dummy test user
-    dummy_user = User.new_user(
-        email='dummy@dummy.com', username='dummy', password='dummy')
-    dummy_user.activate(pulse_management)
-    db_session.add(dummy_user)
+    # Dummy test users
+    for i in xrange(4):
+        dummy_user = User.new_user(
+            email='dummy{}@dummy.com'.format(i), username='dummy{}'.format(i),
+            password='dummy')
+        dummy_user.activate(pulse_management)
+        db_session.add(dummy_user)
     db_session.commit()
 
-    # And a dummy queue
-    dummy_queue = Queue(name='iamadummyqueue', size=2, owner=dummy_user)
+    users = User.query.all()
+
+    # And some dummy queues
+    dummy_queue = Queue(name='dummy-empty-queue', size=0, owner=users[0])
     db_session.add(dummy_queue)
     db_session.commit()
+
+    dummy_queue = Queue(name='dummy-non-empty-queue', size=config.warn_queue_size/5, owner=users[0])
+    db_session.add(dummy_queue)
+    db_session.commit()
+
+    dummy_queue = Queue(name='dummy-warning-queue', size=config.warn_queue_size + 1, owner=users[1])
+    db_session.add(dummy_queue)
+    db_session.commit()
+
+    dummy_queue = Queue(name='dummy-deletion-queue', size=config.del_queue_size + 10000, owner=users[2])
+    db_session.add(dummy_queue)
+    db_session.commit()
+
 
     # Test admin user
     admin = User.new_user(
