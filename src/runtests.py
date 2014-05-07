@@ -19,6 +19,7 @@ from guardian import PulseGuardian
 from model.user import User
 from model.queue import Queue
 from model.base import db_session, init_db
+from dbinit import init_and_clear_db
 
 # Initializing test DB
 init_db()
@@ -65,8 +66,8 @@ class GuardianTest(unittest.TestCase):
     warns the queue's owner and deletes the queue if it get's over the maximum size
     """
 
-    consumer = consumers.PulseTestConsumer
-    publisher = publishers.PulseTestPublisher
+    consumer_class = consumers.PulseTestConsumer
+    publisher_class = publishers.PulseTestPublisher
 
     proc = None
     QUEUE_CHECK_PERIOD = 0.05
@@ -78,11 +79,28 @@ class GuardianTest(unittest.TestCase):
         return msg
 
     def setUp(self):
+        init_and_clear_db()
         self.management_api = PulseManagementAPI()
         self.guardian = PulseGuardian(self.management_api, emails=False)
 
+        self.consumer_cfg = pulse_cfg.copy()
+        self.consumer_cfg['applabel'] = str(uuid.uuid1())
+
+        # Configure / Create the test user to be used for message consumption
+        self.consumer_cfg['user'], self.consumer_cfg['password'] = CONSUMER_USER, CONSUMER_PASSWORD
+        username, password = self.consumer_cfg['user'], self.consumer_cfg['password']
+        self.user = User.query.filter(User.username == username).first()
+        if self.user is None:
+            self.user = User.new_user(username=username, email=CONSUMER_EMAIL, password=password)
+            self.user.activate(self.management_api)
+            db_session.add(self.user)
+            db_session.commit()
+
+        self.publisher = self.publisher_class(**pulse_cfg)
+
     def tearDown(self):
         self.terminate_proc()
+        init_and_clear_db()
 
     def terminate_proc(self):
         if self.proc:
@@ -92,7 +110,7 @@ class GuardianTest(unittest.TestCase):
 
     def _wait_for_queue(self, config, queue_should_exist=True):
         # Wait until queue has been created by consumer process.
-        consumer = self.consumer(**config)
+        consumer = self.consumer_class(**config)
         consumer.configure(topic='#', callback=lambda x, y: None)
         attempts = 0
         while attempts < self.QUEUE_CHECK_ATTEMPTS:
@@ -116,30 +134,15 @@ class GuardianTest(unittest.TestCase):
     def test_warning(self):
         self.management_api.delete_all_queues()
 
-        consumer_cfg = pulse_cfg.copy()
-        consumer_cfg['applabel'] = str(uuid.uuid1())
-
-        # Configure / Create the test user to be used for message consumption
-        consumer_cfg['user'], consumer_cfg['password'] = CONSUMER_USER, CONSUMER_PASSWORD
-        username, password = consumer_cfg['user'], consumer_cfg['password']
-        user = User.query.filter(User.username == username).first()
-        if user is None:
-            user = User.new_user(username=username, email=CONSUMER_EMAIL, password=password)
-            user.activate(self.management_api)
-            db_session.add(user)
-            db_session.commit()
-
-        publisher = self.publisher(**pulse_cfg)
-
         # Publish some messages
         for i in xrange(10):
             msg = self._build_message(0)
-            publisher.publish(msg)
+            self.publisher.publish(msg)
 
         # Start the consumer
-        self.proc = ConsumerSubprocess(self.consumer, consumer_cfg, True)
+        self.proc = ConsumerSubprocess(self.consumer_class, self.consumer_cfg, True)
         self.proc.start()
-        self._wait_for_queue(consumer_cfg)
+        self._wait_for_queue(self.consumer_cfg)
 
         # Monitor the queues, this should create the queue object and assign it to the user
         for i in xrange(10):
@@ -150,15 +153,15 @@ class GuardianTest(unittest.TestCase):
         self.terminate_proc()
 
         # Queue should still exist.
-        self._wait_for_queue(consumer_cfg)
+        self._wait_for_queue(self.consumer_cfg)
 
         # Get the queue's object
-        db_session.refresh(user)
+        db_session.refresh(self.user)
 
         # Queue multiple messages while no consumer exists.
         for i in xrange(config.warn_queue_size + 1):
             msg = self._build_message(i)
-            publisher.publish(msg)
+            self.publisher.publish(msg)
 
         # Wait for messages to be taken into account and get the warned messages if any
         for i in xrange(10):
@@ -169,7 +172,7 @@ class GuardianTest(unittest.TestCase):
                 break
 
         # Test that no queue have been warned at the beginning of the process
-        self.assertTrue(not any(q.warned for q in user.queues))
+        self.assertTrue(not any(q.warned for q in self.user.queues))
         # ... but some queues should be
         self.assertGreater(len(queues_to_warn), 0)
 
@@ -177,46 +180,31 @@ class GuardianTest(unittest.TestCase):
         self.guardian.monitor_queues(self.management_api.queues())
 
         # Refreshing the user's queues state
-        db_session.refresh(user)
+        db_session.refresh(self.user)
 
         # Test that the queues that had to be "warned" were
-        self.assertTrue(all(q.warned for q in user.queues if q in queues_to_warn))
+        self.assertTrue(all(q.warned for q in self.user.queues if q in queues_to_warn))
         # The queues that needed to be warned haven't been deleted
         queues_to_warn_bis = {q_data['name'] for q_data in self.management_api.queues()
                               if config.warn_queue_size < q_data['messages_ready'] <= config.del_queue_size}
         self.assertEqual(queues_to_warn_bis, queues_to_warn)
 
-        # Deleting the test user (should delete all his queues too)
-        db_session.delete(user)
-        db_session.commit()
+        # Reinitialize the db
+        init_and_clear_db()
+
 
     def test_delete(self):
         self.management_api.delete_all_queues()
 
-        consumer_cfg = pulse_cfg.copy()
-        consumer_cfg['applabel'] = str(uuid.uuid1())
-
-        # Configure / Create the test user to be used for message consumption
-        consumer_cfg['user'], consumer_cfg['password'] = CONSUMER_USER, CONSUMER_PASSWORD
-        username, password = consumer_cfg['user'], consumer_cfg['password']
-        user = User.query.filter(User.username == username).first()
-        if user is None:
-            user = User.new_user(username=username, email=CONSUMER_EMAIL, password=password)
-            user.activate(self.management_api)
-            db_session.add(user)
-            db_session.commit()
-
-        publisher = self.publisher(**pulse_cfg)
-
         # Publish some messages
         for i in xrange(10):
             msg = self._build_message(0)
-            publisher.publish(msg)
+            self.publisher.publish(msg)
 
         # Start the consumer
-        self.proc = ConsumerSubprocess(self.consumer, consumer_cfg, True)
+        self.proc = ConsumerSubprocess(self.consumer_class, self.consumer_cfg, True)
         self.proc.start()
-        self._wait_for_queue(consumer_cfg)
+        self._wait_for_queue(self.consumer_cfg)
 
         # Monitor the queues, this should create the queue object and assign it to the user
         for i in xrange(10):
@@ -227,17 +215,17 @@ class GuardianTest(unittest.TestCase):
         self.terminate_proc()
 
         # Queue should still exist.
-        self._wait_for_queue(consumer_cfg)
+        self._wait_for_queue(self.consumer_cfg)
 
         # Get the queue's object
-        db_session.refresh(user)
+        db_session.refresh(self.user)
 
-        self.assertTrue(len(user.queues) > 0)
+        self.assertTrue(len(self.user.queues) > 0)
 
         # Queue multiple messages while no consumer exists.
         for i in xrange(config.del_queue_size + 1):
             msg = self._build_message(i)
-            publisher.publish(msg)
+            self.publisher.publish(msg)
 
         # Wait some time for published messages to be taken into account
         for i in xrange(10):
@@ -264,9 +252,9 @@ class GuardianTest(unittest.TestCase):
                             if q_data['messages_ready'] > config.del_queue_size]
         self.assertTrue(len(queues_to_delete) == 0)
 
-        # Deleting the test user (should delete all his queues too)
-        db_session.delete(user)
-        db_session.commit()
+        # Reinitialize the db
+        init_and_clear_db()
+
 
 
 class ModelTest(unittest.TestCase):
