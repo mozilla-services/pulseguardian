@@ -41,7 +41,7 @@ class PulseGuardian(object):
 
     def monitor_queues(self, queues):
         for queue_data in queues:
-            q_size, q_name, q_vhost = (queue_data['messages_ready'],
+            q_size, q_name, q_vhost = (queue_data['messages'],
                                        queue_data['name'], queue_data['vhost'])
             queue = Queue.query.filter(Queue.name == q_name).first()
 
@@ -128,7 +128,7 @@ overgrowing ({} ready messages).
 
 Make sure your clients are running correctly. The queue will be automatically
 deleted when it exceeds {} messages.
-'''.format(queue_data['name'], exchange, queue_data['messages_ready'],
+'''.format(queue_data['name'], exchange, queue_data['messages'],
            self.del_queue_size)
 
         if self.emails:
