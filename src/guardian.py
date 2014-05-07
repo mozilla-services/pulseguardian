@@ -15,13 +15,11 @@ logger.setLevel(logging.DEBUG)
 class PulseGuardian(object):
 
     def __init__(self, api, emails=True, warn_queue_size=config.warn_queue_size,
-                 archive_queue_size=config.archive_queue_size,
                  del_queue_size=config.del_queue_size):
         self.api = api
 
         self.emails = emails
         self.warn_queue_size = warn_queue_size
-        self.archive_queue_size = archive_queue_size
         self.del_queue_size = del_queue_size
 
         self.warned_queues = set()
@@ -71,10 +69,9 @@ class PulseGuardian(object):
 
             # If we don't know who created the queue
             if queue.owner is None:
-                # logger.info('. Queue "{}" owner unknown.'.format(q_name))
+                # logger.info(". Queue '{}' owner's unknown.".format(q_name))
 
-                # If no client is currently consuming the queue, we just skip
-                # it
+                # If no client is currently consuming the queue, we just skip it
                 if queue_data['consumers'] == 0:
                     # logger.info(". Queue '{}' skipped (no owner, no current consumer).".format(q_name))
                     continue
@@ -96,22 +93,21 @@ class PulseGuardian(object):
                     ". Assigning queue '{}'  to user {}.".format(q_name, user))
                 queue.owner = user
 
-            # print q_size, queue
             if q_size > self.warn_queue_size and not queue.warned:
                 logger.warning("Warning queue '{}' owner. Queue size = {}; warn_queue_size = {}".format(
                     q_name, q_size, self.warn_queue_size))
                 queue.warned = True
                 self.warned_queues.add(queue.name)
-                if self.emails:
-                    self.warning_email(queue.owner, queue_data)
+                self.warning_email(queue.owner, queue_data)
             elif q_size <= self.warn_queue_size and queue.warned:
+                # A previously warned queue got out of the warning threshold, its
+                # owner cannow be warned again
                 logger.warning("Queue '{}' was in warning zone but is OK now".format(
-                    q_name, q_size, self.del_queue_size))
-                # When a warned queue gets out of the warning threshold, it can
-                # get warned again
+                q_name, q_size, self.del_queue_size))
                 queue.warned = False
+                self.back_to_normal_email(queue.owner, queue_data)
 
-            # Commiting changes to the queue
+            # Commiting any changes to the queue
             db_session.add(queue)
             db_session.commit()
 
@@ -124,7 +120,7 @@ class PulseGuardian(object):
         subject = 'Pulse warning: queue "{}" is overgrowing'.format(
             queue_data['name'])
         body = '''Warning: your queue "{}" on exchange "{}" is
-overgrowing ({} ready messages).
+overgrowing ({} messages).
 
 Make sure your clients are running correctly. The queue will be automatically
 deleted when it exceeds {} messages.
@@ -143,10 +139,30 @@ deleted when it exceeds {} messages.
         if detailed_data['incoming']:
             exchange = detailed_data['incoming'][0]['exchange']['name']
 
+        subject = "Pulse warning: Deleted an overgrowing queue"
         body = "Your queue '{}' on the exchange '{}' has been deleted because it exceeded the unread messages limit.\n\
                   Make sure your clients are running correctly and delete unused queues.".format(queue_data['name'], exchange)
         if self.emails:
-            sendemail(subject="Pulse : Deleted an overgrowing queue", from_addr=config.email_from,
+            sendemail(subject=subject, from_addr=config.email_from,
+                      to_addrs=[user.email], username=config.email_account,
+                      password=config.email_password, text_data=body)
+
+
+    def back_to_normal_email(self, user, queue_data):
+        exchange = 'could not be determined'
+        detailed_data = self.api.queue(vhost=queue_data['vhost'], queue=queue_data['name'])
+        if detailed_data['incoming']:
+            exchange = detailed_data['incoming'][0]['exchange']['name']
+
+        subject = "Pulse warning: queue '{}' is back to normal".format(queue_data['name'])
+        body = '''Your queue "{}" on exchange "{}" is
+now back to normal ({} messages).
+
+Make sure your clients are running correctly to avoid those warnings.
+'''.format(queue_data['name'], exchange, queue_data['messages'], self.del_queue_size)
+
+        if self.emails:
+            sendemail(subject=subject, from_addr=config.email_from,
                       to_addrs=[user.email], username=config.email_account,
                       password=config.email_password, text_data=body)
 

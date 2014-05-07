@@ -21,6 +21,5 @@ rabbit_password = 'guest'
 
 # PulseGuardian
 warn_queue_size = 2000
-archive_queue_size = 1500
 del_queue_size = 8000
 polling_interval = 5
