@@ -9,10 +9,15 @@ from queue import Queue
 
 
 def hash_password(password, salt):
-    return hashlib.sha512(salt + password).hexdigest()
+    return hashlib.sha256(salt + password).hexdigest()
 
 
 class User(Base):
+    """
+        User class, linked to a rabbitmq user (with the same username)
+        once activated. Provides access to a user's queues.
+    """
+
     __tablename__ = 'users'
 
     username = Column(String(100), unique=True)
@@ -35,10 +40,13 @@ class User(Base):
         return hash_password(password, self.salt) == self.secret_hash
 
     def activate(self, management_api):
+        """
+            Activates a user's account and subsequently creates a
+            user with the same username and password
+        """
         self.activated = True
         # Creating the appropriate rabbitmq user
-        management_api.create_user(
-            username=self.username, password=self.password)
+        management_api.create_user(username=self.username, password=self.password)
         # TODO : remove configure and write permissions while letting users
         # create queues ?
         management_api.set_permission(username=self.username, vhost='/',
@@ -51,6 +59,10 @@ class User(Base):
 
     @staticmethod
     def new_user(email, username, password, admin=False):
+        """
+            Initializes a new user, generating a salt and encrypting
+            his password. Then creates a
+        """
         username = username.lower()
         password = password.lower()
 
@@ -68,6 +80,7 @@ class User(Base):
         return user
 
     def __repr__(self):
-        return "<User(email='{}', username='{}')>".format(self.email, self.username)
+        return "<User(email='{}', username='{}')>".format(self.email,
+                                                          self.username)
 
     __str__ = __repr__
