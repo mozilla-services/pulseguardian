@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-        
+
 {% block body %}
 {% set inspected_users = users if cur_user.admin else [cur_user] %}
 
@@ -9,7 +9,11 @@
         <h2 class="text-primary">
             <small>Profile:</small> {{user.username}}
         </h2>
-    
+
+        <a href="#" class="autoreload">
+            <span class="glyphicon glyphicon-refresh"></span> Auto-reload
+        </a>
+
         <h3>Queues</h3>
 
         {% if user.queues %}
@@ -19,7 +23,7 @@
                 {% if cur_user.admin or user == cur_user %}
                     <span class="glyphicon glyphicon-remove delete"></span>
                 {% endif %}
-                <h4>{{queue.name}} <small>{{queue.size}} messages</small></h4> 
+                <h4>{{queue.name}} <small>{{queue.size}} messages</small></h4>
 
                 {% set fill_perc = 100 * queue.size / config.del_queue_size %}
                 {% set bar_class = 'progress-bar-danger' if queue.size > config.warn_queue_size else '' %}

@@ -1,6 +1,21 @@
 $(document).ready(function() {
     var error_bar = $('#error-bar');
 
+    // Auto-reload
+    var autoReload = true;
+    var reloadInterval = 10000;
+    setInterval(function() {
+        if (autoReload) {
+            window.location.reload();
+        }
+    }, reloadInterval);
+    $('.autoreload').click(function() {
+        autoReload = !autoReload;
+        $(this).toggleClass('inactive');
+    });
+
+
+    // Queue deletion
     $('.delete').click(function() {
         var queue = $(this).closest('.queue');
         var queue_name = queue.data('queue-name');

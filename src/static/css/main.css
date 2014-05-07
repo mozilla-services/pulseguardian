@@ -16,8 +16,9 @@ body {
   position: relative;
 }
 
-a:href {
-  text-decoration: none !important;
+a:hover, a:active, a:focus {
+    outline: 0;
+    text-decoration: none !important;
 }
 
 .row {
@@ -98,4 +99,15 @@ a:href {
 
 .user {
   border-bottom: 1px dashed #d5d7df;
+}
+
+.autoreload {
+    color: #30a53c;
+    float: right;
+}
+.autoreload:focus {
+    color: #3cba2e;
+}
+.autoreload.inactive {
+    color: #b0bdd2;
 }
