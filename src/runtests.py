@@ -10,12 +10,18 @@ import sys
 from mozillapulse import consumers, publishers
 from mozillapulse.messages.base import GenericMessage
 
+import config
+# Changing the DB for the tests before the model is initialized
+config.sqlalchemy_engine_url = 'sqlite:///pulseguardian_test.db'
+
 from management import PulseManagementAPI
 from guardian import PulseGuardian
 from model.user import User
 from model.queue import Queue
-from model.base import db_session
-import config
+from model.base import db_session, init_db
+
+# Initializing test DB
+init_db()
 
 # Default RabbitMQ host settings
 DEFAULT_RABBIT_HOST = 'localhost'
