@@ -8,6 +8,9 @@ from management import PulseManagementAPI
 from sendemail import sendemail
 import config
 
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class PulseGuardian(object):
 
@@ -44,7 +47,7 @@ class PulseGuardian(object):
 
             # If the queue doesn't exist, we create it
             if queue is None:
-                logging.warning(". New queue '{}' encountered. "
+                logger.warning(". New queue '{}' encountered. "
                                 "Adding to the database.".format(q_name))
                 queue = Queue(name=q_name, owner=None)
                 db_session.add(queue)
@@ -56,7 +59,7 @@ class PulseGuardian(object):
             # If a queue is over the deletion size, regardless of it having an
             # owner or not, we delete it
             if q_size > self.del_queue_size:
-                logging.warning("Queue '{}' deleted. Queue size = {}; del_queue_size = {}".format(
+                logger.warning("Queue '{}' deleted. Queue size = {}; del_queue_size = {}".format(
                     q_name, q_size, self.del_queue_size))
                 if queue.owner:
                     self.deletion_email(queue.owner, queue_data)
@@ -68,12 +71,12 @@ class PulseGuardian(object):
 
             # If we don't know who created the queue
             if queue.owner is None:
-                # logging.info('. Queue "{}" owner unknown.'.format(q_name))
+                # logger.info('. Queue "{}" owner unknown.'.format(q_name))
 
                 # If no client is currently consuming the queue, we just skip
                 # it
                 if queue_data['consumers'] == 0:
-                    # logging.info(". Queue '{}' skipped (no owner, no current consumer).".format(q_name))
+                    # logger.info(". Queue '{}' skipped (no owner, no current consumer).".format(q_name))
                     continue
 
                 # Otherwise we look for its user
@@ -84,25 +87,25 @@ class PulseGuardian(object):
                 # If the queue was created by a user that isn't in the
                 # pulseguardian database, we skip the queue
                 if user is None:
-                    logging.warning(
+                    logger.warning(
                         ". Queue '{}' owner, {}, isn't in the db. Skipping the queue.".format(q_name, owner_name))
                     continue
 
                 # We assign the user to the queue
-                logging.warning(
+                logger.warning(
                     ". Assigning queue '{}'  to user {}.".format(q_name, user))
                 queue.owner = user
 
             # print q_size, queue
             if q_size > self.warn_queue_size and not queue.warned:
-                logging.warning("Warning queue '{}' owner. Queue size = {}; warn_queue_size = {}".format(
+                logger.warning("Warning queue '{}' owner. Queue size = {}; warn_queue_size = {}".format(
                     q_name, q_size, self.warn_queue_size))
                 queue.warned = True
                 self.warned_queues.add(queue.name)
                 if self.emails:
                     self.warning_email(queue.owner, queue_data)
             elif q_size <= self.warn_queue_size and queue.warned:
-                logging.warning("Queue '{}' was in warning zone but is OK now".format(
+                logger.warning("Queue '{}' was in warning zone but is OK now".format(
                     q_name, q_size, self.del_queue_size))
                 # When a warned queue gets out of the warning threshold, it can
                 # get warned again

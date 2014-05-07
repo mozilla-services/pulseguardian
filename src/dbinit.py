@@ -6,8 +6,9 @@ from model.user import User
 from model.queue import Queue
 from management import PulseManagementAPI, PulseManagementException
 
+logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 pulse_management = PulseManagementAPI()
 
