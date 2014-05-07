@@ -45,7 +45,7 @@ class PulseGuardian(object):
 
             # If the queue doesn't exist, we create it
             if queue is None:
-                logger.warning(". New queue '{}' encountered. "
+                logger.info(". New queue '{}' encountered. "
                                 "Adding to the database.".format(q_name))
                 queue = Queue(name=q_name, owner=None)
                 db_session.add(queue)
@@ -84,12 +84,12 @@ class PulseGuardian(object):
                 # If the queue was created by a user that isn't in the
                 # pulseguardian database, we skip the queue
                 if user is None:
-                    logger.warning(
+                    logger.info(
                         ". Queue '{}' owner, {}, isn't in the db. Skipping the queue.".format(q_name, owner_name))
                     continue
 
                 # We assign the user to the queue
-                logger.warning(
+                logger.info(
                     ". Assigning queue '{}'  to user {}.".format(q_name, user))
                 queue.owner = user
 
@@ -120,12 +120,12 @@ class PulseGuardian(object):
         subject = 'Pulse warning: queue "{}" is overgrowing'.format(
             queue_data['name'])
         body = '''Warning: your queue "{}" on exchange "{}" is
-overgrowing ({} messages).
+overgrowing ({} ready messages, {} total messages).
 
 Make sure your clients are running correctly. The queue will be automatically
 deleted when it exceeds {} messages.
-'''.format(queue_data['name'], exchange, queue_data['messages'],
-           self.del_queue_size)
+'''.format(queue_data['name'], exchange, queue_data['messages_ready'],
+           queue_data['messages'], self.del_queue_size)
 
         if self.emails:
             sendemail(subject=subject, from_addr=config.email_from,
@@ -156,10 +156,11 @@ deleted when it exceeds {} messages.
 
         subject = "Pulse warning: queue '{}' is back to normal".format(queue_data['name'])
         body = '''Your queue "{}" on exchange "{}" is
-now back to normal ({} messages).
+now back to normal ({} ready messages, {} total messages).
 
 Make sure your clients are running correctly to avoid those warnings.
-'''.format(queue_data['name'], exchange, queue_data['messages'], self.del_queue_size)
+'''.format(queue_data['name'], exchange, queue_data['messages_ready'],
+           queue_data['messages'], self.del_queue_size)
 
         if self.emails:
             sendemail(subject=subject, from_addr=config.email_from,
