@@ -6,8 +6,10 @@ from model.user import User
 from model.queue import Queue
 from management import PulseManagementAPI, PulseManagementException
 
-pulse_management = PulseManagementAPI()
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
+pulse_management = PulseManagementAPI()
 
 def init_and_clear_db():
     # Initializing the database schema
@@ -24,7 +26,7 @@ def init_and_clear_db():
     Queue.query.delete()
     User.query.delete()
 
-    logging.info('Finished initializing database')
+    logger.info('Finished initializing database')
 
 
 def dummy_data():
@@ -47,7 +49,7 @@ def dummy_data():
     db_session.add(admin)
     db_session.commit()
 
-    logging.info('Finished generating dummy data')
+    logger.info('Finished generating dummy data')
 
 if __name__ == '__main__':
     init_and_clear_db()
