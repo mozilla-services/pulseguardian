@@ -23,3 +23,15 @@ rabbit_password = 'guest'
 warn_queue_size = 2000
 del_queue_size = 8000
 polling_interval = 5
+
+# Overriding configuration with os environment vars (e.g Stackato)
+import os
+import urlparse
+
+if 'DATABASE_URL' in os.environ:
+    sqlalchemy_engine_url = os.environ['DATABASE_URL']
+if 'RABBITMQ_URL' in os.environ:
+    url = urlparse.urlparse(os.environ['RABBITMQ_URL'])
+    rabbit_host = url.hostname
+    rabbit_user = url.username
+    rabbit_password = url.password
