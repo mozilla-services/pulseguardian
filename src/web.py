@@ -14,7 +14,7 @@ app = Flask(__name__)
 app.secret_key = config.flask_secret_key
 
 # Initializing the rabbitmq management API
-pulse_management = PulseManagementAPI()
+pulse_management = PulseManagementAPI(host=config.rabbit_host, user=config.rabbit_user, password=config.rabbit_password)
 
 # Initializing the databse
 init_db()
@@ -98,13 +98,21 @@ def signup():
     password = request.form['password']
     password_confirmation = request.form['password-confirmation']
 
-    # TODO : Add some safeguards as some admin users may exist in rabbitmq but
-    # not in our db ?
     errors = []
+
     if User.query.filter(User.email == email).first():
         errors.append("A user with the same email already exists")
-    if User.query.filter(User.username == username).first():
+
+
+    # Checking if a user exists in RabbitMQ OR in our db
+    try:
+        pulse_management.user(username=username)
+        in_rabbitmq = True
+    except PulseManagementException:
+        in_rabbitmq = False
+    if User.query.filter(User.username == username).first() or in_rabbitmq:
         errors.append("A user with the same username already exists")
+
     if password != password_confirmation:
         errors.append("Password confirmation doesn't match")
     if errors:

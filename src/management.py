@@ -17,10 +17,9 @@ class PulseManagementException(Exception):
 class PulseManagementAPI(object):
 
     def __init__(self, host=DEFAULT_RABBIT_HOST, management_port=DEFAULT_RABBIT_MANAGEMENT_PORT,
-                 vhost=DEFAULT_RABBIT_VHOST, user=DEFAULT_RABBIT_USER, password=DEFAULT_RABBIT_PASSWORD):
+                 user=DEFAULT_RABBIT_USER, password=DEFAULT_RABBIT_PASSWORD):
         self.host = host
         self.management_port = management_port
-        self.vhost = vhost
         self.management_user = user
         self.management_password = password
 
