@@ -1,0 +1,12 @@
+name: pulse-guardian
+instances: 1
+framework:
+  type: python
+mem: 256
+requirements:
+    pip: gunicorn
+hooks:
+    pre-running: python src/dbinit.py
+processes:
+    web: cd src; gunicorn --debug -b 0.0.0.0:$PORT web:app
+command: python src/guardian.py
