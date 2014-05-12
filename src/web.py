@@ -66,8 +66,11 @@ def index():
 @app.route("/profile")
 @requires_login
 def profile():
-    users = User.query.all()
-    return render_template('profile.html', users=users)
+    users = no_owner_queues = []
+    if g.user.admin:
+        users = User.query.all()
+        no_owner_queues = list(Queue.query.filter(Queue.owner == None))
+    return render_template('profile.html', users=users, no_owner_queues=no_owner_queues)
 
 # API
 
