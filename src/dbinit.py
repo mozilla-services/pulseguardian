@@ -63,7 +63,7 @@ def dummy_data():
 
     # Test admin user
     admin = User.new_user(
-        email='admin@admin.com', username='admin', password='admin', admin=True)
+        email='admin@admin.com', username='dummy-admin', password='dummy-admin', admin=True)
     admin.activate(pulse_management)
     db_session.add(admin)
     db_session.commit()
