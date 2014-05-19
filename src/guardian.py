@@ -112,62 +112,71 @@ class PulseGuardian(object):
             db_session.add(queue)
             db_session.commit()
 
-    def warning_email(self, user, queue_data):
+    def _exchange_from_queue(self, queue_data):
         exchange = 'could not be determined'
         detailed_data = self.api.queue(vhost=queue_data['vhost'],
                                        queue=queue_data['name'])
         if detailed_data['incoming']:
             exchange = detailed_data['incoming'][0]['exchange']['name']
+        return exchange
+
+    def warning_email(self, user, queue_data):
+        if not self.emails:
+            return
+
+        exchange = self._exchange_from_queue(queue_data)
 
         subject = 'Pulse warning: queue "{}" is overgrowing'.format(
             queue_data['name'])
         body = '''Warning: your queue "{}" on exchange "{}" is
 overgrowing ({} ready messages, {} total messages).
 
-Make sure your clients are running correctly. The queue will be automatically
-deleted when it exceeds {} messages.
+The queue will be automatically deleted when it exceeds {} messages.
+
+Make sure your clients are running correctly and are cleaning up unused
+durable queues.
 '''.format(queue_data['name'], exchange, queue_data['messages_ready'],
            queue_data['messages'], self.del_queue_size)
 
-        if self.emails:
-            sendemail(subject=subject, from_addr=config.email_from,
-                      to_addrs=[user.email], username=config.email_account,
-                      password=config.email_password, text_data=body)
+        sendemail(subject=subject, from_addr=config.email_from,
+                  to_addrs=[user.email], username=config.email_account,
+                  password=config.email_password, text_data=body)
 
     def deletion_email(self, user, queue_data):
-        exchange = 'could not be determined'
-        detailed_data = self.api.queue(
-            vhost=queue_data['vhost'], queue=queue_data['name'])
-        if detailed_data['incoming']:
-            exchange = detailed_data['incoming'][0]['exchange']['name']
+        if not self.emails:
+            return
 
-        subject = "Pulse warning: Deleted an overgrowing queue"
-        body = "Your queue '{}' on the exchange '{}' has been deleted because it exceeded the unread messages limit.\n\
-                  Make sure your clients are running correctly and delete unused queues.".format(queue_data['name'], exchange)
-        if self.emails:
-            sendemail(subject=subject, from_addr=config.email_from,
-                      to_addrs=[user.email], username=config.email_account,
-                      password=config.email_password, text_data=body)
+        exchange = self._exchange_from_queue(queue_data)
 
+        subject = 'Pulse warning: queue "{}" has been deleted'.format(queue_data['name'])
+        body = '''Your queue "{}" on exchange "{}" has been
+deleted after exceeding the maximum number of unread messages.  Upon deletion
+there were {} messages in the queue, out of a maximum {} messages.
+
+Make sure your clients are running correctly and are cleaning up unused
+durable queues.
+'''.format(queue_data['name'], exchange, queue_data['messages'],
+           self.del_queue_size)
+
+        sendemail(subject=subject, from_addr=config.email_from,
+                  to_addrs=[user.email], username=config.email_account,
+                  password=config.email_password, text_data=body)
 
     def back_to_normal_email(self, user, queue_data):
-        exchange = 'could not be determined'
-        detailed_data = self.api.queue(vhost=queue_data['vhost'], queue=queue_data['name'])
-        if detailed_data['incoming']:
-            exchange = detailed_data['incoming'][0]['exchange']['name']
+        if not self.emails:
+            return
 
-        subject = "Pulse warning: queue '{}' is back to normal".format(queue_data['name'])
+        exchange = self._exchange_from_queue(queue_data)
+
+        subject = 'Pulse warning: queue "{}" is back to normal'.format(queue_data['name'])
         body = '''Your queue "{}" on exchange "{}" is
 now back to normal ({} ready messages, {} total messages).
-
-Make sure your clients are running correctly to avoid those warnings.
 '''.format(queue_data['name'], exchange, queue_data['messages_ready'],
            queue_data['messages'], self.del_queue_size)
 
-        if self.emails:
-            sendemail(subject=subject, from_addr=config.email_from,
-                      to_addrs=[user.email], username=config.email_account,
-                      password=config.email_password, text_data=body)
+        sendemail(subject=subject, from_addr=config.email_from,
+                  to_addrs=[user.email], username=config.email_account,
+                  password=config.email_password, text_data=body)
 
     def guard(self):
         while True:
