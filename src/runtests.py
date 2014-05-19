@@ -63,7 +63,8 @@ class GuardianTest(unittest.TestCase):
 
     """Launches a consumer process that creates a queue then disconnects,
     and then floods the exchange with messages and checks that PulseGuardian
-    warns the queue's owner and deletes the queue if it get's over the maximum size
+    warns the queue's owner and deletes the queue if it gets over the maximum
+    size.
     """
 
     consumer_class = consumers.PulseTestConsumer
@@ -91,7 +92,8 @@ class GuardianTest(unittest.TestCase):
         username, password = self.consumer_cfg['user'], self.consumer_cfg['password']
         self.user = User.query.filter(User.username == username).first()
         if self.user is None:
-            self.user = User.new_user(username=username, email=CONSUMER_EMAIL, password=password)
+            self.user = User.new_user(username=username, email=CONSUMER_EMAIL,
+                                      password=password)
             self.user.activate(self.management_api)
             db_session.add(self.user)
             db_session.commit()
@@ -140,11 +142,13 @@ class GuardianTest(unittest.TestCase):
             self.publisher.publish(msg)
 
         # Start the consumer
-        self.proc = ConsumerSubprocess(self.consumer_class, self.consumer_cfg, True)
+        self.proc = ConsumerSubprocess(self.consumer_class, self.consumer_cfg,
+                                       True)
         self.proc.start()
         self._wait_for_queue(self.consumer_cfg)
 
-        # Monitor the queues, this should create the queue object and assign it to the user
+        # Monitor the queues; this should create the queue object and assign
+        # it to the user.
         for i in xrange(10):
             self.guardian.monitor_queues(self.management_api.queues())
             time.sleep(0.2)
@@ -163,35 +167,43 @@ class GuardianTest(unittest.TestCase):
             msg = self._build_message(i)
             self.publisher.publish(msg)
 
-        # Wait for messages to be taken into account and get the warned messages if any
+        # Wait for messages to be taken into account and get the warned
+        # messages, if any.
         for i in xrange(10):
             time.sleep(0.3)
-            queues_to_warn = {q_data['name'] for q_data in self.management_api.queues()
-                              if config.warn_queue_size < q_data['messages_ready'] <= config.del_queue_size}
+            queues_to_warn = {q_data['name'] for q_data
+                              in self.management_api.queues()
+                              if config.warn_queue_size
+                                 < q_data['messages_ready']
+                                 <= config.del_queue_size}
             if queues_to_warn:
                 break
 
-        # Test that no queue have been warned at the beginning of the process
+        # Test that no queue has been warned at the beginning of the process.
         self.assertTrue(not any(q.warned for q in self.user.queues))
-        # ... but some queues should be
+        # ... but some queues should be now.
         self.assertGreater(len(queues_to_warn), 0)
 
-        # Monitor the queues, this should detect queues that should be warned
+        # Monitor the queues; this should detect queues that should be warned.
         self.guardian.monitor_queues(self.management_api.queues())
 
-        # Refreshing the user's queues state
+        # Refresh the user's queues state.
         db_session.refresh(self.user)
 
-        # Test that the queues that had to be "warned" were
-        self.assertTrue(all(q.warned for q in self.user.queues if q in queues_to_warn))
-        # The queues that needed to be warned haven't been deleted
-        queues_to_warn_bis = {q_data['name'] for q_data in self.management_api.queues()
-                              if config.warn_queue_size < q_data['messages_ready'] <= config.del_queue_size}
+        # Test that the queues that had to be "warned" were.
+        self.assertTrue(all(q.warned for q in self.user.queues
+                            if q in queues_to_warn))
+
+        # The queues that needed to be warned haven't been deleted.
+        queues_to_warn_bis = {q_data['name'] for q_data
+                              in self.management_api.queues()
+                              if config.warn_queue_size
+                                 < q_data['messages_ready']
+                                 <= config.del_queue_size}
         self.assertEqual(queues_to_warn_bis, queues_to_warn)
 
-        # Reinitialize the db
+        # Reinitialize the db.
         init_and_clear_db()
-
 
     def test_delete(self):
         self.management_api.delete_all_queues()
@@ -202,11 +214,13 @@ class GuardianTest(unittest.TestCase):
             self.publisher.publish(msg)
 
         # Start the consumer
-        self.proc = ConsumerSubprocess(self.consumer_class, self.consumer_cfg, True)
+        self.proc = ConsumerSubprocess(self.consumer_class, self.consumer_cfg,
+                                       True)
         self.proc.start()
         self._wait_for_queue(self.consumer_cfg)
 
-        # Monitor the queues, this should create the queue object and assign it to the user
+        # Monitor the queues; this should create the queue object and assign
+        # it to the user.
         for i in xrange(10):
             self.guardian.monitor_queues(self.management_api.queues())
             time.sleep(0.2)
@@ -227,28 +241,33 @@ class GuardianTest(unittest.TestCase):
             msg = self._build_message(i)
             self.publisher.publish(msg)
 
-        # Wait some time for published messages to be taken into account
+        # Wait some time for published messages to be taken into account.
         for i in xrange(10):
             time.sleep(0.3)
-            queues_to_delete = {q_data['name'] for q_data in self.management_api.queues()
-                                if q_data['messages_ready'] > config.del_queue_size}
+            queues_to_delete = {q_data['name'] for q_data
+                                in self.management_api.queues()
+                                if q_data['messages_ready']
+                                   > config.del_queue_size}
             if queues_to_delete:
                 break
 
-        # Tests that there are some queues that should be deleted
+        # Test that there are some queues that should be deleted.
         self.assertTrue(len(queues_to_delete) > 0)
 
-        # Monitor the queues, this should create the queue object and assign it to the user
+        # Monitor the queues; this should create the queue object and assign
+        # it to the user.
         for i in xrange(20):
             self.guardian.monitor_queues(self.management_api.queues())
             time.sleep(0.2)
 
-        # Tests that the queues that had to be deleted were deleted
-        self.assertTrue(not any(q in queues_to_delete for q in self.management_api.queues()))
-        # And that those were deleted by guardian
+        # Test that the queues that had to be deleted were deleted...
+        self.assertTrue(not any(q in queues_to_delete for q
+                                in self.management_api.queues()))
+        # And that they were deleted by guardian...
         self.assertEqual(queues_to_delete, self.guardian.deleted_queues)
-        # And no queue have overgrown
-        queues_to_delete = [q_data['name'] for q_data in self.management_api.queues()
+        # And that no queue has overgrown.
+        queues_to_delete = [q_data['name'] for q_data
+                            in self.management_api.queues()
                             if q_data['messages_ready'] > config.del_queue_size]
         self.assertTrue(len(queues_to_delete) == 0)
 
@@ -256,11 +275,9 @@ class GuardianTest(unittest.TestCase):
         init_and_clear_db()
 
 
-
 class ModelTest(unittest.TestCase):
 
-    """Tests the underlying model (users and queues)
-    """
+    """Tests the underlying model (users and queues)."""
 
     def setUp(self):
         Queue.query.delete()

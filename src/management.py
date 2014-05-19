@@ -16,8 +16,10 @@ class PulseManagementException(Exception):
 
 class PulseManagementAPI(object):
 
-    def __init__(self, host=DEFAULT_RABBIT_HOST, management_port=DEFAULT_RABBIT_MANAGEMENT_PORT,
-                 user=DEFAULT_RABBIT_USER, password=DEFAULT_RABBIT_PASSWORD):
+    def __init__(self, host=DEFAULT_RABBIT_HOST,
+                 management_port=DEFAULT_RABBIT_MANAGEMENT_PORT,
+                 user=DEFAULT_RABBIT_USER,
+                 password=DEFAULT_RABBIT_PASSWORD):
         self.host = host
         self.management_port = management_port
         self.management_user = user
@@ -28,7 +30,8 @@ class PulseManagementAPI(object):
         request = requests.Request(
             method, 'http://{}:{}/api/{}'.format(
                 self.host, self.management_port, path),
-            auth=(self.management_user, self.management_password), data=json.dumps(data)).prepare()
+            auth=(self.management_user, self.management_password),
+            data=json.dumps(data)).prepare()
         request.headers['Content-type'] = 'application/json'
         response = session.send(request)
 
@@ -58,9 +61,11 @@ class PulseManagementAPI(object):
     def purge_queue(self, vhost, queue):
         vhost = quote(vhost, '')
         queue = quote(queue, '')
-        return self._api_request('/api/queues/{}/{}/contents'.format(vhost, queue))
+        return self._api_request('/api/queues/{}/{}/contents'.format(vhost,
+                                                                     queue))
 
-    def queue_messages(self, vhost, queue, count, truncate=None, requeue=True, encoding='auto'):
+    def queue_messages(self, vhost, queue, count, truncate=None, requeue=True,
+                       encoding='auto'):
         vhost = quote(vhost, '')
         queue = quote(queue, '')
 
@@ -68,7 +73,8 @@ class PulseManagementAPI(object):
         if truncate:
             data['truncate'] = truncate
 
-        return self._api_request('/api/queues/{}/{}/get'.format(vhost, queue), method='POST', data=data)
+        return self._api_request('/api/queues/{}/{}/get'.format(vhost, queue),
+                                 method='POST', data=data)
 
     def delete_queue(self, vhost, queue):
         vhost = quote(vhost, '')
@@ -134,8 +140,8 @@ class PulseManagementAPI(object):
         name = quote(name, '')
         return self._api_request('exchanges/{}/{}'.format(vhost, name))
 
-    def create_exchange(self, vhost, name, type="direct", auto_delete=False, durable=True,
-                        internal=False, arguments=None):
+    def create_exchange(self, vhost, name, type="direct", auto_delete=False,
+                        durable=True, internal=False, arguments=None):
         arguments = arguments or list()
         vhost = quote(vhost, '')
         name = quote(name, '')
