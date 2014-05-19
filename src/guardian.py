@@ -55,11 +55,11 @@ class PulseGuardian(object):
             logger.info("New queue '{}' encountered. "
                         "Adding to the database.".format(q_name))
             queue = Queue(name=q_name, owner=None)
-            db_session.add(queue)
-            db_session.commit()
 
         # Update the saved queue size.
         queue.size = q_size
+        db_session.add(queue)
+        db_session.commit()
 
         # If we don't know who created the queue...
         if queue.owner is None:
@@ -86,11 +86,8 @@ class PulseGuardian(object):
             logger.info(
                 "Assigning queue '{}' to user {}.".format(q_name, user))
             queue.owner = user
-
-
-        # Commit any changes to the queue.
-        db_session.add(queue)
-        db_session.commit()
+            db_session.add(queue)
+            db_session.commit()
 
 
     def monitor_queues(self, queues):
