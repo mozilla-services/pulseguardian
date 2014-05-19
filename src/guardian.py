@@ -4,6 +4,7 @@
 
 import time
 import logging
+import optparse
 
 from model.base import init_db, db_session
 from model.user import User
@@ -15,6 +16,8 @@ import config
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+DEFAULT_LOGLEVEL = 'INFO'
 
 class PulseGuardian(object):
 
@@ -210,6 +213,21 @@ now back to normal ({} ready messages, {} total messages).
 
 
 if __name__ == '__main__':
+    # Parsing parameters
+    parser = optparse.OptionParser()
+    parser.add_option('--log', action='store', dest='loglevel',
+                      default=DEFAULT_LOGLEVEL,
+                      help='logging level; defaults to "%s"'
+                      % DEFAULT_LOGLEVEL)
+    (opts, args) = parser.parse_args()
+
+    # Configuring logging
+    loglevel = opts.loglevel
+    numeric_level = getattr(logging, loglevel.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError('Invalid log level: %s' % loglevel)
+    logger.setLevel(level=numeric_level)
+
     # Initialize the database if necessary.
     init_db()
 

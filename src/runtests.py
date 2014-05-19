@@ -7,6 +7,7 @@ import time
 import unittest
 import uuid
 import sys
+import logging
 
 from mozillapulse import consumers, publishers
 from mozillapulse.messages.test import TestMessage
@@ -38,6 +39,7 @@ CONSUMER_EMAIL = 'guardtest@guardtest.com'
 
 TEST_WARN_SIZE = 20
 TEST_DELETE_SIZE = 30
+DEFAULT_LOGLEVEL = 'INFO'
 
 # Global pulse configuration.
 pulse_cfg = dict()
@@ -78,11 +80,6 @@ class GuardianTest(unittest.TestCase):
     QUEUE_CHECK_PERIOD = 0.05
     QUEUE_CHECK_ATTEMPTS = 4000
 
-    def _build_message(self, msg_id):
-        msg = TestMessage()
-        msg.set_data('id', msg_id)
-        return msg
-
     def setUp(self):
         init_and_clear_db()
         self.management_api = PulseManagementAPI()
@@ -104,10 +101,17 @@ class GuardianTest(unittest.TestCase):
         self.publisher = self.publisher_class(**pulse_cfg)
 
     def tearDown(self):
-        self.terminate_proc()
+        self._terminate_proc()
+        for queue in Queue.query.all():
+            self.management_api.delete_queue(vhost=DEFAULT_RABBIT_VHOST, queue=queue.name)
         init_and_clear_db()
 
-    def terminate_proc(self):
+    def _build_message(self, msg_id):
+        msg = TestMessage()
+        msg.set_data('id', msg_id)
+        return msg
+
+    def _terminate_proc(self):
         if self.proc:
             self.proc.terminate()
             self.proc.join()
@@ -125,20 +129,7 @@ class GuardianTest(unittest.TestCase):
             time.sleep(self.QUEUE_CHECK_PERIOD)
         self.assertEqual(consumer.queue_exists(), queue_should_exist)
 
-    def _get_verify_msg(self, msg):
-        try:
-            received_data = self.proc.queue.get(timeout=5)
-        except Queue.Empty:
-            self.fail('did not receive message from consumer process')
-        self.assertEqual(msg.routing_key, received_data['_meta']['routing_key'])
-        received_payload = {}
-        for k, v in received_data['payload'].iteritems():
-            received_payload[k.encode('ascii')] = v.encode('ascii')
-        self.assertEqual(msg.data, received_payload)
-
     def test_warning(self):
-        self.management_api.delete_all_queues()
-
         # Publish some messages
         for i in xrange(10):
             msg = self._build_message(0)
@@ -157,7 +148,7 @@ class GuardianTest(unittest.TestCase):
             time.sleep(0.2)
 
         # Terminate the consumer process
-        self.terminate_proc()
+        self._terminate_proc()
 
         # Queue should still exist.
         self._wait_for_queue(self.consumer_cfg)
@@ -206,8 +197,6 @@ class GuardianTest(unittest.TestCase):
         self.assertEqual(queues_to_warn_bis, queues_to_warn)
 
     def test_delete(self):
-        self.management_api.delete_all_queues()
-
         # Publish some messages
         for i in xrange(10):
             msg = self._build_message(0)
@@ -226,7 +215,7 @@ class GuardianTest(unittest.TestCase):
             time.sleep(0.2)
 
         # Terminate the consumer process
-        self.terminate_proc()
+        self._terminate_proc()
 
         # Queue should still exist.
         self._wait_for_queue(self.consumer_cfg)
@@ -303,6 +292,14 @@ class ModelTest(unittest.TestCase):
 
 def main(pulse_opts):
     global pulse_cfg
+
+    # Configuring logging
+    loglevel = pulse_opts['loglevel']
+    numeric_level = getattr(logging, loglevel.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError('Invalid log level: %s' % loglevel)
+    logging.disable(level=numeric_level - 1)
+
     pulse_cfg.update(pulse_opts)
     unittest.main(argv=sys.argv[0:1])
 
@@ -330,5 +327,9 @@ if __name__ == '__main__':
                       default=DEFAULT_RABBIT_PASSWORD,
                       help='password of pulse RabbitMQ user; defaults to "%s"'
                       % DEFAULT_RABBIT_PASSWORD)
+    parser.add_option('--log', action='store', dest='loglevel',
+                      default=DEFAULT_LOGLEVEL,
+                      help='logging level; defaults to "%s"'
+                      % DEFAULT_LOGLEVEL)
     (opts, args) = parser.parse_args()
     main(opts.__dict__)
