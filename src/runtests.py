@@ -233,15 +233,21 @@ class GuardianTest(unittest.TestCase):
         # Wait some time for published messages to be taken into account.
         for i in xrange(10):
             time.sleep(0.3)
-            queues_to_delete = {q_data['name'] for q_data
+            queues_to_delete = [q_data['name'] for q_data
                                 in self.management_api.queues()
                                 if q_data['messages_ready']
-                                   > self.guardian.del_queue_size}
+                                   > self.guardian.del_queue_size]
             if queues_to_delete:
                 break
 
         # Test that there are some queues that should be deleted.
         self.assertTrue(len(queues_to_delete) > 0)
+
+        # Setting up a callback to capture deleted queues
+        deleted_queues = []
+        def on_delete(queue):
+            deleted_queues.append(queue)
+        self.guardian.on_delete = on_delete
 
         # Monitor the queues; this should create the queue object and assign
         # it to the user.
@@ -253,7 +259,7 @@ class GuardianTest(unittest.TestCase):
         self.assertTrue(not any(q in queues_to_delete for q
                                 in self.management_api.queues()))
         # And that they were deleted by guardian...
-        self.assertEqual(queues_to_delete, self.guardian.deleted_queues)
+        self.assertEqual(sorted(queues_to_delete), sorted(deleted_queues))
         # And that no queue has overgrown.
         queues_to_delete = [q_data['name'] for q_data
                             in self.management_api.queues()

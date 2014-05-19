@@ -20,17 +20,30 @@ logger.setLevel(logging.INFO)
 DEFAULT_LOGLEVEL = 'INFO'
 
 class PulseGuardian(object):
+    """Monitors RabbitMQ queues: assigns owners to queues, warn owners
+    when a queue have a dangerously high number of unread messages, and
+    deletes a queue if its unread messages exceed an even higher threshold.
 
+    :param api: An instance of PulseManagementAPI, to communicate with rabbitmq.
+    :param emails: Sends emails to queue owners if True.
+    :param warn_queue_size: Warning threshold.
+    :param del_queue_size: Deletion threshold.
+    :param on_warn: Callback called with a queue's name when it's warned.
+    :param on_delete: Callback called with a queue's name when it's deleted.
+    """
     def __init__(self, api, emails=True, warn_queue_size=config.warn_queue_size,
-                 del_queue_size=config.del_queue_size):
+                 del_queue_size=config.del_queue_size, on_warn=None, on_delete=None):
+        if del_queue_size < warn_queue_size:
+            raise ValueError("Deletion threshold can't be smaller than the warning threshold.")
+
         self.api = api
 
         self.emails = emails
         self.warn_queue_size = warn_queue_size
         self.del_queue_size = del_queue_size
 
-        self.warned_queues = set()
-        self.deleted_queues = set()
+        self.on_warn = on_warn
+        self.on_delete = on_delete
 
     def delete_zombie_queues(self, queues):
         db_queues = Queue.query.all()
@@ -105,7 +118,8 @@ class PulseGuardian(object):
                     q_name, q_size, self.del_queue_size))
                 if queue.owner:
                     self.deletion_email(queue.owner, queue_data)
-                self.deleted_queues.add(queue.name)
+                if self.on_delete:
+                    self.on_delete(queue.name)
                 self.api.delete_queue(vhost=q_vhost, queue=q_name)
                 db_session.delete(queue)
                 db_session.commit()
@@ -118,7 +132,8 @@ class PulseGuardian(object):
                 logger.warning("Warning queue '{}' owner. Queue size = {}; warn_queue_size = {}".format(
                     q_name, q_size, self.warn_queue_size))
                 queue.warned = True
-                self.warned_queues.add(queue.name)
+                if self.on_warn:
+                    self.on_warn(queue.name)
                 self.warning_email(queue.owner, queue_data)
             elif q_size <= self.warn_queue_size and queue.warned:
                 # A previously warned queue got out of the warning threshold;
