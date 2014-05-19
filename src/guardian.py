@@ -46,7 +46,7 @@ class PulseGuardian(object):
 
             # If the queue doesn't exist in the db, create it.
             if queue is None:
-                logger.info(". New queue '{}' encountered. "
+                logger.info("New queue '{}' encountered. "
                             "Adding to the database.".format(q_name))
                 queue = Queue(name=q_name, owner=None)
                 db_session.add(queue)
@@ -91,7 +91,7 @@ class PulseGuardian(object):
 
                 # Assign the user to the queue.
                 logger.info(
-                    ". Assigning queue '{}'  to user {}.".format(q_name, user))
+                    "Assigning queue '{}'  to user {}.".format(q_name, user))
                 queue.owner = user
 
             if q_size > self.warn_queue_size and not queue.warned:

@@ -28,7 +28,7 @@ def init_and_clear_db():
     Queue.query.delete()
     User.query.delete()
 
-    logger.info('Finished initializing database')
+    logger.info('Finished initializing database.')
 
 
 def dummy_data():
@@ -60,7 +60,6 @@ def dummy_data():
     db_session.add(dummy_queue)
     db_session.commit()
 
-
     # Test admin user
     admin = User.new_user(
         email='admin@admin.com', username='dummy-admin', password='dummy-admin', admin=True)
@@ -68,7 +67,7 @@ def dummy_data():
     db_session.add(admin)
     db_session.commit()
 
-    logger.info('Finished generating dummy data')
+    logger.info('Finished generating dummy data.')
 
 if __name__ == '__main__':
     init_and_clear_db()

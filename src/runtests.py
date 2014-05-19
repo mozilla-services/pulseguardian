@@ -35,6 +35,9 @@ CONSUMER_USER = 'guardtest'
 CONSUMER_PASSWORD = 'guardtest'
 CONSUMER_EMAIL = 'guardtest@guardtest.com'
 
+TEST_WARN_SIZE = 20
+TEST_DELETE_SIZE = 30
+
 # Global pulse configuration.
 pulse_cfg = dict()
 
@@ -82,7 +85,8 @@ class GuardianTest(unittest.TestCase):
     def setUp(self):
         init_and_clear_db()
         self.management_api = PulseManagementAPI()
-        self.guardian = PulseGuardian(self.management_api, emails=False)
+        self.guardian = PulseGuardian(self.management_api, warn_queue_size=TEST_WARN_SIZE,
+                                      del_queue_size=TEST_DELETE_SIZE, emails=False)
 
         self.consumer_cfg = pulse_cfg.copy()
         self.consumer_cfg['applabel'] = str(uuid.uuid1())
@@ -90,13 +94,11 @@ class GuardianTest(unittest.TestCase):
         # Configure / Create the test user to be used for message consumption
         self.consumer_cfg['user'], self.consumer_cfg['password'] = CONSUMER_USER, CONSUMER_PASSWORD
         username, password = self.consumer_cfg['user'], self.consumer_cfg['password']
-        self.user = User.query.filter(User.username == username).first()
-        if self.user is None:
-            self.user = User.new_user(username=username, email=CONSUMER_EMAIL,
-                                      password=password)
-            self.user.activate(self.management_api)
-            db_session.add(self.user)
-            db_session.commit()
+        self.user = User.new_user(username=username, email=CONSUMER_EMAIL,
+                                  password=password)
+        self.user.activate(self.management_api)
+        db_session.add(self.user)
+        db_session.commit()
 
         self.publisher = self.publisher_class(**pulse_cfg)
 
@@ -163,7 +165,7 @@ class GuardianTest(unittest.TestCase):
         db_session.refresh(self.user)
 
         # Queue multiple messages while no consumer exists.
-        for i in xrange(config.warn_queue_size + 1):
+        for i in xrange(self.guardian.warn_queue_size + 1):
             msg = self._build_message(i)
             self.publisher.publish(msg)
 
@@ -173,9 +175,9 @@ class GuardianTest(unittest.TestCase):
             time.sleep(0.3)
             queues_to_warn = {q_data['name'] for q_data
                               in self.management_api.queues()
-                              if config.warn_queue_size
+                              if self.guardian.warn_queue_size
                                  < q_data['messages_ready']
-                                 <= config.del_queue_size}
+                                 <= self.guardian.del_queue_size}
             if queues_to_warn:
                 break
 
@@ -197,13 +199,10 @@ class GuardianTest(unittest.TestCase):
         # The queues that needed to be warned haven't been deleted.
         queues_to_warn_bis = {q_data['name'] for q_data
                               in self.management_api.queues()
-                              if config.warn_queue_size
+                              if self.guardian.warn_queue_size
                                  < q_data['messages_ready']
-                                 <= config.del_queue_size}
+                                 <= self.guardian.del_queue_size}
         self.assertEqual(queues_to_warn_bis, queues_to_warn)
-
-        # Reinitialize the db.
-        init_and_clear_db()
 
     def test_delete(self):
         self.management_api.delete_all_queues()
@@ -237,7 +236,7 @@ class GuardianTest(unittest.TestCase):
         self.assertTrue(len(self.user.queues) > 0)
 
         # Queue multiple messages while no consumer exists.
-        for i in xrange(config.del_queue_size + 1):
+        for i in xrange(self.guardian.del_queue_size + 1):
             msg = self._build_message(i)
             self.publisher.publish(msg)
 
@@ -247,7 +246,7 @@ class GuardianTest(unittest.TestCase):
             queues_to_delete = {q_data['name'] for q_data
                                 in self.management_api.queues()
                                 if q_data['messages_ready']
-                                   > config.del_queue_size}
+                                   > self.guardian.del_queue_size}
             if queues_to_delete:
                 break
 
@@ -268,11 +267,8 @@ class GuardianTest(unittest.TestCase):
         # And that no queue has overgrown.
         queues_to_delete = [q_data['name'] for q_data
                             in self.management_api.queues()
-                            if q_data['messages_ready'] > config.del_queue_size]
+                            if q_data['messages_ready'] > self.guardian.del_queue_size]
         self.assertTrue(len(queues_to_delete) == 0)
-
-        # Reinitialize the db
-        init_and_clear_db()
 
 
 class ModelTest(unittest.TestCase):
