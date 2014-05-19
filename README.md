@@ -25,7 +25,9 @@ A system to manage Pulse: creates users and handle overgrowing queues. More info
 
 ## Usage
 
-Make sure `rabbitmq-server` is running before you run the following:
+Make sure `rabbitmq-server` is running before you run the following commands.
+
+**WARNING:**  the tests will mess with your local rabbitmq instance (wiping out existing queues, possibly deleting users) so make sure you don't run the tests on a production instance.
 
 * Initialize the db with: `python src/dbinit.py`. *WARNING:* this removes any existing data the app might have previously stored in the databse.
 * Optional: Generate some dummy data (dummy user account, admin account): `python src/dbinit.py --dummy`
