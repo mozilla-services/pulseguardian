@@ -14,7 +14,7 @@ import config
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class PulseGuardian(object):
 
@@ -42,22 +42,61 @@ class PulseGuardian(object):
             db_session.delete(queue)
         db_session.commit()
 
+    def update_queue_information(self, queue_data):
+        q_size, q_name = (queue_data['messages'],
+                          queue_data['name'])
+        queue = Queue.query.filter(Queue.name == q_name).first()
+
+        # If the queue doesn't exist in the db, create it.
+        if queue is None:
+            logger.info("New queue '{}' encountered. "
+                        "Adding to the database.".format(q_name))
+            queue = Queue(name=q_name, owner=None)
+            db_session.add(queue)
+            db_session.commit()
+
+        # Update the saved queue size.
+        queue.size = q_size
+
+        # If we don't know who created the queue...
+        if queue.owner is None:
+            logger.debug("Queue '{}' owner's unknown.".format(q_name))
+
+            # If no client is currently consuming the queue, just skip it.
+            if queue_data['consumers'] == 0:
+                logger.debug("Queue '{}' skipped (no owner, no current consumer).".format(q_name))
+                return
+
+            # Otherwise look for its user.
+            owner_name = self.api.queue_owner(queue_data)
+
+            user = User.query.filter(User.username == owner_name).first()
+
+            # If the queue was created by a user that isn't in the
+            # pulseguardian database, skip the queue.
+            if user is None:
+                logger.info(
+                    "Queue '{}' owner, {}, isn't in the db. Skipping the queue.".format(q_name, owner_name))
+                return
+
+            # Assign the user to the queue.
+            logger.info(
+                "Assigning queue '{}' to user {}.".format(q_name, user))
+            queue.owner = user
+
+
+        # Commit any changes to the queue.
+        db_session.add(queue)
+        db_session.commit()
+
+
     def monitor_queues(self, queues):
         for queue_data in queues:
             q_size, q_name, q_vhost = (queue_data['messages'],
                                        queue_data['name'], queue_data['vhost'])
+            # Updating the queue's information in the database (owner, size).
+            self.update_queue_information(queue_data)
             queue = Queue.query.filter(Queue.name == q_name).first()
-
-            # If the queue doesn't exist in the db, create it.
-            if queue is None:
-                logger.info("New queue '{}' encountered. "
-                            "Adding to the database.".format(q_name))
-                queue = Queue(name=q_name, owner=None)
-                db_session.add(queue)
-                db_session.commit()
-
-            # Update the saved queue size.
-            queue.size = q_size
 
             # If a queue is over the deletion size, regardless of it having an
             # owner or not, delete it.
@@ -72,31 +111,8 @@ class PulseGuardian(object):
                 db_session.commit()
                 continue
 
-            # If we don't know who created the queue...
             if queue.owner is None:
-                # logger.info(". Queue '{}' owner's unknown.".format(q_name))
-
-                # If no client is currently consuming the queue, just skip it.
-                if queue_data['consumers'] == 0:
-                    # logger.info(". Queue '{}' skipped (no owner, no current consumer).".format(q_name))
-                    continue
-
-                # Otherwise look for its user.
-                owner_name = self.api.queue_owner(queue_data)
-
-                user = User.query.filter(User.username == owner_name).first()
-
-                # If the queue was created by a user that isn't in the
-                # pulseguardian database, skip the queue.
-                if user is None:
-                    logger.info(
-                        ". Queue '{}' owner, {}, isn't in the db. Skipping the queue.".format(q_name, owner_name))
-                    continue
-
-                # Assign the user to the queue.
-                logger.info(
-                    "Assigning queue '{}'  to user {}.".format(q_name, user))
-                queue.owner = user
+                continue
 
             if q_size > self.warn_queue_size and not queue.warned:
                 logger.warning("Warning queue '{}' owner. Queue size = {}; warn_queue_size = {}".format(
