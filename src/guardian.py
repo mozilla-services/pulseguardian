@@ -168,6 +168,7 @@ Make sure your clients are running correctly to avoid those warnings.
                       password=config.email_password, text_data=body)
 
     def guard(self):
+        logger.info("PulseGuardian started")
         while True:
             queues = self.api.queues()
 
@@ -183,7 +184,6 @@ if __name__ == '__main__':
 
     api = PulseManagementAPI(host=config.rabbit_host,
                              management_port=config.rabbit_management_port,
-                             vhost=config.rabbit_vhost,
                              user=config.rabbit_user,
                              password=config.rabbit_password)
     pulse_guardian = PulseGuardian(api)
