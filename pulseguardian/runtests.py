@@ -15,7 +15,6 @@ from mozillapulse.messages.test import TestMessage
 import config
 # Changing the DB for the tests before the model is initialized
 config.sqlalchemy_engine_url = 'sqlite:///pulseguardian_test.db'
-
 from management import PulseManagementAPI
 from guardian import PulseGuardian
 from model.user import User
@@ -272,12 +271,10 @@ class ModelTest(unittest.TestCase):
     """Tests the underlying model (users and queues)."""
 
     def setUp(self):
-        Queue.query.delete()
-        User.query.delete()
+        init_and_clear_db()
 
     def tearDown(self):
-        Queue.query.delete()
-        User.query.delete()
+        init_and_clear_db()
 
     def test_user(self):
         user = User.new_user(email='dUmMy@EmAil.com',
