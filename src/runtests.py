@@ -9,7 +9,7 @@ import uuid
 import sys
 
 from mozillapulse import consumers, publishers
-from mozillapulse.messages.base import GenericMessage
+from mozillapulse.messages.test import TestMessage
 
 import config
 # Changing the DB for the tests before the model is initialized
@@ -299,13 +299,6 @@ class ModelTest(unittest.TestCase):
         self.assertEqual(User.query.filter(User.email == 'dummy@email.com').first(), user)
         self.assertEqual(User.query.filter(User.username == 'dummy').first(), user)
         self.assertIsNone(User.query.filter(User.username == 'DOMMY').first())
-
-
-class TestMessage(GenericMessage):
-
-    def __init__(self):
-        super(TestMessage, self).__init__()
-        self.routing_parts.append('test')
 
 
 def main(pulse_opts):
