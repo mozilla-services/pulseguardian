@@ -46,7 +46,8 @@ class PulseManagementAPI(object):
             return response.json()
         except ValueError:
             raise PulseManagementException(
-                "Error when calling '{} {}' with data={}. Received : {}".format(method, path, data, response.content))
+                "Error when calling '{} {}' with data={}. Received : {}".format(method, path,
+                                                                                data, response.content))
 
     # Queues
 

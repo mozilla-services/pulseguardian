@@ -18,7 +18,9 @@ app = Flask(__name__)
 app.secret_key = config.flask_secret_key
 
 # Initializing the rabbitmq management API
-pulse_management = PulseManagementAPI(host=config.rabbit_host, user=config.rabbit_user, password=config.rabbit_password)
+pulse_management = PulseManagementAPI(host=config.rabbit_host,
+                                      user=config.rabbit_user,
+                                      password=config.rabbit_password)
 
 # Initializing the databse
 init_db()
@@ -110,7 +112,6 @@ def signup():
     if User.query.filter(User.email == email).first():
         errors.append("A user with the same email already exists")
 
-
     # Checking if a user exists in RabbitMQ OR in our db
     try:
         pulse_management.user(username=username)
@@ -189,4 +190,6 @@ def logout():
 
 
 if __name__ == "__main__":
-    app.run(host=config.flask_host, port=config.flask_port, debug=config.flask_debug_mode)
+    app.run(host=config.flask_host,
+            port=config.flask_port,
+            debug=config.flask_debug_mode)

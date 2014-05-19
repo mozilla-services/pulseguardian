@@ -19,6 +19,7 @@ logger.setLevel(logging.INFO)
 
 DEFAULT_LOGLEVEL = 'INFO'
 
+
 class PulseGuardian(object):
     """Monitors RabbitMQ queues: assigns owners to queues, warn owners
     when a queue have a dangerously high number of unread messages, and
@@ -50,8 +51,8 @@ class PulseGuardian(object):
 
         # Filter queues that are in the database but no longer on RabbitMQ.
         alive_queues_names = {q['name'] for q in queues}
-        zombie_queues = {q for q in db_queues if not q.name
-                         in alive_queues_names}
+        zombie_queues = {q for q in db_queues if q.name
+                         not in alive_queues_names}
 
         # Delete those queues.
         for queue in zombie_queues:
@@ -102,7 +103,6 @@ class PulseGuardian(object):
             db_session.add(queue)
             db_session.commit()
 
-
     def monitor_queues(self, queues):
         for queue_data in queues:
             q_size, q_name, q_vhost = (queue_data['messages'],
@@ -139,7 +139,7 @@ class PulseGuardian(object):
                 # A previously warned queue got out of the warning threshold;
                 # its owner should not be warned again.
                 logger.warning("Queue '{}' was in warning zone but is OK now".format(
-                q_name, q_size, self.del_queue_size))
+                               q_name, q_size, self.del_queue_size))
                 queue.warned = False
                 self.back_to_normal_email(queue.owner, queue_data)
 

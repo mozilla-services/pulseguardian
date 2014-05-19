@@ -167,8 +167,8 @@ class GuardianTest(unittest.TestCase):
             queues_to_warn = {q_data['name'] for q_data
                               in self.management_api.queues()
                               if self.guardian.warn_queue_size
-                                 < q_data['messages_ready']
-                                 <= self.guardian.del_queue_size}
+                              < q_data['messages_ready']
+                              <= self.guardian.del_queue_size}
             if queues_to_warn:
                 break
 
