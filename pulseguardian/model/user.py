@@ -17,9 +17,8 @@ def hash_password(password, salt):
 
 
 class User(Base):
-    """
-        User class, linked to a rabbitmq user (with the same username)
-        once activated. Provides access to a user's queues.
+    """User class, linked to a rabbitmq user (with the same username)
+    once activated. Provides access to a user's queues.
     """
 
     __tablename__ = 'users'
@@ -45,9 +44,8 @@ class User(Base):
         return hash_password(password, self.salt) == self.secret_hash
 
     def activate(self, management_api):
-        """
-            Activates a user's account and subsequently creates a
-            user with the same username and password
+        """Activates a user's account and subsequently creates a
+        user with the same username and password
         """
         self.activated = True
         # Creating the appropriate rabbitmq user
@@ -64,9 +62,8 @@ class User(Base):
 
     @staticmethod
     def new_user(email, username, password, admin=False):
-        """
-            Initializes a new user, generating a salt and encrypting
-            his password. Then creates a
+        """Initializes a new user, generating a salt and encrypting
+        his password. Then creates a
         """
         email = email.lower()
         token = os.urandom(16).encode('hex')
