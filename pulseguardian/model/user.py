@@ -5,7 +5,7 @@
 import os
 import hashlib
 
-from sqlalchemy import Column, String, Boolean
+from sqlalchemy import Column, String, Integer, Boolean
 from sqlalchemy.orm import relationship
 
 from base import Base, db_session
@@ -24,8 +24,9 @@ class User(Base):
 
     __tablename__ = 'users'
 
+    id = Column(Integer, primary_key=True)
     username = Column(String(100), unique=True)
-    email = Column(String(100), primary_key=True)
+    email = Column(String(100))
 
     # Only stored temporarly
     password = Column(String(100))

@@ -11,7 +11,7 @@ class Queue(Base):
     __tablename__ = 'queues'
 
     name = Column(String(40), primary_key=True)
-    owner_id = Column(String(40), ForeignKey('users.email'))
+    owner_id = Column(Integer, ForeignKey('users.id'))
     size = Column(Integer)
 
     warned = Column(Boolean)

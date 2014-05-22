@@ -86,7 +86,7 @@ class PulseGuardian(object):
             # If no client is currently consuming the queue, just skip it.
             if queue_data['consumers'] == 0:
                 logger.debug("Queue '{}' skipped (no owner, no current consumer).".format(q_name))
-                return
+                return queue
 
             # Otherwise look for its user.
             owner_name = self.api.queue_owner(queue_data)
@@ -97,8 +97,8 @@ class PulseGuardian(object):
             # pulseguardian database, skip the queue.
             if user is None:
                 logger.info(
-                    "Queue '{}' owner, {}, isn't in the db. Skipping the queue.".format(q_name, owner_name))
-                return
+                    "Queue '{}' owner, {}, isn't in the db. Creating the user.".format(q_name, owner_name))
+                user = User.new_user(username=owner_name, email=None, password=None)
 
             # Assign the user to the queue.
             logger.info(
@@ -107,24 +107,23 @@ class PulseGuardian(object):
             db_session.add(queue)
             db_session.commit()
 
+        return queue
+
     def monitor_queues(self, queues):
         for queue_data in queues:
-            q_size, q_name, q_vhost = (queue_data['messages'],
-                                       queue_data['name'], queue_data['vhost'])
             # Updating the queue's information in the database (owner, size).
-            self.update_queue_information(queue_data)
-            queue = Queue.query.filter(Queue.name == q_name).first()
+            queue = self.update_queue_information(queue_data)
 
             # If a queue is over the deletion size, regardless of it having an
             # owner or not, delete it.
-            if q_size > self.del_queue_size:
+            if queue.size > self.del_queue_size:
                 logger.warning("Queue '{}' deleted. Queue size = {}; del_queue_size = {}".format(
-                    q_name, q_size, self.del_queue_size))
+                    queue.name, queue.size, self.del_queue_size))
                 if queue.owner:
                     self.deletion_email(queue.owner, queue_data)
                 if self.on_delete:
                     self.on_delete(queue.name)
-                self.api.delete_queue(vhost=q_vhost, queue=q_name)
+                self.api.delete_queue(vhost=queue_data['vhost'], queue=queue.name)
                 db_session.delete(queue)
                 db_session.commit()
                 continue
@@ -132,18 +131,18 @@ class PulseGuardian(object):
             if queue.owner is None:
                 continue
 
-            if q_size > self.warn_queue_size and not queue.warned:
+            if queue.size > self.warn_queue_size and not queue.warned:
                 logger.warning("Warning queue '{}' owner. Queue size = {}; warn_queue_size = {}".format(
-                    q_name, q_size, self.warn_queue_size))
+                    queue.name, queue.size, self.warn_queue_size))
                 queue.warned = True
                 if self.on_warn:
                     self.on_warn(queue.name)
                 self.warning_email(queue.owner, queue_data)
-            elif q_size <= self.warn_queue_size and queue.warned:
+            elif queue.size <= self.warn_queue_size and queue.warned:
                 # A previously warned queue got out of the warning threshold;
                 # its owner should not be warned again.
                 logger.warning("Queue '{}' was in warning zone but is OK now".format(
-                               q_name, q_size, self.del_queue_size))
+                               queue.name, queue.size, self.del_queue_size))
                 queue.warned = False
                 self.back_to_normal_email(queue.owner, queue_data)
 
@@ -160,9 +159,6 @@ class PulseGuardian(object):
         return exchange
 
     def warning_email(self, user, queue_data):
-        if not self.emails:
-            return
-
         exchange = self._exchange_from_queue(queue_data)
 
         subject = 'Pulse warning: queue "{}" is overgrowing'.format(
@@ -177,14 +173,12 @@ durable queues.
 '''.format(queue_data['name'], exchange, queue_data['messages_ready'],
            queue_data['messages'], self.del_queue_size)
 
-        sendemail(subject=subject, from_addr=config.email_from,
-                  to_addrs=[user.email], username=config.email_account,
-                  password=config.email_password, text_data=body)
+        if self.emails and user.email is not None:
+            sendemail(subject=subject, from_addr=config.email_from,
+                      to_addrs=[user.email], username=config.email_account,
+                      password=config.email_password, text_data=body)
 
     def deletion_email(self, user, queue_data):
-        if not self.emails:
-            return
-
         exchange = self._exchange_from_queue(queue_data)
 
         subject = 'Pulse warning: queue "{}" has been deleted'.format(queue_data['name'])
@@ -197,14 +191,12 @@ durable queues.
 '''.format(queue_data['name'], exchange, queue_data['messages'],
            self.del_queue_size)
 
-        sendemail(subject=subject, from_addr=config.email_from,
-                  to_addrs=[user.email], username=config.email_account,
-                  password=config.email_password, text_data=body)
+        if self.emails and user.email is not None:
+            sendemail(subject=subject, from_addr=config.email_from,
+                      to_addrs=[user.email], username=config.email_account,
+                      password=config.email_password, text_data=body)
 
     def back_to_normal_email(self, user, queue_data):
-        if not self.emails:
-            return
-
         exchange = self._exchange_from_queue(queue_data)
 
         subject = 'Pulse warning: queue "{}" is back to normal'.format(queue_data['name'])
@@ -213,9 +205,11 @@ now back to normal ({} ready messages, {} total messages).
 '''.format(queue_data['name'], exchange, queue_data['messages_ready'],
            queue_data['messages'], self.del_queue_size)
 
-        sendemail(subject=subject, from_addr=config.email_from,
-                  to_addrs=[user.email], username=config.email_account,
-                  password=config.email_password, text_data=body)
+
+        if self.emails and user.email is not None:
+            sendemail(subject=subject, from_addr=config.email_from,
+                      to_addrs=[user.email], username=config.email_account,
+                      password=config.email_password, text_data=body)
 
     def guard(self):
         logger.info("PulseGuardian started")
