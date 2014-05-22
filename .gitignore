@@ -1,5 +1,7 @@
 # Custom ignores
 pulseguardian/config.py
+*.log
+*.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

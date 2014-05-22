@@ -4,6 +4,7 @@
 
 import time
 import logging
+import logging.handlers
 import optparse
 
 from model.base import init_db, db_session
@@ -15,6 +16,9 @@ import config
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
+handler = logging.handlers.RotatingFileHandler(config.GUARDIAN_LOG_PATH, mode='a+',
+                                               maxBytes=config.MAX_LOG_SIZE)
+logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
 DEFAULT_LOGLEVEL = 'INFO'
