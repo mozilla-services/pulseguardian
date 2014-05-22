@@ -1,5 +1,5 @@
 # Custom ignores
-src/config.py
+pulseguardian/config.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

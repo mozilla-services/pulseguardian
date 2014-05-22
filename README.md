@@ -25,13 +25,13 @@ A system to manage Pulse: creates users and handle overgrowing queues. More info
 
 ## Usage
 
-Make sure `rabbitmq-server` is running before you run the following commands.
+Make sure `rabbitmq-server` is running and you're inside the source directory (`pulseguardian`) before you run the following commands.
 
 **WARNING:**  the tests will mess with your local rabbitmq instance (wiping out existing queues, possibly deleting users) so make sure you don't run the tests on a production instance.
 
-* Initialize the db with: `python pulseguardian/dbinit.py`. *WARNING:* this removes any existing data the app might have previously stored in the databse.
-* Optional: Generate some dummy data (dummy user account, admin account): `python pulseguardian/dbinit.py --dummy`
-* Run the Pulse Guardian daemon with: `python pulseguardian/guardian.py`
-* Run the web app (for development) with: `python pulseguardian/web.py`
+* Initialize the db with: `python dbinit.py`. *WARNING:* this removes any existing data the app might have previously stored in the databse.
+* Optional: Generate some dummy data (dummy user account, admin account): `python dbinit.py --dummy`
+* Run the Pulse Guardian daemon with: `python guardian.py`
+* Run the web app (for development) with: `python web.py`
 * For production, the web app can be run with [gunicorn](https://www.digitalocean.com/community/articles/how-to-deploy-python-wsgi-apps-using-gunicorn-http-server-behind-nginx) and such.
-* Run tests with: `python pulseguardian/runtests.py`
+* Run tests with: `python runtests.py`
