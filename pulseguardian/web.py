@@ -31,7 +31,7 @@ init_db()
 
 
 def requires_login(f):
-    """  Decorator for views that requires the user to be logged-in """
+    """Decorator for views that require the user to be logged-in."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get('logged_in', None):
@@ -43,14 +43,14 @@ def requires_login(f):
 
 @app.context_processor
 def inject_user():
-    """ Injects a user and configuration in templates' context """
+    """Injects a user and configuration in templates' context."""
     user = User.query.filter(User.email == session.get('logged_in')).first()
     return dict(cur_user=user, config=config)
 
 
 @app.before_request
 def load_user():
-    """ Loads the currently logged-in user (if any) to the request context """
+    """Loads the currently logged-in user (if any) to the request context."""
     g.user = User.query.filter(User.email == session.get('logged_in')).first()
 
 
@@ -184,6 +184,7 @@ def login():
 
 
 @app.route("/logout", methods=['GET'])
+@requires_login
 def logout():
     del session['logged_in']
     return redirect('/')
