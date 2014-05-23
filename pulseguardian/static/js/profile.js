@@ -3,10 +3,10 @@ $(document).ready(function() {
 
     // Auto-reload
     var autoReload = true;
-    var reloadInterval = 10000;
+    var reloadInterval = 8000;
     setInterval(function() {
         if (autoReload) {
-            window.location.reload();
+            $('#queues-info').load('/queues');
         }
     }, reloadInterval);
     $('.autoreload').click(function() {
@@ -31,5 +31,5 @@ $(document).ready(function() {
                 $(queue).slideUp(300);
             }
         });
-    })
+    });
 });
