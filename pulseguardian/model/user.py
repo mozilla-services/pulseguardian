@@ -48,8 +48,11 @@ class User(Base):
         user with the same username and password
         """
         self.activated = True
-        # Creating the appropriate rabbitmq user
-        management_api.create_user(username=self.username, password=self.password)
+        # Creating the appropriate rabbitmq user if he doesn't already exist
+        try:
+            management_api.user(self.username)
+        except management_api.exception:
+            management_api.create_user(username=self.username, password=self.password)
         # TODO : remove configure and write permissions while letting users
         # create queues ?
         management_api.set_permission(username=self.username, vhost='/',
@@ -78,6 +81,14 @@ class User(Base):
         user.secret_hash = hash_password(password, user.salt)
 
         return user
+
+    def change_password(self, new_password):
+        # Generating a new salt
+        self.salt = os.urandom(16).encode('base_64')
+        self.secret_hash = hash_password(new_password, self.salt)
+
+        db_session.add(self)
+        db_session.commit()
 
     def __repr__(self):
         return "<User(email='{}', username='{}')>".format(self.email,

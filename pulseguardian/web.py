@@ -91,7 +91,6 @@ def queues():
 
 # API
 
-
 @app.route("/queue/<queue_name>", methods=['DELETE'])
 def delete_queue(queue_name):
     queue = Queue.query.get(queue_name)
@@ -109,7 +108,16 @@ def delete_queue(queue_name):
     return jsonify(ok=False)
 
 
-# Login / Signup / Activate user
+# Login / Signup / Activate user / Change user info
+
+def send_activation_email(user):
+    # Sending the activation email
+    activation_link = 'http://{}:{}/activate/{}/{}'.format(config.flask_host, config.flask_port,
+                                                           user.email, user.activation_token)
+    sendemail(
+        subject="Activate your Pulse account", from_addr=config.email_from, to_addrs=[user.email],
+        username=config.email_account, password=config.email_password,
+        html_data=render_template('activation_email.html', user=user, activation_link=activation_link))
 
 @app.route("/signup", methods=['POST'])
 def signup():
@@ -142,15 +150,41 @@ def signup():
     db_session.add(user)
     db_session.commit()
 
-    # Sending the activation email
-    activation_link = 'http://{}:{}/activate/{}/{}'.format(config.flask_host, config.flask_port,
-                                                           user.email, user.activation_token)
-    sendemail(
-        subject="Activate your Pulse account", from_addr=config.email_from, to_addrs=[user.email],
-        username=config.email_account, password=config.email_password,
-        html_data=render_template('activation_email.html', user=user, activation_link=activation_link))
+    send_activation_email(user)
 
     return render_template('confirm.html')
+
+@app.route("/update_info", methods=['POST'])
+@requires_login
+def update_info():
+    print request.form
+    email = request.form['email'].strip().lower()
+    password = request.form['password']
+    new_password = request.form['new-password']
+
+    messages = []
+
+    if not g.user.valid_password(password):
+        return render_template('profile.html', error="Please enter a correct password to update your information.")
+
+    if new_password:
+        g.user.change_password(new_password)
+        messages.append("Correctly updated your password.")
+
+    if email != g.user.email:
+        if User.query.filter(User.email == email).first() is not None:
+            return render_template('profile.html', error="There's already a user with that email.")
+        g.user.email = email
+        g.user.activated = False
+        db_session.add(g.user)
+        db_session.commit()
+        session['logged_in'] = g.user.email
+
+        send_activation_email(g.user)
+
+        messages.append("Correctly updated your email. Please check your new email's inbox for an activation link.")
+
+    return render_template('profile.html', messages=messages)
 
 
 @app.route("/activate/<email>/<activation_token>")

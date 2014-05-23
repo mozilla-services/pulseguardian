@@ -26,6 +26,8 @@ class PulseManagementAPI(object):
     :param user: RabbitMQ user with administrator privilege.
     :param password: Password of the RabbitMQ user.
     """
+    exception = PulseManagementException
+
     def __init__(self, host=DEFAULT_RABBIT_HOST,
                  management_port=DEFAULT_RABBIT_MANAGEMENT_PORT,
                  user=DEFAULT_RABBIT_USER,

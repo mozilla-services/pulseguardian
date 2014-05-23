@@ -3,7 +3,14 @@
 {% block body %}
     <h2>Personal information <small>{{cur_user.username}}</small></h2>
 
-    <form action="/update_user" method="post">
+    <form action="/update_info" method="post">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-info">{{message}}</div>
+            {% endfor %}
+        {% elif error %}
+            <div class="alert alert-danger">{{error}}</div>
+        {% endif %}
 
         <ul class="list-group">
             <li class="list-group-item">
