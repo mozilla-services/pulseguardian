@@ -137,11 +137,14 @@ def signup():
         in_rabbitmq = True
     except PulseManagementException:
         in_rabbitmq = False
-    if User.query.filter(User.username == username).first() or in_rabbitmq:
-        errors.append("A user with the same username already exists")
 
+    if in_rabbitmq:
+        errors.append("A user with the same username already exists in Pulse")
+    if User.query.filter(User.username == username).first():
+        errors.append("A user with the same username already exists in our database")
     if password != password_confirmation:
         errors.append("Password confirmation doesn't match")
+
     if errors:
         signup_error = "{}.".format(', '.join(errors))
         return render_template('index.html', signup_error=signup_error)
