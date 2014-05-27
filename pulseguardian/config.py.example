@@ -27,15 +27,3 @@ polling_interval = 5
 # Logging
 GUARDIAN_LOG_PATH = 'log_guardian.log'
 MAX_LOG_SIZE = 20480
-
-# Overriding configuration with os environment vars (e.g Stackato)
-import os
-import urlparse
-
-if 'DATABASE_URL' in os.environ:
-    sqlalchemy_engine_url = os.environ['DATABASE_URL']
-if 'RABBITMQ_URL' in os.environ:
-    url = urlparse.urlparse(os.environ['RABBITMQ_URL'])
-    rabbit_host = url.hostname
-    rabbit_user = url.username
-    rabbit_password = url.password
