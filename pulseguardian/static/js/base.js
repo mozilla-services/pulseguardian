@@ -1,5 +1,10 @@
-$(document).ready(function() {
+var errorMessage = function(msg) {
+    error_bar.text(msg);
+    error_bar.slideDown(300).delay(3000).slideUp(300);
+};
 
+$(document).ready(function() {
+    error_bar = $('#error-bar');
 
     // Signin/Signout callbacks
     var signinLink = $('#signin-link').click(function() {
@@ -27,7 +32,7 @@ $(document).ready(function() {
             window.location.href = res.redirect;
           },
           error: function(xhr, status, err) {
-            navigator.id.logout();
+            errorMessage("Login failure: " + err);
           }
         });
       },
@@ -39,7 +44,7 @@ $(document).ready(function() {
             window.location.reload();
           },
           error: function(xhr, status, err) {
-            alert("Logout failure: " + err);
+            errorMessage("Logout failure: " + err);
           }
         });
       }

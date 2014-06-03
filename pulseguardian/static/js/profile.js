@@ -1,6 +1,4 @@
 $(document).ready(function() {
-    var error_bar = $('#error-bar');
-
     // Auto-reload
     var autoReload = true;
     var reloadInterval = 8000;
@@ -24,8 +22,7 @@ $(document).ready(function() {
             type: 'DELETE',
             success: function(result) {
                 if (!result.ok) {
-                    error_bar.text("Couldn't delete queue '" + queue_name + "' in Pulse");
-                    error_bar.show(300).delay(3000).hide(300);
+                    errorMessage("Couldn't delete queue '" + queue_name + "' in Pulse");
                 }
 
                 $(queue).slideUp(300);
