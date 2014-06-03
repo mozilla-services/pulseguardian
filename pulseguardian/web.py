@@ -4,7 +4,8 @@
 
 from functools import wraps
 
-from flask import Flask, render_template, session, g, redirect, request, jsonify
+from flask import Flask, render_template, session, g, redirect, request, jsonify, abort
+import requests
 
 from model.base import db_session, init_db
 from model.user import User
@@ -34,8 +35,10 @@ def requires_login(f):
     """Decorator for views that require the user to be logged-in."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not session.get('logged_in', None):
+        if session.get('email') is None:
             return redirect('/')
+        elif g.user is None:
+            return redirect('/register')
         else:
             return f(*args, **kwargs)
     return decorated_function
@@ -44,14 +47,14 @@ def requires_login(f):
 @app.context_processor
 def inject_user():
     """Injects a user and configuration in templates' context."""
-    user = User.query.filter(User.email == session.get('logged_in')).first()
-    return dict(cur_user=user, config=config)
+    user = User.query.filter(User.email == session.get('email')).first()
+    return dict(cur_user=user, config=config, session=session)
 
 
 @app.before_request
 def load_user():
     """Loads the currently logged-in user (if any) to the request context."""
-    g.user = User.query.filter(User.email == session.get('logged_in')).first()
+    g.user = User.query.filter(User.email == session.get('email')).first()
 
 
 @app.teardown_appcontext
@@ -68,6 +71,12 @@ def index():
     else:
         return render_template('index.html')
 
+
+@app.route('/register')
+def register():
+    if session.get('email') is None:
+        return redirect('/')
+    return render_template('register.html', email=session.get('email'))
 
 @app.route("/profile")
 @requires_login
@@ -108,7 +117,7 @@ def delete_queue(queue_name):
     return jsonify(ok=False)
 
 
-# Login / Signup / Activate user / Change user info
+# Authentication related
 
 def send_activation_email(user):
     # Sending the activation email
@@ -119,13 +128,42 @@ def send_activation_email(user):
         username=config.email_account, password=config.email_password,
         html_data=render_template('activation_email.html', user=user, activation_link=activation_link))
 
-@app.route("/signup", methods=['POST'])
-def signup():
-    email = request.form['email']
+
+@app.route('/auth/login', methods=['POST'])
+def auth_handler():
+    # The request has to have an assertion for us to verify
+    if 'assertion' not in request.form:
+        abort(400)
+
+    # Send the assertion to Mozilla's verifier service.
+    data = dict(assertion=request.form['assertion'],
+                audience='http://{}:{}'.format(config.flask_host, config.flask_port))
+    resp = requests.post(config.persona_verifier, data=data, verify=True)
+
+    # Did the verifier respond?
+    if resp.ok:
+        # Parse the response
+        verification_data = resp.json()
+        if verification_data['status'] == 'okay':
+            email = verification_data['email']
+            session['email'] = email
+
+            user = User.query.filter(User.email == email).first()
+
+            if user is None:
+                return jsonify(ok=True, redirect='/register')
+            else:
+                return jsonify(ok=True, redirect='/')
+
+    # Oops, something failed. Abort.
+    abort(500)
+
+
+@app.route('/register', methods=['POST'])
+def register_handler():
     username = request.form['username']
     password = request.form['password']
-    password_confirmation = request.form['password-confirmation']
-
+    email = session['email']
     errors = []
 
     if User.query.filter(User.email == email).first():
@@ -142,100 +180,20 @@ def signup():
         errors.append("A user with the same username already exists in Pulse")
     if User.query.filter(User.username == username).first():
         errors.append("A user with the same username already exists in our database")
-    if password != password_confirmation:
-        errors.append("Password confirmation doesn't match")
-
     if errors:
         signup_error = "{}.".format(', '.join(errors))
-        return render_template('index.html', signup_error=signup_error)
+        return render_template('register.html', email=email, signup_error=signup_error)
 
-    user = User.new_user(email=email, username=username, password=password)
+    user = User.new_user(email=email, username=username, password=password, management_api=pulse_management)
     db_session.add(user)
     db_session.commit()
 
-    send_activation_email(user)
-
     return render_template('confirm.html')
 
-@app.route("/update_info", methods=['POST'])
-@requires_login
-def update_info():
-    print request.form
-    email = request.form['email'].strip().lower()
-    password = request.form['password']
-    new_password = request.form['new-password']
-
-    messages = []
-
-    if not g.user.valid_password(password):
-        return render_template('profile.html', error="Please enter a correct password to update your information.")
-
-    if new_password:
-        g.user.change_password(new_password)
-        messages.append("Correctly updated your password.")
-
-    if email != g.user.email:
-        if User.query.filter(User.email == email).first() is not None:
-            return render_template('profile.html', error="There's already a user with that email.")
-        g.user.email = email
-        g.user.activated = False
-        db_session.add(g.user)
-        db_session.commit()
-        session['logged_in'] = g.user.email
-
-        send_activation_email(g.user)
-
-        messages.append("Correctly updated your email. Please check your new email's inbox for an activation link.")
-
-    return render_template('profile.html', messages=messages)
-
-
-@app.route("/activate/<email>/<activation_token>")
-def activate(email, activation_token):
-    user = User.query.filter(User.email == email).first()
-
-    if user is None:
-        return render_template('activate.html', error="No user with the given email")
-    elif user.activated:
-        return render_template('activate.html', error="Requested user is already activated")
-    elif user.activation_token != activation_token:
-        return render_template('activate.html', error="Wrong activation token " + user.activation_token)
-    else:
-        # Activating the user account, which will also create a Pulse account
-        # with the same username/password
-        user.activate(pulse_management)
-
-        db_session.add(user)
-        db_session.commit()
-
-    return render_template('activate.html')
-
-
-@app.route("/login", methods=['POST'])
-def login():
-    email, password = request.form['email'], request.form['password']
-
-    # Emails are case-insensitive and stored lower-case
-    email = email.lower()
-
-    user = User.query.filter(User.email == email).first()
-
-    if user is None or not user.valid_password(password):
-        return render_template('index.html', email=email,
-                               login_error="User doesn't exist or incorrect password")
-    elif not user.activated:
-        return render_template('index.html', email=email,
-                               login_error="User account isn't activated. Please check your emails.")
-    else:
-        session['logged_in'] = email
-        return redirect('/')
-
-
-@app.route("/logout", methods=['GET'])
-@requires_login
-def logout():
-    del session['logged_in']
-    return redirect('/')
+@app.route('/auth/logout', methods=['POST'])
+def logout_handler():
+    session['email'] = None
+    return jsonify(ok=True, redirect='/')
 
 
 if __name__ == "__main__":

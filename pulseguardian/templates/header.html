@@ -5,22 +5,26 @@
             <h1 class="sitename"><span class="glyphicon glyphicon-tower icon"></span> PulseGuardian</h1>
         </a>
 
-        {% if cur_user %}
-            <span class="logout right-link">
-                <a href="/logout"><span class="glyphicon glyphicon-remove"></span> Logout</a>
-            </span>
 
+        {% if session.get('email') %}
+            <span class="right-link">
+                <a id="signout-link" href="#" class="persona-button"><span>Logout</span></a>
+            </span>
+        {% else %}
+            <span class="login right-link">
+              <a id="signin-link" href="#" class="persona-button"><span>Sign in with your Email</span></a>
+            </span>
+        {% endif %}
+
+        {% if cur_user %}
             <a href="/profile">
-                <span class="username right-link">
+                <span class="username right-link nav-box">
                         <span class="glyphicon glyphicon-user"></span> {{cur_user.username}}
                 </span>
             </a>
-        {% else %}
-            <span class="login right-link">
-                <a href="/"><span class="glyphicon glyphicon-user"></span> Login/Sign up</a>
-            </span>
         {% endif %}
+
     </div>
-    
+
 </div>
 

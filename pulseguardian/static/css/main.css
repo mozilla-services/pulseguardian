@@ -57,21 +57,25 @@ a:hover, a:active, a:focus {
 }
 
 .right-link {
-  font-size: 14px;
   display: inline-block;
   float: right;
+  margin: 3px 3px;
+}
+
+.nav-box {
+  font-size: 14px;
   margin: -2px 5px;
   background: rgba(0, 0, 0, 0.25);
   padding: 8px 11px;
   border-radius: 4px;
 }
 
-.right-link .glyphicon {
+.nav-box .glyphicon {
   top: 1px;
   font-size: 12px;
 }
 
-.right-link:hover .glyphicon {
+.nav-box:hover .glyphicon {
   color: #5277ff;
 }
 

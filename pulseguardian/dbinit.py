@@ -41,12 +41,9 @@ def init_and_clear_db():
 def dummy_data():
     # Dummy test users
     for i in xrange(4):
-        dummy_user = User.new_user(
+        User.new_user(
             email='dummy{}@dummy.com'.format(i), username='dummy{}'.format(i),
-            password='dummy')
-        dummy_user.activate(pulse_management)
-        db_session.add(dummy_user)
-    db_session.commit()
+            password='dummy', management_api=pulse_management)
 
     users = User.query.all()
 
@@ -68,11 +65,9 @@ def dummy_data():
     db_session.commit()
 
     # Test admin user
-    admin = User.new_user(
-        email='admin@admin.com', username='dummy-admin', password='dummy-admin', admin=True)
-    admin.activate(pulse_management)
-    db_session.add(admin)
-    db_session.commit()
+    User.new_user(
+        email='admin@admin.com', username='dummy-admin', password='dummy-admin',
+        management_api=pulse_management, admin=True)
 
     logger.info('Finished generating dummy data.')
 

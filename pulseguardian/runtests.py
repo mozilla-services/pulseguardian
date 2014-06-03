@@ -92,8 +92,7 @@ class GuardianTest(unittest.TestCase):
         self.consumer_cfg['user'], self.consumer_cfg['password'] = CONSUMER_USER, CONSUMER_PASSWORD
         username, password = self.consumer_cfg['user'], self.consumer_cfg['password']
         self.user = User.new_user(username=username, email=CONSUMER_EMAIL,
-                                  password=password)
-        self.user.activate(self.management_api)
+                                  password=password, management_api=self.management_api)
         db_session.add(self.user)
         db_session.commit()
 
@@ -277,12 +276,8 @@ class ModelTest(unittest.TestCase):
         init_and_clear_db()
 
     def test_user(self):
-        user = User.new_user(email='dUmMy@EmAil.com',
-                             username='dummy', password='DummyPassword')
-        self.assertTrue(user.valid_password('DummyPassword'))
-        self.assertFalse(user.valid_password('dummypassword'))
-        self.assertFalse(user.valid_password('DUMMYPASSWORD'))
-
+        user = User.new_user(email='dUmMy@EmAil.com', username='dummy',
+                             password='DummyPassword', management_api=None)
         db_session.add(user)
         db_session.commit()
 
