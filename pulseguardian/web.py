@@ -64,7 +64,7 @@ def shutdown_session(exception=None):
 # Views
 
 
-@app.route("/")
+@app.route('/')
 def index():
     if g.user:
         return redirect('/profile')
@@ -78,17 +78,18 @@ def register():
         return redirect('/')
     return render_template('register.html', email=session.get('email'))
 
-@app.route("/profile")
+@app.route('/profile')
 @requires_login
-def profile():
+def profile(error=None, messages=None):
     users = no_owner_queues = []
     if g.user.admin:
         users = User.query.all()
         no_owner_queues = list(Queue.query.filter(Queue.owner == None))
-    return render_template('profile.html', users=users, no_owner_queues=no_owner_queues)
+    return render_template('profile.html', users=users, no_owner_queues=no_owner_queues,
+                           error=error, messages=messages)
 
 
-@app.route("/queues")
+@app.route('/queues')
 @requires_login
 def queues():
     users = no_owner_queues = []
@@ -100,7 +101,7 @@ def queues():
 
 # API
 
-@app.route("/queue/<queue_name>", methods=['DELETE'])
+@app.route('/queue/<queue_name>', methods=['DELETE'])
 def delete_queue(queue_name):
     queue = Queue.query.get(queue_name)
 
@@ -158,6 +159,20 @@ def auth_handler():
     # Oops, something failed. Abort.
     abort(500)
 
+@app.route("/update_info", methods=['POST'])
+@requires_login
+def update_info():
+    new_password = request.form['new-password']
+    password_verification = request.form['new-password-verification']
+
+    if new_password:
+        if new_password != password_verification:
+            return profile(error="Password verification doesn't match the password.")
+        else:
+            g.user.change_password(new_password, pulse_management)
+            return profile(messages=["Correctly updated your password."])
+    else:
+        return profile(messages=["You didn't enter a new password."])
 
 @app.route('/register', methods=['POST'])
 def register_handler():

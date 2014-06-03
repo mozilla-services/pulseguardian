@@ -49,6 +49,14 @@ class User(Base):
 
         return user
 
+    def change_password(self, new_password, management_api):
+        """"Changes" a user's password by deleting his rabbitmq account
+        and recreating it with the new password.
+        """
+        management_api.delete_user(self.username)
+        management_api.create_user(username=self.username, password=new_password)
+        management_api.set_permission(username=self.username, vhost='/',
+                                      read='.*', configure='.*', write='.*')
     def __repr__(self):
         return "<User(email='{}', username='{}')>".format(self.email,
                                                           self.username)

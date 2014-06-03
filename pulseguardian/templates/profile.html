@@ -14,20 +14,20 @@
 
         <ul class="list-group">
             <li class="list-group-item">
-                <strong>Username:</strong> {{cur_user.username}}
-            </li>
-
-            <li class="list-group-item">
                 <strong>E-mail:</strong>
-                <input name="email" type="email" class="form-control" value="{{cur_user.email}}"/>
+                <input name="email" type="email" class="form-control" value="{{cur_user.email}}" disabled/>
+            </li>
+            <li class="list-group-item">
+                <strong>Username:</strong>
+                <input name="username" type="text" class="form-control" value="{{cur_user.username}}" disabled/>
             </li>
 
             <li class="list-group-item">
-                <strong>Password:</strong>
-                <input name="password" type="password" class="form-control"/>
-                <br />
-                <strong>New password <small>(optional)</small>:</strong>
+                <strong>New password:</strong>
                 <input name="new-password" type="password" class="form-control"/>
+                <br />
+                <strong>New password verification:</strong>
+                <input name="new-password-verification" type="password" class="form-control"/>
             </li>
 
             <li class="list-group-item">
