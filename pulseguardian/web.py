@@ -11,7 +11,6 @@ from model.base import db_session, init_db
 from model.user import User
 from model.queue import Queue
 from management import PulseManagementAPI, PulseManagementException
-from sendemail import sendemail
 import config
 
 # Initializing the web app and the database
@@ -63,7 +62,6 @@ def shutdown_session(exception=None):
 
 # Views
 
-
 @app.route('/')
 def index():
     if g.user:
@@ -74,9 +72,10 @@ def index():
 
 @app.route('/register')
 def register():
-    if session.get('email') is None:
+    if session.get('email') is None or g.user is not None:
         return redirect('/')
     return render_template('register.html', email=session.get('email'))
+
 
 @app.route('/profile')
 @requires_login
@@ -119,16 +118,6 @@ def delete_queue(queue_name):
 
 
 # Authentication related
-
-def send_activation_email(user):
-    # Sending the activation email
-    activation_link = 'http://{}:{}/activate/{}/{}'.format(config.flask_host, config.flask_port,
-                                                           user.email, user.activation_token)
-    sendemail(
-        subject="Activate your Pulse account", from_addr=config.email_from, to_addrs=[user.email],
-        username=config.email_account, password=config.email_password,
-        html_data=render_template('activation_email.html', user=user, activation_link=activation_link))
-
 
 @app.route('/auth/login', methods=['POST'])
 def auth_handler():
