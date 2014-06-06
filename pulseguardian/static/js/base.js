@@ -29,7 +29,11 @@ $(document).ready(function() {
           url: '/auth/login',
           data: {assertion: assertion},
           success: function(res, status, xhr) {
-            window.location.href = res.redirect;
+            if (res.ok) {
+                window.location.href = res.redirect;
+            } else {
+                errorMessage("Login error: " + res.message);
+            }
           },
           error: function(xhr, status, err) {
             errorMessage("Login failure: " + err);

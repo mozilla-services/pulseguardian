@@ -123,7 +123,7 @@ def delete_queue(queue_name):
 def auth_handler():
     # The request has to have an assertion for us to verify
     if 'assertion' not in request.form:
-        abort(400)
+        return jsonify(ok=False, message="Assertion parameter missing")
 
     # Send the assertion to Mozilla's verifier service.
     data = dict(assertion=request.form['assertion'],
@@ -146,7 +146,7 @@ def auth_handler():
                 return jsonify(ok=True, redirect='/')
 
     # Oops, something failed. Abort.
-    abort(500)
+    return jsonify(ok=False, message="Couldn't connect to the Persona verifier ({})".format(config.persona_verifier))
 
 @app.route("/update_info", methods=['POST'])
 @requires_login
