@@ -1,10 +1,11 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
+import logging
+import logging.handlers
 from functools import wraps
 
-from flask import Flask, render_template, session, g, redirect, request, jsonify, abort
+from flask import Flask, render_template, session, g, redirect, request, jsonify
 import requests
 
 from model.base import db_session, init_db
@@ -16,6 +17,13 @@ import config
 # Initializing the web app and the database
 app = Flask(__name__)
 app.secret_key = config.flask_secret_key
+
+# Setting up the web app's logger
+file_handler = logging.handlers.RotatingFileHandler(config.WEBAPP_LOG_PATH, mode='a+',
+                                                    maxBytes=config.MAX_LOG_SIZE)
+file_handler.setLevel(logging.WARNING)
+app.logger.addHandler(file_handler)
+
 
 # Initializing the rabbitmq management API
 pulse_management = PulseManagementAPI(host=config.rabbit_host,
@@ -127,7 +135,7 @@ def auth_handler():
 
     # Send the assertion to Mozilla's verifier service.
     data = dict(assertion=request.form['assertion'],
-                audience='http://{}:{}'.format(config.flask_host, config.flask_port))
+                audience=config.persona_audience)
     resp = requests.post(config.persona_verifier, data=data, verify=True)
 
     # Did the verifier respond?
