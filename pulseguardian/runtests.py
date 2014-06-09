@@ -41,7 +41,7 @@ TEST_DELETE_SIZE = 30
 DEFAULT_LOGLEVEL = 'INFO'
 
 # Global pulse configuration.
-pulse_cfg = dict()
+pulse_cfg = dict(ssl=False)
 
 
 class ConsumerSubprocess(multiprocessing.Process):
