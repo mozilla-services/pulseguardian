@@ -40,7 +40,7 @@ class PulseManagementAPI(object):
     def _api_request(self, path, method='GET', data=None):
         session = requests.Session()
         request = requests.Request(
-            method, 'http://{}:{}/api/{}'.format(
+            method, 'http://{0}:{1}/api/{2}'.format(
                 self.host, self.management_port, path),
             auth=(self.management_user, self.management_password),
             data=json.dumps(data)).prepare()
@@ -54,7 +54,7 @@ class PulseManagementAPI(object):
             return response.json()
         except ValueError:
             raise PulseManagementException(
-                "Error when calling '{} {}' with data={}. Received : {}".format(method, path,
+                "Error when calling '{0} {1}' with data={2}. Received : {3}".format(method, path,
                                                                                 data, response.content))
 
     # Queues
@@ -62,19 +62,19 @@ class PulseManagementAPI(object):
     def queues(self, vhost=None):
         if vhost:
             vhost = quote(vhost, '')
-            return self._api_request('queues/{}'.format(vhost))
+            return self._api_request('queues/{0}'.format(vhost))
         else:
             return self._api_request('queues')
 
     def queue(self, vhost, queue):
         vhost = quote(vhost, '')
         queue = quote(queue, '')
-        return self._api_request('queues/{}/{}'.format(vhost, queue))
+        return self._api_request('queues/{0}/{1}'.format(vhost, queue))
 
     def delete_queue(self, vhost, queue):
         vhost = quote(vhost, '')
         queue = quote(queue, '')
-        self._api_request('queues/{}/{}'.format(vhost, queue), method='DELETE')
+        self._api_request('queues/{0}/{1}'.format(vhost, queue), method='DELETE')
 
     def delete_all_queues(self):
         for queue_data in self.queues():
@@ -84,16 +84,16 @@ class PulseManagementAPI(object):
 
     def user(self, username):
         username = quote(username, '')
-        return self._api_request('users/{}'.format(username))
+        return self._api_request('users/{0}'.format(username))
 
     def create_user(self, username, password, tags='monitoring'):
         username = quote(username, '')
         data = dict(password=password, tags=tags)
-        self._api_request('users/{}'.format(username), method='PUT', data=data)
+        self._api_request('users/{0}'.format(username), method='PUT', data=data)
 
     def delete_user(self, username):
         username = quote(username, '')
-        self._api_request('users/{}'.format(username), method='DELETE')
+        self._api_request('users/{0}'.format(username), method='DELETE')
 
     # Permissions
 
@@ -101,14 +101,14 @@ class PulseManagementAPI(object):
         username = quote(username, '')
         vhost = quote(vhost, '')
         data = dict(configure=configure, write=write, read=read)
-        self._api_request('permissions/{}/{}'.format(
+        self._api_request('permissions/{0}/{1}'.format(
             vhost, username), method='PUT', data=data)
 
     # Channels
 
     def channel(self, channel):
         channel = quote(channel, '')
-        return self._api_request('channels/{}'.format(channel))
+        return self._api_request('channels/{0}'.format(channel))
 
     # Misc
 

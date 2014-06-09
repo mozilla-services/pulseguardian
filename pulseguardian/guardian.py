@@ -70,7 +70,7 @@ class PulseGuardian(object):
 
         # If the queue doesn't exist in the db, create it.
         if queue is None:
-            logger.info("New queue '{}' encountered. "
+            logger.info("New queue '{0}' encountered. "
                         "Adding to the database.".format(q_name))
             queue = Queue(name=q_name, owner=None)
 
@@ -81,11 +81,11 @@ class PulseGuardian(object):
 
         # If we don't know who created the queue...
         if queue.owner is None:
-            logger.debug("Queue '{}' owner's unknown.".format(q_name))
+            logger.debug("Queue '{0}' owner's unknown.".format(q_name))
 
             # If no client is currently consuming the queue, just skip it.
             if queue_data['consumers'] == 0:
-                logger.debug("Queue '{}' skipped (no owner, no current consumer).".format(q_name))
+                logger.debug("Queue '{0}' skipped (no owner, no current consumer).".format(q_name))
                 return queue
 
             # Otherwise look for its user.
@@ -97,12 +97,12 @@ class PulseGuardian(object):
             # pulseguardian database, skip the queue.
             if user is None:
                 logger.info(
-                    "Queue '{}' owner, {}, isn't in the db. Creating the user.".format(q_name, owner_name))
+                    "Queue '{0}' owner, {1}, isn't in the db. Creating the user.".format(q_name, owner_name))
                 user = User.new_user(username=owner_name, email=None, password=None)
 
             # Assign the user to the queue.
             logger.info(
-                "Assigning queue '{}' to user {}.".format(q_name, user))
+                "Assigning queue '{0}' to user {1}.".format(q_name, user))
             queue.owner = user
             db_session.add(queue)
             db_session.commit()
@@ -117,7 +117,7 @@ class PulseGuardian(object):
             # If a queue is over the deletion size, regardless of it having an
             # owner or not, delete it.
             if queue.size > self.del_queue_size:
-                logger.warning("Queue '{}' deleted. Queue size = {}; del_queue_size = {}".format(
+                logger.warning("Queue '{0}' deleted. Queue size = {1}; del_queue_size = {2}".format(
                     queue.name, queue.size, self.del_queue_size))
                 if queue.owner:
                     self.deletion_email(queue.owner, queue_data)
@@ -132,7 +132,7 @@ class PulseGuardian(object):
                 continue
 
             if queue.size > self.warn_queue_size and not queue.warned:
-                logger.warning("Warning queue '{}' owner. Queue size = {}; warn_queue_size = {}".format(
+                logger.warning("Warning queue '{0}' owner. Queue size = {1}; warn_queue_size = {2}".format(
                     queue.name, queue.size, self.warn_queue_size))
                 queue.warned = True
                 if self.on_warn:
@@ -141,7 +141,7 @@ class PulseGuardian(object):
             elif queue.size <= self.warn_queue_size and queue.warned:
                 # A previously warned queue got out of the warning threshold;
                 # its owner should not be warned again.
-                logger.warning("Queue '{}' was in warning zone but is OK now".format(
+                logger.warning("Queue '{0}' was in warning zone but is OK now".format(
                                queue.name, queue.size, self.del_queue_size))
                 queue.warned = False
                 self.back_to_normal_email(queue.owner, queue_data)
@@ -161,12 +161,12 @@ class PulseGuardian(object):
     def warning_email(self, user, queue_data):
         exchange = self._exchange_from_queue(queue_data)
 
-        subject = 'Pulse warning: queue "{}" is overgrowing'.format(
+        subject = 'Pulse warning: queue "{0}" is overgrowing'.format(
             queue_data['name'])
-        body = '''Warning: your queue "{}" on exchange "{}" is
-overgrowing ({} ready messages, {} total messages).
+        body = '''Warning: your queue "{0}" on exchange "{1}" is
+overgrowing ({2} ready messages, {3} total messages).
 
-The queue will be automatically deleted when it exceeds {} messages.
+The queue will be automatically deleted when it exceeds {4} messages.
 
 Make sure your clients are running correctly and are cleaning up unused
 durable queues.
@@ -181,10 +181,10 @@ durable queues.
     def deletion_email(self, user, queue_data):
         exchange = self._exchange_from_queue(queue_data)
 
-        subject = 'Pulse warning: queue "{}" has been deleted'.format(queue_data['name'])
-        body = '''Your queue "{}" on exchange "{}" has been
+        subject = 'Pulse warning: queue "{0}" has been deleted'.format(queue_data['name'])
+        body = '''Your queue "{0}" on exchange "{1}" has been
 deleted after exceeding the maximum number of unread messages.  Upon deletion
-there were {} messages in the queue, out of a maximum {} messages.
+there were {2} messages in the queue, out of a maximum {3} messages.
 
 Make sure your clients are running correctly and are cleaning up unused
 durable queues.
@@ -199,9 +199,9 @@ durable queues.
     def back_to_normal_email(self, user, queue_data):
         exchange = self._exchange_from_queue(queue_data)
 
-        subject = 'Pulse warning: queue "{}" is back to normal'.format(queue_data['name'])
-        body = '''Your queue "{}" on exchange "{}" is
-now back to normal ({} ready messages, {} total messages).
+        subject = 'Pulse warning: queue "{0}" is back to normal'.format(queue_data['name'])
+        body = '''Your queue "{0}" on exchange "{1}" is
+now back to normal ({2} ready messages, {3} total messages).
 '''.format(queue_data['name'], exchange, queue_data['messages_ready'],
            queue_data['messages'], self.del_queue_size)
 

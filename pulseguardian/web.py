@@ -120,7 +120,7 @@ def delete_queue(queue_name):
             return jsonify(ok=True)
         except PulseManagementException:
             app.logger.warning(
-                "Couldn't delete the queue '{}' on rabbitmq".format(queue_name))
+                "Couldn't delete the queue '{0}' on rabbitmq".format(queue_name))
 
     return jsonify(ok=False)
 
@@ -154,7 +154,9 @@ def auth_handler():
                 return jsonify(ok=True, redirect='/')
 
     # Oops, something failed. Abort.
-    return jsonify(ok=False, message="Couldn't connect to the Persona verifier ({})".format(config.persona_verifier))
+    error_msg = "Couldn't connect to the Persona verifier ({0})".format(config.persona_verifier)
+    app.logger.error(error_msg)
+    return jsonify(ok=False, message=error_msg)
 
 @app.route("/update_info", methods=['POST'])
 @requires_login
@@ -193,7 +195,7 @@ def register_handler():
     if User.query.filter(User.username == username).first():
         errors.append("A user with the same username already exists in our database")
     if errors:
-        signup_error = "{}.".format(', '.join(errors))
+        signup_error = "{0}.".format(', '.join(errors))
         return render_template('register.html', email=email, signup_error=signup_error)
 
     user = User.new_user(email=email, username=username, password=password, management_api=pulse_management)

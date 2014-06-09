@@ -17,6 +17,6 @@ class Queue(Base):
     warned = Column(Boolean)
 
     def __repr__(self):
-        return "<Queue(name='{}', owner='{}')>".format(self.name, self.owner)
+        return "<Queue(name='{0}', owner='{1}')>".format(self.name, self.owner)
 
     __str__ = __repr__

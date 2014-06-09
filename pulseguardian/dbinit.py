@@ -42,7 +42,7 @@ def dummy_data():
     # Dummy test users
     for i in xrange(4):
         User.new_user(
-            email='dummy{}@dummy.com'.format(i), username='dummy{}'.format(i),
+            email='dummy{0}@dummy.com'.format(i), username='dummy{0}'.format(i),
             password='dummy', management_api=pulse_management)
 
     users = User.query.all()

@@ -58,7 +58,7 @@ class User(Base):
         management_api.set_permission(username=self.username, vhost='/',
                                       read='.*', configure='.*', write='.*')
     def __repr__(self):
-        return "<User(email='{}', username='{}')>".format(self.email,
-                                                          self.username)
+        return "<User(email='{0}', username='{1}')>".format(self.email,
+                                                            self.username)
 
     __str__ = __repr__
