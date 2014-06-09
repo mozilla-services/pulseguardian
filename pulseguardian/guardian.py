@@ -54,9 +54,9 @@ class PulseGuardian(object):
         db_queues = Queue.query.all()
 
         # Filter queues that are in the database but no longer on RabbitMQ.
-        alive_queues_names = {q['name'] for q in queues}
-        zombie_queues = {q for q in db_queues if q.name
-                         not in alive_queues_names}
+        alive_queues_names = set(q['name'] for q in queues)
+        zombie_queues = set(q for q in db_queues if q.name
+                            not in alive_queues_names)
 
         # Delete those queues.
         for queue in zombie_queues:

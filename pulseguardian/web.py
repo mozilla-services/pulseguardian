@@ -118,9 +118,9 @@ def delete_queue(queue_name):
         try:
             pulse_management.delete_queue(vhost='/', queue=queue.name)
             return jsonify(ok=True)
-        except PulseManagementException:
+        except PulseManagementException as e:
             app.logger.warning(
-                "Couldn't delete the queue '{0}' on rabbitmq".format(queue_name))
+                "Couldn't delete the queue '{0}' on rabbitmq: {1}".format(queue_name, e))
 
     return jsonify(ok=False)
 

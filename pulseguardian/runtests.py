@@ -163,11 +163,11 @@ class GuardianTest(unittest.TestCase):
         # messages, if any.
         for i in xrange(10):
             time.sleep(0.3)
-            queues_to_warn = {q_data['name'] for q_data
-                              in self.management_api.queues()
-                              if self.guardian.warn_queue_size
-                              < q_data['messages_ready']
-                              <= self.guardian.del_queue_size}
+            queues_to_warn = set(q_data['name'] for q_data
+                                 in self.management_api.queues()
+                                 if self.guardian.warn_queue_size
+                                 < q_data['messages_ready']
+                                 <= self.guardian.del_queue_size)
             if queues_to_warn:
                 break
 
@@ -187,11 +187,11 @@ class GuardianTest(unittest.TestCase):
                             if q in queues_to_warn))
 
         # The queues that needed to be warned haven't been deleted.
-        queues_to_warn_bis = {q_data['name'] for q_data
-                              in self.management_api.queues()
-                              if self.guardian.warn_queue_size
-                                 < q_data['messages_ready']
-                                 <= self.guardian.del_queue_size}
+        queues_to_warn_bis = set(q_data['name'] for q_data
+                                 in self.management_api.queues()
+                                 if self.guardian.warn_queue_size
+                                    < q_data['messages_ready']
+                                    <= self.guardian.del_queue_size)
         self.assertEqual(queues_to_warn_bis, queues_to_warn)
 
     def test_delete(self):
