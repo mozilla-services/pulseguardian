@@ -15,6 +15,7 @@ email_from = 'Mozilla A-Team <auto-tools@mozilla.com>'
 
 # Database
 sqlalchemy_engine_url = 'mysql://root@localhost/pulseguardian'
+pool_recycle_interval = 60
 
 # RabbitMQ
 rabbit_host = 'localhost'
