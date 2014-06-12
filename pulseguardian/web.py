@@ -72,10 +72,13 @@ def shutdown_session(exception=None):
 
 @app.route('/')
 def index():
+    if session.get('email') and g.user is None:
+        return redirect('/register')
+
     if g.user:
         return redirect('/profile')
-    else:
-        return render_template('index.html')
+
+    return render_template('index.html')
 
 
 @app.route('/register')
