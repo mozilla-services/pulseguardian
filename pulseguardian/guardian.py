@@ -98,8 +98,8 @@ class PulseGuardian(object):
             if user is None:
                 logger.info(
                     "Queue '{0}' owner, {1}, isn't in the db. Creating the user.".format(q_name, owner_name))
-                user = User.new_user(username=owner_name, email=None, management_api=self.api,
-                                     password=None)
+                user = User.new_user(username=owner_name, email='', password='',
+                                     management_api=None)
 
             # Assign the user to the queue.
             logger.info(

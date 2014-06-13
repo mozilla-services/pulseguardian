@@ -6,6 +6,7 @@ from urllib import quote
 import json
 
 import requests
+import socket
 
 DEFAULT_RABBIT_HOST = 'localhost'
 DEFAULT_RABBIT_MANAGEMENT_PORT = 15672
@@ -13,6 +14,7 @@ DEFAULT_RABBIT_VHOST = '/'
 DEFAULT_RABBIT_USER = 'guest'
 DEFAULT_RABBIT_PASSWORD = 'guest'
 
+MAX_RETRY = 5
 
 class PulseManagementException(Exception):
     pass
@@ -45,7 +47,13 @@ class PulseManagementAPI(object):
             auth=(self.management_user, self.management_password),
             data=json.dumps(data)).prepare()
         request.headers['Content-type'] = 'application/json'
-        response = session.send(request)
+
+        for i in xrange(MAX_RETRY):
+            try:
+                response = session.send(request)
+                break
+            except (requests.ConnectionError, socket.error):
+                pass
 
         if not response.content:
             return None
