@@ -164,11 +164,14 @@ def auth_handler():
 @app.route("/update_info", methods=['POST'])
 @requires_login
 def update_info():
+    current_password = request.form['current-password']
     new_password = request.form['new-password']
     password_verification = request.form['new-password-verification']
 
     if new_password:
-        if new_password != password_verification:
+        if not g.user.valid_password(current_password):
+            return profile(error="The given 'current password' isn't valid.")
+        elif new_password != password_verification:
             return profile(error="Password verification doesn't match the password.")
         else:
             g.user.change_password(new_password, pulse_management)
