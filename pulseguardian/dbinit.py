@@ -32,8 +32,12 @@ def init_and_clear_db():
             pass
 
     # Clearing the database from old data
-    Queue.query.delete()
-    User.query.delete()
+    for queue in Queue.query.all():
+        db_session.delete(queue)
+    for user in User.query.all():
+        db_session.delete(user)
+
+    db_session.commit()
 
     logger.info('Finished initializing database.')
 
