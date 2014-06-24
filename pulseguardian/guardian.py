@@ -18,6 +18,9 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 handler = logging.handlers.RotatingFileHandler(config.GUARDIAN_LOG_PATH, mode='a+',
                                                maxBytes=config.MAX_LOG_SIZE)
+formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s", "%Y-%m-%d %H:%M:%S")
+handler.setFormatter(formatter)
+
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
