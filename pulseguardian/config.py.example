@@ -6,7 +6,7 @@ flask_debug_mode = True
 
 # Persona
 persona_verifier = 'https://verifier.login.persona.org/verify'
-persona_audience = 'http://{0}:{1}'.format(flask_host, flask_port)
+persona_audience = 'https://{0}:{1}'.format(flask_host, flask_port)
 
 # Mail
 email_account = 'automation@mozilla.com'
