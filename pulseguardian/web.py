@@ -18,6 +18,7 @@ import config
 # Initializing the web app and the database
 app = Flask(__name__)
 app.secret_key = config.flask_secret_key
+app.config['SESSION_COOKIE_SECURE'] = True
 
 # Setting up the web app's logger
 file_handler = logging.handlers.RotatingFileHandler(config.WEBAPP_LOG_PATH, mode='a+',
@@ -228,4 +229,5 @@ def logout_handler():
 if __name__ == "__main__":
     app.run(host=config.flask_host,
             port=config.flask_port,
-            debug=config.flask_debug_mode)
+            debug=config.flask_debug_mode,
+            ssl_context='adhoc')
