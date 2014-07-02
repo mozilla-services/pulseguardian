@@ -3,6 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import logging
 import logging.handlers
+import re
 from functools import wraps
 
 from flask import Flask, render_template, session, g, redirect, request, jsonify
@@ -57,8 +58,8 @@ def requires_login(f):
 @app.context_processor
 def inject_user():
     """Injects a user and configuration in templates' context."""
-    user = User.query.filter(User.email == session.get('email')).first()
-    return dict(cur_user=user, config=config, session=session)
+    cur_user = User.query.filter(User.email == session.get('email')).first()
+    return dict(cur_user=cur_user, config=config, session=session)
 
 
 @app.before_request
@@ -78,7 +79,7 @@ def index():
     if session.get('email') and g.user is None:
         return redirect('/register')
 
-    if g.user:
+    if g.user is not None:
         return redirect('/profile')
 
     return render_template('index.html')
@@ -86,7 +87,7 @@ def index():
 
 @app.route('/register')
 def register():
-    if session.get('email') is None or g.user is not None:
+    if not (session.get('email') and g.user is None):
         return redirect('/')
     return render_template('register.html', email=session.get('email'))
 
@@ -153,7 +154,6 @@ def auth_handler():
             session['email'] = email
 
             user = User.query.filter(User.email == email).first()
-
             if user is None:
                 return jsonify(ok=True, redirect='/register')
             else:
@@ -173,9 +173,11 @@ def update_info():
 
     if new_password:
         if not g.user.valid_password(current_password):
-            return profile(error="The given 'current password' isn't valid.")
+            return profile(error="The given current password isn't valid.")
         elif new_password != password_verification:
             return profile(error="Password verification doesn't match the password.")
+        elif not User.strong_password(new_password):
+            return profile(error="Your password must contain numerical characters and be at least 6 characters long")
         else:
             g.user.change_password(new_password, pulse_management)
             return profile(messages=["Correctly updated your password."])
@@ -189,8 +191,12 @@ def register_handler():
     email = session['email']
     errors = []
 
+    if not re.match('^[a-z0-9]+$', username):
+        errors.append("The submitted username contains non-alphanumeric characters")
     if User.query.filter(User.email == email).first():
         errors.append("A user with the same email already exists")
+    if not User.strong_password(password):
+        errors.append("Your password must contain numerical characters and be at least 6 characters long")
 
     # Checking if a user exists in RabbitMQ OR in our db
     try:

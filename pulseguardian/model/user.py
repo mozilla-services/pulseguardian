@@ -2,8 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import os
 import hashlib
+import os
+import re
 
 from sqlalchemy import Column, String, Integer, Boolean
 from sqlalchemy.orm import relationship
@@ -57,6 +58,10 @@ class User(Base):
         db_session.commit()
 
         return user
+
+    @staticmethod
+    def strong_password(password):
+        return re.findall('[0-9]', password) and len(password) > 6
 
     def change_password(self, new_password, management_api):
         """"Changes" a user's password by deleting his rabbitmq account
