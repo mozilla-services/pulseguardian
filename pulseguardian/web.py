@@ -178,7 +178,7 @@ def update_info():
         elif new_password != password_verification:
             return profile(error="Password verification doesn't match the password.")
         elif not User.strong_password(new_password):
-            return profile(error="Your password must contain numerical characters and be at least 6 characters long")
+            return profile(error="Your password must contain a mix of letters and numerical characters and be at least 6 characters long")
         else:
             g.user.change_password(new_password, pulse_management)
             return profile(messages=["Correctly updated your password."])
@@ -197,7 +197,7 @@ def register_handler():
     if User.query.filter(User.email == email).first():
         errors.append("A user with the same email already exists")
     if not User.strong_password(password):
-        errors.append("Your password must contain numerical characters and be at least 6 characters long")
+        errors.append("Your password must contain a mix of letters and numerical characters and be at least 6 characters long")
 
     # Checking if a user exists in RabbitMQ OR in our db
     try:

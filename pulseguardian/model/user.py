@@ -61,7 +61,7 @@ class User(Base):
 
     @staticmethod
     def strong_password(password):
-        return re.findall('[0-9]', password) and len(password) > 6
+        return re.findall('[0-9]', password) and re.findall('[a-zA-Z]', password) and len(password) > 6
 
     def change_password(self, new_password, management_api):
         """"Changes" a user's password by deleting his rabbitmq account
