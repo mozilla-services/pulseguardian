@@ -35,7 +35,8 @@ class User(Base):
     @staticmethod
     def new_user(email, username, password, management_api, admin=False):
         """Initializes a new user, generating a salt and encrypting
-        his password. Then creates a
+        his password. Then creates a RabbitMQ user if needed and sets
+        permissions.
         """
         email = email.lower()
         user = User(email=email, username=username, admin=admin)
@@ -44,15 +45,21 @@ class User(Base):
         user.secret_hash = hash_password(password=password, salt=user.salt)
 
         if management_api is not None:
-            # Creating the appropriate rabbitmq user if he doesn't already exist
+            # Creating the appropriate rabbitmq user if it doesn't already
+            # exist.
             try:
                 management_api.user(username)
             except management_api.exception:
                 management_api.create_user(username=username, password=password)
-            # TODO : remove configure and write permissions while letting users
-            # create queues ?
-            management_api.set_permission(username=username, vhost='/',
-                                          read='.*', configure='.*', write='.*')
+
+            read_perms = '^(queue/{0}/.*|exchange/.*)'.format(username)
+            write_conf_perms = '^queue/{0}/.*'.format(username)
+
+            management_api.set_permission(username=username,
+                                          vhost='/',
+                                          read=read_perms,
+                                          configure=write_conf_perms,
+                                          write=write_conf_perms)
 
         db_session.add(user)
         db_session.commit()
@@ -61,7 +68,8 @@ class User(Base):
 
     @staticmethod
     def strong_password(password):
-        return re.findall('[0-9]', password) and re.findall('[a-zA-Z]', password) and len(password) > 6
+        return (re.findall('[0-9]', password) and
+                re.findall('[a-zA-Z]', password) and len(password) > 6)
 
     def change_password(self, new_password, management_api):
         """"Changes" a user's password by deleting his rabbitmq account

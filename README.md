@@ -1,11 +1,12 @@
 # PulseGuardian
 
-A system to manage Pulse: creates users and handle overgrowing queues. More information on [the wiki](https://wiki.mozilla.org/Auto-tools/Projects/Pulse/PulseGuardian).
+A system to manage Pulse: creates users and handle overgrowing queues. More
+information on [the wiki][].
 
 ## Pre-requisites
 
 * RabbitMQ (tested on 3.3.0)
-* Python (2.7.x)
+* Python (2.6+)
 * pip (to install external dependencies)
 * MySQL (if you're using the sqlalchemy MySQL engine, see below)
 
@@ -21,17 +22,27 @@ A system to manage Pulse: creates users and handle overgrowing queues. More info
 ```
   pip install -r requirements.txt
 ```
-* Copy `pulseguardian/config.py.example` to `pulseguardian/config.py` and update it with the correct settings (database, email password, etc.)
+* Copy `pulseguardian/config.py.example` to `pulseguardian/config.py` and
+  update it with the correct settings (database, email password, etc.)
 
 ## Usage
 
-Make sure `rabbitmq-server` is running and you're inside the source directory (`pulseguardian`) before you run the following commands.
+Make sure `rabbitmq-server` is running and you're inside the source directory
+(`pulseguardian`) before you run the following commands.
 
-**WARNING:**  the tests will mess with your local rabbitmq instance (wiping out existing queues, possibly deleting users) so make sure you don't run the tests on a production instance.
+**WARNING**: The tests will mess with your local rabbitmq instance (wiping out
+existing queues, possibly deleting users) so make sure you don't run the tests
+on a production instance.
 
-* Initialize the db with: `python dbinit.py`. *WARNING:* this removes any existing data the app might have previously stored in the databse.
-* Optional: Generate some dummy data (dummy user account, admin account): `python dbinit.py --dummy`
+* Initialize the db with: `python dbinit.py`. *WARNING*: This removes any
+  existing data the app might have previously stored in the databse.
+* Optional: Generate some dummy data (dummy user account, admin account):
+  `python dbinit.py --dummy`
 * Run the Pulse Guardian daemon with: `python guardian.py`
 * Run the web app (for development) with: `python web.py`
-* For production, the web app can be run with [gunicorn](https://www.digitalocean.com/community/articles/how-to-deploy-python-wsgi-apps-using-gunicorn-http-server-behind-nginx) and such.
+* For production, the web app can be run with [gunicorn][] and such.
 * Run tests with: `python runtests.py`
+
+
+[the wiki]: https://wiki.mozilla.org/Auto-tools/Projects/Pulse/PulseGuardian
+[gunicorn]: https://www.digitalocean.com/community/articles/how-to-deploy-python-wsgi-apps-using-gunicorn-http-server-behind-nginx
