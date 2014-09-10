@@ -53,7 +53,7 @@ class User(Base):
                 management_api.create_user(username=username, password=password)
 
             read_perms = '^(queue/{0}/.*|exchange/.*)'.format(username)
-            write_conf_perms = '^queue/{0}/.*'.format(username)
+            write_conf_perms = '^(queue/{0}/.*|exchange/{0}/.*)'.format(username)
 
             management_api.set_permission(username=username,
                                           vhost='/',
