@@ -23,8 +23,8 @@ class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
-    username = Column(String(100), unique=True)
-    email = Column(String(100))
+    username = Column(String(255), unique=True)
+    email = Column(String(255))
     salt = Column(String(100))
     secret_hash = Column(String(100), unique=True)
     admin = Column(Boolean)
