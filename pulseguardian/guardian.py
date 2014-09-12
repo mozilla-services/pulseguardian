@@ -67,6 +67,12 @@ class PulseGuardian(object):
         db_session.commit()
 
     def update_queue_information(self, queue_data):
+        if not 'messages' in queue_data:
+            # FIXME: We should do something here, probably delete the queue,
+            # as it's in a weird state.  More investigation is required.
+            # See bug 1066338.
+            return None
+
         q_size, q_name = (queue_data['messages'],
                           queue_data['name'])
         queue = Queue.query.filter(Queue.name == q_name).first()
@@ -117,6 +123,8 @@ class PulseGuardian(object):
         for queue_data in queues:
             # Updating the queue's information in the database (owner, size).
             queue = self.update_queue_information(queue_data)
+            if not queue:
+                continue
 
             # If a queue is over the deletion size, regardless of it having an
             # owner or not, delete it.
