@@ -21,6 +21,10 @@ a:hover, a:active, a:focus {
     text-decoration: none !important;
 }
 
+a:visited {
+  color: #C0C0C0;
+}
+
 .row {
   margin: 0px 0px 0px -15px;
 }
