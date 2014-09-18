@@ -100,6 +100,10 @@ def msgformat():
 def roadmap():
     return render_template('roadmap.html')
 
+@app.route('/why')
+def why():
+    return render_template('why.html')
+
 
 @app.route('/register')
 def register():
