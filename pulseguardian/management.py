@@ -7,6 +7,7 @@ import logging
 import socket
 from urllib import quote
 
+import logging
 import requests
 
 DEFAULT_RABBIT_HOST = 'localhost'
