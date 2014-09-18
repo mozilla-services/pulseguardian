@@ -228,8 +228,9 @@ now back to normal ({2} ready messages, {3} total messages).
         while True:
             queues = self.api.queues()
 
-            self.monitor_queues(queues)
-            self.delete_zombie_queues(queues)
+            if queues:
+                self.monitor_queues(queues)
+                self.delete_zombie_queues(queues)
 
             time.sleep(config.polling_interval)
 

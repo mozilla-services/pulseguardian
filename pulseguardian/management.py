@@ -2,11 +2,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-from urllib import quote
 import json
+import logging
+import socket
+from urllib import quote
 
 import requests
-import socket
 
 DEFAULT_RABBIT_HOST = 'localhost'
 DEFAULT_RABBIT_MANAGEMENT_PORT = 15672
@@ -49,13 +50,14 @@ class PulseManagementAPI(object):
         request.headers['Content-type'] = 'application/json'
 
         for i in xrange(MAX_RETRY):
+            response = None
             try:
                 response = session.send(request)
                 break
             except (requests.ConnectionError, socket.error):
-                pass
+                logging.exception('Failed to connect to the RabbitMQ server.')
 
-        if not response.content:
+        if not response or not response.content:
             return None
 
         try:
