@@ -56,6 +56,26 @@ a:hover, a:active, a:focus {
   font-size: 20px;
 }
 
+.menu {
+  font-size: 15px;
+  display: inline-block;
+  width: 100%;
+  padding: 10px;
+
+  margin-left: auto;
+  margin-right: auto;
+  background: #2249B1;
+  color: #FFF;
+  text-shadow: -1px 1px 0px rgba(0, 0, 0, 0.5);
+}
+
+.menu .menuitem {
+  font-size: 15px;
+  float: left;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
 .right-link {
   display: inline-block;
   float: right;
