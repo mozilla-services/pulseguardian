@@ -53,9 +53,13 @@ class PulseManagementAPI(object):
                 response = session.send(request)
                 break
             except (requests.ConnectionError, socket.error):
+                response = None
                 pass
 
-        if not response.content:
+        if response:
+            if not response.content:
+                return None
+        else:
             return None
 
         try:
