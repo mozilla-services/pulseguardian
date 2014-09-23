@@ -8,4 +8,13 @@
   <a href="/roadmap">
     <h4 class="menuitem">Roadmap</h4>
   </a>
+  {% if session.get('email') %}
+      <a href="/profile">
+        <h4 class="menuitem">Profile</h4>
+      </a>
+  {% else %}
+      <a href="/register">
+        <h4 class="menuitem">Register</h4>
+      </a>
+  {% endif %}
 </div>
