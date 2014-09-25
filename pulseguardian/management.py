@@ -48,16 +48,16 @@ class PulseManagementAPI(object):
             auth=(self.management_user, self.management_password),
             data=json.dumps(data)).prepare()
         request.headers['Content-type'] = 'application/json'
+        response = None
 
         for i in xrange(MAX_RETRY):
-            response = None
             try:
                 response = session.send(request)
                 break
             except (requests.ConnectionError, socket.error):
                 logging.exception('Failed to connect to the RabbitMQ server.')
 
-        if not response or not response.content:
+        if response is None or not response.content:
             return None
 
         try:
