@@ -8,7 +8,7 @@ import logging.handlers
 import optparse
 
 from model.base import init_db, db_session
-from model.user import User
+from model.user import PulseUser
 from model.queue import Queue
 from management import PulseManagementAPI
 from sendemail import sendemail
@@ -18,7 +18,8 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 handler = logging.handlers.RotatingFileHandler(config.GUARDIAN_LOG_PATH, mode='a+',
                                                maxBytes=config.MAX_LOG_SIZE)
-formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s", "%Y-%m-%d %H:%M:%S")
+formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s",
+                              "%Y-%m-%d %H:%M:%S")
 handler.setFormatter(formatter)
 
 logger.addHandler(handler)
@@ -40,9 +41,11 @@ class PulseGuardian(object):
     :param on_delete: Callback called with a queue's name when it's deleted.
     """
     def __init__(self, api, emails=True, warn_queue_size=config.warn_queue_size,
-                 del_queue_size=config.del_queue_size, on_warn=None, on_delete=None):
+                 del_queue_size=config.del_queue_size, on_warn=None,
+                 on_delete=None):
         if del_queue_size < warn_queue_size:
-            raise ValueError("Deletion threshold can't be smaller than the warning threshold.")
+            raise ValueError("Deletion threshold can't be smaller than the "
+                             "warning threshold.")
 
         self.api = api
 
@@ -53,16 +56,17 @@ class PulseGuardian(object):
         self.on_warn = on_warn
         self.on_delete = on_delete
 
-    def delete_zombie_queues(self, queues):
+    def clear_deleted_queues(self, queues):
         db_queues = Queue.query.all()
 
         # Filter queues that are in the database but no longer on RabbitMQ.
         alive_queues_names = set(q['name'] for q in queues)
-        zombie_queues = set(q for q in db_queues if q.name
-                            not in alive_queues_names)
+        deleted_queues = set(q for q in db_queues if q.name
+                             not in alive_queues_names)
 
         # Delete those queues.
-        for queue in zombie_queues:
+        for queue in deleted_queues:
+            logger.info("Queue '{0}' has been deleted.".format(queue))
             db_session.delete(queue)
         db_session.commit()
 
@@ -94,26 +98,28 @@ class PulseGuardian(object):
 
             # If no client is currently consuming the queue, just skip it.
             if queue_data['consumers'] == 0:
-                logger.debug("Queue '{0}' skipped (no owner, no current consumer).".format(q_name))
+                logger.debug("Queue '{0}' skipped (no owner, no current "
+                             "consumer).".format(q_name))
                 return queue
 
             # Otherwise look for its user.
             owner_name = self.api.queue_owner(queue_data)
 
-            user = User.query.filter(User.username == owner_name).first()
+            pulse_user = PulseUser.query.filter(
+                PulseUser.username == owner_name).first()
 
             # If the queue was created by a user that isn't in the
             # pulseguardian database, skip the queue.
-            if user is None:
+            if pulse_user is None:
                 logger.info(
-                    "Queue '{0}' owner, {1}, isn't in the db. Creating the user.".format(q_name, owner_name))
-                user = User.new_user(username=owner_name, email='', password='',
-                                     management_api=None)
+                    "Queue '{0}' owner, {1}, isn't in the db. Creating the "
+                    "user.".format(q_name, owner_name))
+                pulse_user = PulseUser.new_user(owner_name)
 
             # Assign the user to the queue.
             logger.info(
-                "Assigning queue '{0}' to user {1}.".format(q_name, user))
-            queue.owner = user
+                "Assigning queue '{0}' to user {1}.".format(q_name, pulse_user))
+            queue.owner = pulse_user
             db_session.add(queue)
             db_session.commit()
 
@@ -129,34 +135,38 @@ class PulseGuardian(object):
             # If a queue is over the deletion size, regardless of it having an
             # owner or not, delete it.
             if queue.size > self.del_queue_size:
-                logger.warning("Queue '{0}' deleted. Queue size = {1}; del_queue_size = {2}".format(
+                logger.warning("Queue '{0}' deleted. Queue size = {1}; "
+                               "del_queue_size = {2}".format(
                     queue.name, queue.size, self.del_queue_size))
-                if queue.owner:
-                    self.deletion_email(queue.owner, queue_data)
+                if queue.owner and queue.owner.owner:
+                    self.deletion_email(queue.owner.owner, queue_data)
                 if self.on_delete:
                     self.on_delete(queue.name)
-                self.api.delete_queue(vhost=queue_data['vhost'], queue=queue.name)
+                self.api.delete_queue(vhost=queue_data['vhost'],
+                                      queue=queue.name)
                 db_session.delete(queue)
                 db_session.commit()
                 continue
 
-            if queue.owner is None:
+            if queue.owner is None or queue.owner.owner is None:
                 continue
 
             if queue.size > self.warn_queue_size and not queue.warned:
-                logger.warning("Warning queue '{0}' owner. Queue size = {1}; warn_queue_size = {2}".format(
+                logger.warning("Warning queue '{0}' owner. Queue size = {1}; "
+                               "warn_queue_size = {2}".format(
                     queue.name, queue.size, self.warn_queue_size))
                 queue.warned = True
                 if self.on_warn:
                     self.on_warn(queue.name)
-                self.warning_email(queue.owner, queue_data)
+                self.warning_email(queue.owner.owner, queue_data)
             elif queue.size <= self.warn_queue_size and queue.warned:
                 # A previously warned queue got out of the warning threshold;
                 # its owner should not be warned again.
-                logger.warning("Queue '{0}' was in warning zone but is OK now".format(
-                               queue.name, queue.size, self.del_queue_size))
+                logger.warning("Queue '{0}' was in warning zone but is OK "
+                               "now".format(queue.name, queue.size,
+                                            self.del_queue_size))
                 queue.warned = False
-                self.back_to_normal_email(queue.owner, queue_data)
+                self.back_to_normal_email(queue.owner.owner, queue_data)
 
             # Commit any changes to the queue.
             db_session.add(queue)
@@ -193,7 +203,8 @@ durable queues.
     def deletion_email(self, user, queue_data):
         exchange = self._exchange_from_queue(queue_data)
 
-        subject = 'Pulse warning: queue "{0}" has been deleted'.format(queue_data['name'])
+        subject = 'Pulse warning: queue "{0}" has been deleted'.format(
+            queue_data['name'])
         body = '''Your queue "{0}" on exchange "{1}" has been
 deleted after exceeding the maximum number of unread messages.  Upon deletion
 there were {2} messages in the queue, out of a maximum {3} messages.
@@ -211,7 +222,8 @@ durable queues.
     def back_to_normal_email(self, user, queue_data):
         exchange = self._exchange_from_queue(queue_data)
 
-        subject = 'Pulse warning: queue "{0}" is back to normal'.format(queue_data['name'])
+        subject = 'Pulse warning: queue "{0}" is back to normal'.format(
+            queue_data['name'])
         body = '''Your queue "{0}" on exchange "{1}" is
 now back to normal ({2} ready messages, {3} total messages).
 '''.format(queue_data['name'], exchange, queue_data['messages_ready'],
@@ -227,11 +239,9 @@ now back to normal ({2} ready messages, {3} total messages).
         logger.info("PulseGuardian started")
         while True:
             queues = self.api.queues()
-
             if queues:
                 self.monitor_queues(queues)
-                self.delete_zombie_queues(queues)
-
+            self.clear_deleted_queues(queues)
             time.sleep(config.polling_interval)
 
 

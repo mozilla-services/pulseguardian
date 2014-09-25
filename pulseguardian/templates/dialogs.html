@@ -1,0 +1,19 @@
+{% macro confirm_dialog(objectTypeName, objectType) %}
+<div class="modal fade modal-delete-{{objectType}}">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-body">
+        Delete {{objectTypeName}} <span class="{{objectType}}-name"></span>?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default"
+                data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary delete-{{objectType}}-ok">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{{ confirm_dialog('queue', 'queue') }}
+{{ confirm_dialog('Pulse user', 'pulse-user') }}

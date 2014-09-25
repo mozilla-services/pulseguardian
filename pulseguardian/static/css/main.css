@@ -91,18 +91,21 @@ a:hover, a:active, a:focus {
 
 /* Profile */
 
-.queues .delete {
+.add {
+  color: #000000;
+}
+
+.edit {
+  cursor: pointer;
+}
+
+.delete {
   color: #e10809;
   cursor: pointer;
-  float: right;
 }
 
-.queues .delete:hover {
+.delete:hover {
   color: #e52e38;
-}
-
-.user {
-  border-bottom: 1px dashed #d5d7df;
 }
 
 .autoreload {

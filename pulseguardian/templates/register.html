@@ -1,49 +1,42 @@
 {% extends 'base.html' %}
 
-
 {% block body %}
 
-<h2>
-    Sign up for a consumer account
-</h2>
+<h2>Register a Pulse user</h2>
 
-<p>
-    Supply the username and password you want to use for your Pulse consumer account.
-</p>
-
-<p>
-    Once this is done, you can use the <a href="https://pypi.python.org/pypi/MozillaPulse/0.91">MozillaPulse</a> library to consume messages from Pulse publishers.
-</p>
-
-{% if signup_error %}
-    <div class="alert alert-danger">
-        {{signup_error}}
-    </div>
+{% if signup_errors %}
+  <div class="alert alert-danger">
+    {% for err in signup_errors %}
+      <p>{{err}}</p>
+    {% endfor %}
+  </div>
 {% endif %}
 
-
 <form role="form" action="/register" method="post">
-    <div class="form-group">
-        <label>Email</label>
-        <input name="email" type="email" placeholder="Your email" class="form-control" value="{{email}}" disabled/>
-    </div>
+  <div class="form-group">
+    <label>Username</label>
+    <small>No special characters or spaces. Only alphanumeric
+      characters are accepted.</small>
+    <input name="username" type="text" placeholder="Username"
+           class="form-control"/>
+  </div>
 
-    <div class="form-group">
-        <label>Username</label>
-        <small>No special characters or spaces. Only alphanumeric characters are accepted.</small>
-        <input name="username" type="text" placeholder="Username" class="form-control"/>
-    </div>
+  <div class="form-group">
+    <label>Password</label>
+    <small>Must contain a mix of letters and numerical characters
+      and be at least 6 characters long.</small>
+    <input name="password" type="password" placeholder="Password"
+           type="password" class="form-control"/>
+  </div>
+  <div class="form-group">
+    <strong>Password verification:</strong>
+    <input name="password-verification" type="password" placeholder="Password"
+           class="form-control"/>
+  </div>
 
-    <div class="form-group">
-        <label>Password</label>
-        <small>Must contain a mix of letters and numerical characters and be at least 6 characters long.</small>
-        <input name="password" type="password" placeholder="Password" class="form-control"/>
-    </div>
-
-    <button type="submit" role="button" class="btn btn-default form-control">
-        Sign-up
-    </button>
-
+  <button type="submit" role="button" class="btn btn-primary form-control">
+    Add user
+  </button>
 </form>
 
 {% endblock %}

@@ -1,30 +1,31 @@
 <div class="header">
 
-    <div class="container">
-        <a href="/">
-            <h1 class="sitename"><span class="glyphicon glyphicon-tower icon"></span> PulseGuardian</h1>
-        </a>
+  <div class="container">
+    <a href="/">
+      <h1 class="sitename">
+        <span class="glyphicon glyphicon-tower icon"></span>
+        PulseGuardian
+      </h1>
+    </a>
 
+    {% if session.get('email') %}
+      <span class="right-link">
+        <a id="signout-link" href="#"
+           class="persona-button"><span>Logout</span></a>
+      </span>
+    {% else %}
+      <span class="login right-link">
+        <a id="signin-link" href="#"
+           class="persona-button"><span>Sign in</span></a>
+      </span>
+    {% endif %}
 
-        {% if session.get('email') %}
-            <span class="right-link">
-                <a id="signout-link" href="#" class="persona-button"><span>Logout</span></a>
-            </span>
-        {% else %}
-            <span class="login right-link">
-              <a id="signin-link" href="#" class="persona-button"><span>Sign in</span></a>
-            </span>
-        {% endif %}
-
-        {% if cur_user %}
-            <a href="/profile">
-                <span class="username right-link nav-box">
-                        <span class="glyphicon glyphicon-user"></span> {{cur_user.username}}
-                </span>
-            </a>
-        {% endif %}
-
-    </div>
-
+    {% if cur_user %}
+      <a href="/profile">
+        <span class="username right-link nav-box">
+          <span class="glyphicon glyphicon-user"></span> {{cur_user.email}}
+        </span>
+      </a>
+    {% endif %}
+  </div>
 </div>
-

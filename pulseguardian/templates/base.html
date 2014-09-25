@@ -21,6 +21,8 @@
     <body>
         {% include 'header.html' %}
 
+        {% include 'dialogs.html' %}
+
         {% if session.get('email') %}
         <div id="user" data-email="{{session['email']}}" />
         {% endif %}

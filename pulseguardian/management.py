@@ -42,11 +42,11 @@ class PulseManagementAPI(object):
 
     def _api_request(self, path, method='GET', data=None):
         session = requests.Session()
-        request = requests.Request(
-            method, 'http://{0}:{1}/api/{2}'.format(
-                self.host, self.management_port, path),
-            auth=(self.management_user, self.management_password),
-            data=json.dumps(data)).prepare()
+        url = 'http://{0}:{1}/api/{2}'.format(self.host, self.management_port,
+                                              path)
+        request = requests.Request(method, url, auth=(self.management_user,
+                                                      self.management_password),
+                                   data=json.dumps(data)).prepare()
         request.headers['Content-type'] = 'application/json'
         response = None
 
@@ -64,8 +64,8 @@ class PulseManagementAPI(object):
             return response.json()
         except ValueError:
             raise PulseManagementException(
-                "Error when calling '{0} {1}' with data={2}. Received : {3}".format(method, path,
-                                                                                data, response.content))
+                "Error when calling '{0} {1}' with data={2}. "
+                "Received: {3}".format(method, path, data, response.content))
 
     # Queues
 

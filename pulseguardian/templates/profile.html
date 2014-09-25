@@ -1,57 +1,64 @@
 {% extends 'base.html' %}
 
 {% block body %}
-    <h2>Personal information <small>{{cur_user.username}}</small></h2>
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-info">{{message}}</div>
+    {% endfor %}
+  {% elif error %}
+    <div class="alert alert-danger">{{error}}</div>
+  {% endif %}
 
-    <form action="/update_info" method="post">
-        {% if messages %}
-            {% for message in messages %}
-            <div class="alert alert-info">{{message}}</div>
-            {% endfor %}
-        {% elif error %}
-            <div class="alert alert-danger">{{error}}</div>
-        {% endif %}
+  <h3>Pulse Users
+    <span class="pull-right">
+      <a href="register"><span class="glyphicon glyphicon-plus add"></span></a>
+    </span>
+  </h3>
 
-        <ul class="list-group">
-            <li class="list-group-item">
-                <strong>E-mail:</strong>
-                <input name="email" type="email" class="form-control" value="{{cur_user.email}}" disabled/>
-            </li>
-            <li class="list-group-item">
-                <strong>Username:</strong>
-                <input name="username" type="text" class="form-control" value="{{cur_user.username}}" disabled/>
-            </li>
+  <ul class="list-group pulse-users">
 
-            <li class="list-group-item">
-                <strong>Current password:</strong>
-                <input name="current-password" type="password" class="form-control"/>
-                <br />
-                <strong>New password:</strong>
-                <input name="new-password" type="password" class="form-control"/>
-                <br />
-                <strong>New password verification:</strong>
-                <input name="new-password-verification" type="password" class="form-control"/>
-            </li>
+    {% for pulse_user in cur_user.pulse_users %}
+    <li class="list-group-item pulse-user"
+        data-pulse-user-name="{{pulse_user.username}}">
+      <form action="/update_info" method="post">
+        <input type="hidden" name="pulse-user" value="{{pulse_user.username}}"/>
+        <h4>
+          {{pulse_user.username}}
+          <span class="pull-right">
+            <span class="glyphicon glyphicon-pencil edit"></span>
+            <span class="glyphicon glyphicon-remove delete"></span>
+          </span>
+        </h4>
 
-            <li class="list-group-item">
-                <input type="submit" class="form-control btn btn-primary" value="Update information"/>
-            </li>
+        <div class="pulse-user-details hidden">
+          <strong>New password:</strong>
+          <input name="new-password" type="password"
+                 class="form-control"/>
+          <br />
+          <strong>New password verification:</strong>
+          <input name="new-password-verification" type="password"
+                 class="form-control"/>
 
-        </ul>
+          <br/>
+          <input type="submit" class="form-control btn btn-primary"
+                 value="Update information"/>
+        </div>
+      </form>
+    </li>
+  </form>
+  {% endfor %}
 
+  </ul>
 
-    </form>
+<a href="#" class="autoreload">
+  <span class="glyphicon glyphicon-refresh"></span> Auto-reload
+</a>
 
-
-    <a href="#" class="autoreload">
-        <span class="glyphicon glyphicon-refresh"></span> Auto-reload
-    </a>
-
-    <div id="queues-info">
-        {% include 'queues.html' %}
-    </div>
+<div id="queues-info">
+  {% include 'queues.html' %}
+</div>
 {% endblock %}
 
 {% block javascript %}
-<script type="text/javascript" src="/static/js/profile.js"></script>
+  <script type="text/javascript" src="/static/js/profile.js"></script>
 {% endblock %}
