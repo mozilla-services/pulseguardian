@@ -236,8 +236,13 @@ if __name__ == "__main__":
                       help='use fake account for local https logins; defaults to %s' %
                       DEFAULT_FAKEACCOUNT)
     (opts, args) = parser.parse_args()
-
-    app.run(host=config.flask_host,
-            port=config.flask_port,
-            debug=config.flask_debug_mode,
-            ssl_context='adhoc')
+    app.fake_account = opts.fake_account
+    if not opts.fake_account:
+        app.run(host=config.flask_host,
+                port=config.flask_port,
+                debug=config.flask_debug_mode)
+    else:
+        app.run(host=config.flask_host,
+                port=config.flask_port,
+                debug=config.flask_debug_mode,
+                ssl_context='adhoc')
