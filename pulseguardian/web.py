@@ -5,6 +5,7 @@ import logging
 import logging.handlers
 import re
 from functools import wraps
+import optparse
 
 from flask import Flask, render_template, session, g, redirect, request, jsonify
 import requests
@@ -29,6 +30,7 @@ file_handler.setFormatter(formatter)
 
 app.logger.addHandler(file_handler)
 
+DEFAULT_FAKEACCOUNT = False
 
 # Initializing the rabbitmq management API
 pulse_management = PulseManagementAPI(host=config.rabbit_host,
@@ -227,6 +229,14 @@ def logout_handler():
 
 
 if __name__ == "__main__":
+    # Parsing parameters
+    parser = optparse.OptionParser()
+    parser.add_option('--fake', action='store_true', dest='fake_account',
+                      default=DEFAULT_FAKEACCOUNT,
+                      help='use fake account for local https logins; defaults to %s' %
+                      DEFAULT_FAKEACCOUNT)
+    (opts, args) = parser.parse_args()
+
     app.run(host=config.flask_host,
             port=config.flask_port,
             debug=config.flask_debug_mode,
