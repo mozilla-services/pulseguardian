@@ -5,6 +5,7 @@ import logging
 import logging.handlers
 import re
 from functools import wraps
+import optparse
 
 from flask import Flask, render_template, session, g, redirect, request, jsonify
 import requests
@@ -29,6 +30,7 @@ file_handler.setFormatter(formatter)
 
 app.logger.addHandler(file_handler)
 
+DEFAULT_FAKEACCOUNT = 'test@test.com'
 
 # Initializing the rabbitmq management API
 pulse_management = PulseManagementAPI(host=config.rabbit_host,
@@ -59,14 +61,21 @@ def requires_login(f):
 @app.context_processor
 def inject_user():
     """Injects a user and configuration in templates' context."""
-    cur_user = User.query.filter(User.email == session.get('email')).first()
+    if FAKE_USER:
+        cur_user = g.user
+    else:
+        cur_user = User.query.filter(User.email == session.get('email')).first()
     return dict(cur_user=cur_user, config=config, session=session)
 
 
 @app.before_request
 def load_user():
     """Loads the currently logged-in user (if any) to the request context."""
-    g.user = User.query.filter(User.email == session.get('email')).first()
+    if FAKE_USER:
+        username = FAKE_USER.split('2')[0]
+        g.user = User(email=FAKE_USER, username=username, admin=True)
+    else:
+        g.user = User.query.filter(User.email == session.get('email')).first()
 
 
 @app.teardown_appcontext
@@ -227,7 +236,17 @@ def logout_handler():
 
 
 if __name__ == "__main__":
+    # Parsing parameters
+    parser = optparse.OptionParser()
+    parser.add_option('--fake-account', action='store', dest='fake_account',
+                      default=DEFAULT_FAKEACCOUNT,
+                      help='use fake account for local https logins; defaults to %s' %
+                      DEFAULT_FAKEACCOUNT)
+    (opts, args) = parser.parse_args()
+    ssl_mode = None if opts.fake_account else 'adhoc' 
+
+    FAKE_USER = opts.fake_account
     app.run(host=config.flask_host,
             port=config.flask_port,
             debug=config.flask_debug_mode,
-            ssl_context='adhoc')
+            ssl_context=ssl_mode)
