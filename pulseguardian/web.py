@@ -30,7 +30,7 @@ file_handler.setFormatter(formatter)
 
 app.logger.addHandler(file_handler)
 
-DEFAULT_FAKEACCOUNT = False
+DEFAULT_FAKEACCOUNT = 'test@test.com'
 
 # Initializing the rabbitmq management API
 pulse_management = PulseManagementAPI(host=config.rabbit_host,
@@ -231,7 +231,7 @@ def logout_handler():
 if __name__ == "__main__":
     # Parsing parameters
     parser = optparse.OptionParser()
-    parser.add_option('--fake', action='store_true', dest='fake_account',
+    parser.add_option('--fake-account', action='store', dest='fake_account',
                       default=DEFAULT_FAKEACCOUNT,
                       help='use fake account for local https logins; defaults to %s' %
                       DEFAULT_FAKEACCOUNT)
