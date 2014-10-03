@@ -250,7 +250,7 @@ def register_handler():
 
     if password != password_verification:
         errors.append("Password verification doesn't match the password.")
-    elif not re.match('^[a-z0-9]+$', username):
+    elif not re.match('^[A-Za-z0-9]+$', username):
         errors.append("The submitted username contains non-alphanumeric "
                       "characters.")
     if not PulseUser.strong_password(password):
