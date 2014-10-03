@@ -61,14 +61,21 @@ def requires_login(f):
 @app.context_processor
 def inject_user():
     """Injects a user and configuration in templates' context."""
-    cur_user = User.query.filter(User.email == session.get('email')).first()
+    if FAKE_USER:
+        cur_user = g.user
+    else:
+        cur_user = User.query.filter(User.email == session.get('email')).first()
     return dict(cur_user=cur_user, config=config, session=session)
 
 
 @app.before_request
 def load_user():
     """Loads the currently logged-in user (if any) to the request context."""
-    g.user = User.query.filter(User.email == session.get('email')).first()
+    if FAKE_USER:
+        username = FAKE_USER.split('2')[0]
+        g.user = User(email=FAKE_USER, username=username, admin=True)
+    else:
+        g.user = User.query.filter(User.email == session.get('email')).first()
 
 
 @app.teardown_appcontext
@@ -238,8 +245,7 @@ if __name__ == "__main__":
     (opts, args) = parser.parse_args()
     ssl_mode = None if opts.fake_account else 'adhoc' 
 
-    app.config['FAKE_ACCOUNT'] = '' if not opts.fake_account else opts.fake_account
-
+    FAKE_USER = opts.fake_account
     app.run(host=config.flask_host,
             port=config.flask_port,
             debug=config.flask_debug_mode,
