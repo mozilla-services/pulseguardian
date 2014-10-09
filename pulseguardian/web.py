@@ -250,12 +250,14 @@ def register_handler():
 
     if password != password_verification:
         errors.append("Password verification doesn't match the password.")
-    elif not re.match('^[A-Za-z0-9]+$', username):
-        errors.append("The submitted username contains non-alphanumeric "
-                      "characters.")
-    if not PulseUser.strong_password(password):
+    elif not PulseUser.strong_password(password):
         errors.append("Your password must contain a mix of letters and "
                       "numerical characters and be at least 6 characters long.")
+
+    if not re.match('^[a-zA-Z][a-zA-Z0-9._-]*$', username):
+        errors.append("The submitted username must start with an "
+                      "alphabetical character and contain only alphanumeric "
+                      "characters, periods, underscores, and hyphens.")
 
     # Checking if a user exists in RabbitMQ OR in our db
     try:

@@ -36,9 +36,10 @@ class PulseUser(Base):
         if management_api is not None:
             management_api.create_user(username=username, password=password)
 
-            read_perms = '^(queue/{0}/.*|exchange/.*)'.format(username)
+            esc_username = re.escape(username)
+            read_perms = '^(queue/{0}/.*|exchange/.*)'.format(esc_username)
             write_conf_perms = '^(queue/{0}/.*|exchange/{0}/.*)'.format(
-                username)
+                esc_username)
 
             management_api.set_permission(username=username,
                                           vhost='/',
