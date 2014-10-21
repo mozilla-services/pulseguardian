@@ -2,6 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import sys
+import argparse
 import logging
 import logging.handlers
 import re
@@ -285,8 +287,17 @@ def logout_handler():
     return jsonify(ok=True, redirect='/')
 
 
-if __name__ == "__main__":
+def cli(args):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--fake-account', help='Email for fake dev account',
+                        default=None)
+
+    args = parser.parse_args(args)
+    
     app.run(host=config.flask_host,
             port=config.flask_port,
             debug=config.flask_debug_mode,
             ssl_context='adhoc')
+
+if __name__ == "__main__":
+    cli(sys.argv[1:])
