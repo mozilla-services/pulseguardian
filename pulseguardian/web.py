@@ -291,13 +291,17 @@ def cli(args):
     parser = argparse.ArgumentParser()
     parser.add_argument('--fake-account', help='Email for fake dev account',
                         default=None)
-
-    args = parser.parse_args(args)
     
+    args = parser.parse_args(args)    
+    ssl_context = 'adhoc'
+    
+    if args.fake_account:
+        ssl_context = None    
+            
     app.run(host=config.flask_host,
             port=config.flask_port,
             debug=config.flask_debug_mode,
-            ssl_context='adhoc')
+            ssl_context=ssl_context)
 
 if __name__ == "__main__":
     cli(sys.argv[1:])
