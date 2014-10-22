@@ -12,3 +12,4 @@ kombu==3.0.15
 pytz==2014.2
 requests==2.2.1
 wsgiref==0.1.2
+argparse==1.2.1
