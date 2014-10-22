@@ -52,7 +52,7 @@ fake_account = None
 # restrict access to some pages
 
 
-def load_fake_user(fake_account):
+def load_fake_account(fake_account):
     """ Load fake user and setup session. """
     
     # Set session user
@@ -61,7 +61,7 @@ def load_fake_user(fake_account):
     # Check if user already exists in the database, creating it if not
     g.user = user = User.query.filter(User.email == fake_account).first()
     if user is None:
-        g.useruser = User.new_user(email=email)
+        g.useruser = User.new_user(email=fake_account)
     
             
 def requires_login(f):
@@ -107,10 +107,16 @@ def shutdown_session(exception=None):
 
 @app.route('/')
 def index():
+    global fake_account    
+                
     if session.get('email'):
         if g.user.pulse_users:
             return redirect('/profile')
         return redirect('/register')
+    elif fake_account:
+        load_fake_account(fake_account)
+        return redirect('/')
+    
     return render_template('index.html')
 
 
