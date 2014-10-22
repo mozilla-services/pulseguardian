@@ -57,6 +57,7 @@ def load_fake_account(fake_account):
     
     # Set session user
     session['email'] = fake_account
+    session['fake_account'] = True
     
     # Check if user already exists in the database, creating it if not
     g.user = user = User.query.filter(User.email == fake_account).first()
@@ -113,6 +114,7 @@ def index():
         if g.user.pulse_users:
             return redirect('/profile')
         return redirect('/register')
+    # Check if fake account is set and load user
     elif fake_account:
         load_fake_account(fake_account)
         return redirect('/')

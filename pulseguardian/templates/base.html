@@ -46,7 +46,9 @@
         {% endblock %}
 
         <!-- External JS files -->
-        <script src="https://login.persona.org/include.js"></script>
+        {% if not session.get('fake_account') %}
+            <script src="https://login.persona.org/include.js"></script>
+        {% endif %}
 
     </body>
 
