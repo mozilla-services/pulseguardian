@@ -52,6 +52,18 @@ fake_account = None
 # restrict access to some pages
 
 
+def load_fake_user(fake_account):
+    """ Load fake user and setup session. """
+    
+    # Set session user
+    session['email'] = fake_account
+    
+    # Check if user already exists in the database, creating it if not
+    g.user = user = User.query.filter(User.email == fake_account).first()
+    if user is None:
+        g.useruser = User.new_user(email=email)
+    
+            
 def requires_login(f):
     """Decorator for views that require the user to be logged-in."""
     @wraps(f)
