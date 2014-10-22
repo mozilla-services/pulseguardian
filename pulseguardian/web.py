@@ -290,18 +290,23 @@ def logout_handler():
 
 
 def cli(args):
+    """ Process command line arguments and do some setup. """
     global fake_account
     
+    # Process command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--fake-account', help='Email for fake dev account',
                         default=None)
     
-    args = parser.parse_args(args)    
+    args = parser.parse_args(args)
+    # Default value for SSL context
     ssl_context = 'adhoc'
     
+    # If fake account is provided we need to do some setup
     if args.fake_account:
         ssl_context = None
-        fake_account = args.fake_account        
+        fake_account = args.fake_account
+        app.config['SESSION_COOKIE_SECURE'] = False
 
     app.run(host=config.flask_host,
             port=config.flask_port,
