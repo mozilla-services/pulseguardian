@@ -54,17 +54,17 @@ fake_account = None
 
 def load_fake_account(fake_account):
     """ Load fake user and setup session. """
-    
+
     # Set session user
     session['email'] = fake_account
     session['fake_account'] = True
-    
+
     # Check if user already exists in the database, creating it if not
     g.user = user = User.query.filter(User.email == fake_account).first()
     if user is None:
         g.useruser = User.new_user(email=fake_account)
-    
-            
+
+
 def requires_login(f):
     """Decorator for views that require the user to be logged-in."""
     @wraps(f)
@@ -106,10 +106,11 @@ def shutdown_session(exception=None):
 
 # Views
 
+
 @app.route('/')
 def index():
-    global fake_account    
-                
+    global fake_account
+
     if session.get('email'):
         if g.user.pulse_users:
             return redirect('/profile')
@@ -118,7 +119,7 @@ def index():
     elif fake_account:
         load_fake_account(fake_account)
         return redirect('/')
-    
+
     return render_template('index.html')
 
 
@@ -312,16 +313,16 @@ def logout_handler():
 def cli(args):
     """ Process command line arguments and do some setup. """
     global fake_account
-    
+
     # Process command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--fake-account', help='Email for fake dev account',
                         default=None)
-    
+
     args = parser.parse_args(args)
     # Default value for SSL context
     ssl_context = 'adhoc'
-    
+
     # If fake account is provided we need to do some setup
     if args.fake_account:
         ssl_context = None
@@ -332,8 +333,7 @@ def cli(args):
             port=config.flask_port,
             debug=config.flask_debug_mode,
             ssl_context=ssl_context)
-    
+
 
 if __name__ == "__main__":
-    cli(sys.argv[1:])    
-    
+    cli(sys.argv[1:])
