@@ -60,8 +60,8 @@ def load_fake_account(fake_account):
     session['fake_account'] = True
 
     # Check if user already exists in the database, creating it if not.
-    g.user = user = User.query.filter(User.email == fake_account).first()
-    if user is None:
+    g.user = User.query.filter(User.email == fake_account).first()
+    if g.user is None:
         g.useruser = User.new_user(email=fake_account)
 
 
