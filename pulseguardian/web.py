@@ -53,13 +53,13 @@ fake_account = None
 
 
 def load_fake_account(fake_account):
-    """ Load fake user and setup session. """
+    """Load fake user and setup session."""
 
-    # Set session user
+    # Set session user.
     session['email'] = fake_account
     session['fake_account'] = True
 
-    # Check if user already exists in the database, creating it if not
+    # Check if user already exists in the database, creating it if not.
     g.user = user = User.query.filter(User.email == fake_account).first()
     if user is None:
         g.useruser = User.new_user(email=fake_account)
@@ -115,7 +115,7 @@ def index():
         if g.user.pulse_users:
             return redirect('/profile')
         return redirect('/register')
-    # Check if fake account is set and load user
+    # Check if fake account is set and load user.
     elif fake_account:
         load_fake_account(fake_account)
         return redirect('/')
@@ -314,13 +314,13 @@ def cli(args):
     """ Process command line arguments and do some setup. """
     global fake_account
 
-    # Process command line arguments
+    # Process command line arguments.
     parser = argparse.ArgumentParser()
     parser.add_argument('--fake-account', help='Email for fake dev account',
                         default=None)
 
     args = parser.parse_args(args)
-    # Default value for SSL context
+    # Default value for SSL context.
     ssl_context = 'adhoc'
 
     # If fake account is provided we need to do some setup
