@@ -90,6 +90,12 @@ def inject_user():
 @app.before_request
 def load_user():
     """Loads the currently logged-in user (if any) to the request context."""
+    
+    # Check if fake account is set and load user.
+    if fake_account:
+        load_fake_account(fake_account)
+        return
+    
     email = session.get('email')
     if not email:
         g.user = None
@@ -114,12 +120,7 @@ def index():
     if session.get('email'):
         if g.user.pulse_users:
             return redirect('/profile')
-        return redirect('/register')
-    # Check if fake account is set and load user.
-    elif fake_account:
-        load_fake_account(fake_account)
-        return redirect('/')
-
+        return redirect('/register')    
     return render_template('index.html')
 
 
