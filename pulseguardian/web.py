@@ -62,7 +62,7 @@ def load_fake_account(fake_account):
     # Check if user already exists in the database, creating it if not.
     g.user = User.query.filter(User.email == fake_account).first()
     if g.user is None:
-        g.useruser = User.new_user(email=fake_account)
+        g.user = User.new_user(email=fake_account)
 
 
 def requires_login(f):
