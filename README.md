@@ -39,7 +39,7 @@ on a production instance.
 * Optional: Generate some dummy data (dummy user account, admin account):
   `python dbinit.py --dummy`
 * Run the Pulse Guardian daemon with: `python guardian.py`
-* Run the web app (for development) with: `python web.py`
+* Run the web app (for development) with: `python web.py --fake-account fake@email.com` - it will create a fake account and disable HTTPS
 * For production, the web app can be run with [gunicorn][] and such.
 * Run tests with: `python runtests.py`
 
