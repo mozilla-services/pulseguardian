@@ -112,7 +112,6 @@ def shutdown_session(exception=None):
 
 # Views
 
-
 @app.route('/')
 def index():
     global fake_account
@@ -120,7 +119,7 @@ def index():
     if session.get('email'):
         if g.user.pulse_users:
             return redirect('/profile')
-        return redirect('/register')    
+        return redirect('/register')
     return render_template('index.html')
 
 
