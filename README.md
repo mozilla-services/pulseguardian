@@ -22,6 +22,11 @@ information on [the wiki][].
 ```
   pip install -r requirements.txt
 ```
+* If you are planning to run the development version, you will also need
+  pyOpenSSL:
+```
+  pip install pyOpenSSL
+```
 * Copy `pulseguardian/config.py.example` to `pulseguardian/config.py` and
   update it with the correct settings (database, email password, etc.)
 
