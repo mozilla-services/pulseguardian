@@ -39,10 +39,14 @@ on a production instance.
 * Optional: Generate some dummy data (dummy user account, admin account):
   `python dbinit.py --dummy`
 * Run the Pulse Guardian daemon with: `python guardian.py`
-* Run the web app (for development) with: `python web.py --fake-account fake@email.com` - it will create a fake account and disable HTTPS
+* Run the web app (for development) with: 
+    * `python web.py --fake-account fake@email.com`
 * For production, the web app can be run with [gunicorn][] and such.
 * Run tests with: `python runtests.py`
 
+The fake account option will make development easier. This feature will
+disable HTTPS and bypass Persona for testing. It will also create the 
+given user, if necessary, and log in automatically. 
 
 [the wiki]: https://wiki.mozilla.org/Auto-tools/Projects/Pulse/PulseGuardian
 [gunicorn]: https://www.digitalocean.com/community/articles/how-to-deploy-python-wsgi-apps-using-gunicorn-http-server-behind-nginx
