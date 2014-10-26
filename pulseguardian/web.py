@@ -90,12 +90,12 @@ def inject_user():
 @app.before_request
 def load_user():
     """Loads the currently logged-in user (if any) to the request context."""
-    
+
     # Check if fake account is set and load user.
     if fake_account:
         load_fake_account(fake_account)
         return
-    
+
     email = session.get('email')
     if not email:
         g.user = None
@@ -311,7 +311,7 @@ def logout_handler():
 
 
 def cli(args):
-    """ Process command line arguments and do some setup. """
+    """Process command line arguments and do some setup."""
     global fake_account
 
     # Process command line arguments.
