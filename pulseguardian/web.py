@@ -36,6 +36,18 @@ file_handler.setFormatter(formatter)
 
 app.logger.addHandler(file_handler)
 
+# Setting default logger
+logger = logging.getLogger(__name__)
+handler = logging.handlers.RotatingFileHandler(config.WEBAPP_LOG_PATH,
+                                               mode='a+',
+                                               maxBytes=config.MAX_LOG_SIZE)
+formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s",
+                              "%Y-%m-%d %H:%M:%S")
+handler.setFormatter(formatter)
+
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
 
 # Initializing the rabbitmq management API
 pulse_management = PulseManagementAPI(host=config.rabbit_host,
