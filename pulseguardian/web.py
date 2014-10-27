@@ -74,14 +74,22 @@ app.config['SESSION_COOKIE_SECURE'] = True
 # Setting up the web app's logger
 file_handler = logging.handlers.RotatingFileHandler(
     config.WEBAPP_LOG_PATH, mode='a+',
-    maxBytes=config.MAX_LOG_SIZE)
-file_handler.setLevel(logging.WARNING)
+    maxBytes=config.MAX_LOG_SIZE,
+    backupCount=config.BACKUP_COUNT)
+
 formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s",
                               "%Y-%m-%d %H:%M:%S")
 file_handler.setFormatter(formatter)
 
 app.logger.addHandler(file_handler)
 
+# Setting root logger
+logging.getLogger().addHandler(file_handler)
+
+if config.DEBUG:
+    logging.getLogger().setLevel(logging.DEBUG)
+else:
+    logging.getLogger().setLevel(logging.INFO)
 
 # Initializing the rabbitmq management API
 pulse_management = PulseManagementAPI(host=config.rabbit_host,
@@ -208,7 +216,7 @@ def delete_queue(queue_name):
         try:
             pulse_management.delete_queue(vhost='/', queue=queue.name)
         except PulseManagementException as e:
-            app.logger.warning("Couldn't delete the queue '{0}' on "
+            logging.warning("Couldn't delete the queue '{0}' on "
                                "rabbitmq: {1}".format(queue_name, e))
             return jsonify(ok=False)
         db_session.delete(queue)
@@ -221,17 +229,17 @@ def delete_queue(queue_name):
 @app.route('/pulse-user/<pulse_username>', methods=['DELETE'])
 @requires_login
 def delete_pulse_user(pulse_username):
-    app.logger.info('Request to delete Pulse user "{0}".'.format(pulse_username))
+    logging.info('Request to delete Pulse user "{0}".'.format(pulse_username))
     pulse_user = PulseUser.query.filter(PulseUser.username == pulse_username).first()
 
     if pulse_user and (g.user.admin or pulse_user.owner == g.user):
         try:
             pulse_management.delete_user(pulse_user.username)
         except PulseManagementException as e:
-            app.logger.warning("Couldn't delete user '{0}' on "
+            logging.warning("Couldn't delete user '{0}' on "
                                "rabbitmq: {1}".format(pulse_username, e))
             return jsonify(ok=False)
-        app.logger.info('Pulse user "{0}" deleted.'.format(pulse_username))
+        logging.info('Pulse user "{0}" deleted.'.format(pulse_username))
         db_session.delete(pulse_user)
         db_session.commit()
         return jsonify(ok=True)
@@ -272,7 +280,7 @@ def auth_handler():
     # Oops, something failed. Abort.
     error_msg = "Couldn't connect to the Persona verifier ({0})".format(
         config.persona_verifier)
-    app.logger.error(error_msg)
+    logging.error(error_msg)
     return jsonify(ok=False, message=error_msg)
 
 
@@ -358,6 +366,9 @@ def cli(args):
     """Process command line arguments and do some setup."""
     global fake_account
 
+    # Add StreamHandler for development purposes
+    logging.getLogger().addHandler(logging.StreamHandler())
+
     # Process command line arguments.
     parser = argparse.ArgumentParser()
     parser.add_argument('--fake-account', help='Email for fake dev account',
@@ -373,7 +384,7 @@ def cli(args):
         dev_cert = '%s.crt' % DEV_CERT_BASE
         dev_cert_key = '%s.key' % DEV_CERT_BASE
         if not os.path.exists(dev_cert) or not os.path.exists(dev_cert_key):
-            app.logger.info('Creating dev certificate and key.')
+            logging.info('Creating dev certificate and key.')
             werkzeug.serving.make_ssl_devcert(DEV_CERT_BASE, host='localhost')
         ssl_context = (dev_cert, dev_cert_key)
 

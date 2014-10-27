@@ -14,18 +14,21 @@ from management import PulseManagementAPI
 from sendemail import sendemail
 import config
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-handler = logging.handlers.RotatingFileHandler(config.GUARDIAN_LOG_PATH, mode='a+',
-                                               maxBytes=config.MAX_LOG_SIZE)
+handler = logging.handlers.RotatingFileHandler(
+    config.GUARDIAN_LOG_PATH,
+    mode='a+',
+    maxBytes=config.MAX_LOG_SIZE,
+    backupCount=config.BACKUP_COUNT)
 formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s",
                               "%Y-%m-%d %H:%M:%S")
 handler.setFormatter(formatter)
 
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
+logging.getLogger().addHandler(handler)
 
-DEFAULT_LOGLEVEL = 'INFO'
+if config.DEBUG:
+    logging.getLogger().setLevel(logging.DEBUG)
+else:
+    logging.getLogger().setLevel(logging.INFO)
 
 
 class PulseGuardian(object):
@@ -66,7 +69,7 @@ class PulseGuardian(object):
 
         # Delete those queues.
         for queue in deleted_queues:
-            logger.info("Queue '{0}' has been deleted.".format(queue))
+            logging.info("Queue '{0}' has been deleted.".format(queue))
             db_session.delete(queue)
         db_session.commit()
 
@@ -83,7 +86,7 @@ class PulseGuardian(object):
 
         # If the queue doesn't exist in the db, create it.
         if queue is None:
-            logger.info("New queue '{0}' encountered. "
+            logging.info("New queue '{0}' encountered. "
                         "Adding to the database.".format(q_name))
             queue = Queue(name=q_name, owner=None)
 
@@ -94,11 +97,11 @@ class PulseGuardian(object):
 
         # If we don't know who created the queue...
         if queue.owner is None:
-            logger.debug("Queue '{0}' owner's unknown.".format(q_name))
+            logging.debug("Queue '{0}' owner's unknown.".format(q_name))
 
             # If no client is currently consuming the queue, just skip it.
             if queue_data['consumers'] == 0:
-                logger.debug("Queue '{0}' skipped (no owner, no current "
+                logging.debug("Queue '{0}' skipped (no owner, no current "
                              "consumer).".format(q_name))
                 return queue
 
@@ -111,13 +114,13 @@ class PulseGuardian(object):
             # If the queue was created by a user that isn't in the
             # pulseguardian database, skip the queue.
             if pulse_user is None:
-                logger.info(
+                logging.info(
                     "Queue '{0}' owner, {1}, isn't in the db. Creating the "
                     "user.".format(q_name, owner_name))
                 pulse_user = PulseUser.new_user(owner_name)
 
             # Assign the user to the queue.
-            logger.info(
+            logging.info(
                 "Assigning queue '{0}' to user {1}.".format(q_name, pulse_user))
             queue.owner = pulse_user
             db_session.add(queue)
@@ -135,7 +138,7 @@ class PulseGuardian(object):
             # If a queue is over the deletion size, regardless of it having an
             # owner or not, delete it.
             if queue.size > self.del_queue_size:
-                logger.warning("Queue '{0}' deleted. Queue size = {1}; "
+                logging.warning("Queue '{0}' deleted. Queue size = {1}; "
                                "del_queue_size = {2}".format(
                     queue.name, queue.size, self.del_queue_size))
                 if queue.owner and queue.owner.owner:
@@ -152,7 +155,7 @@ class PulseGuardian(object):
                 continue
 
             if queue.size > self.warn_queue_size and not queue.warned:
-                logger.warning("Warning queue '{0}' owner. Queue size = {1}; "
+                logging.warning("Warning queue '{0}' owner. Queue size = {1}; "
                                "warn_queue_size = {2}".format(
                     queue.name, queue.size, self.warn_queue_size))
                 queue.warned = True
@@ -162,7 +165,7 @@ class PulseGuardian(object):
             elif queue.size <= self.warn_queue_size and queue.warned:
                 # A previously warned queue got out of the warning threshold;
                 # its owner should not be warned again.
-                logger.warning("Queue '{0}' was in warning zone but is OK "
+                logging.warning("Queue '{0}' was in warning zone but is OK "
                                "now".format(queue.name, queue.size,
                                             self.del_queue_size))
                 queue.warned = False
@@ -236,7 +239,7 @@ now back to normal ({2} ready messages, {3} total messages).
                       password=config.email_password, text_data=body)
 
     def guard(self):
-        logger.info("PulseGuardian started")
+        logging.info("PulseGuardian started")
         while True:
             queues = self.api.queues()
             if queues:
@@ -246,20 +249,8 @@ now back to normal ({2} ready messages, {3} total messages).
 
 
 if __name__ == '__main__':
-    # Parsing parameters
-    parser = optparse.OptionParser()
-    parser.add_option('--log', action='store', dest='loglevel',
-                      default=DEFAULT_LOGLEVEL,
-                      help='logging level; defaults to "%s"'
-                      % DEFAULT_LOGLEVEL)
-    (opts, args) = parser.parse_args()
-
-    # Configuring logging
-    loglevel = opts.loglevel
-    numeric_level = getattr(logging, loglevel.upper(), None)
-    if not isinstance(numeric_level, int):
-        raise ValueError('Invalid log level: %s' % loglevel)
-    logger.setLevel(level=numeric_level)
+    # Add StreamHandler for development purposes
+    logging.getLogger().addHandler(logging.StreamHandler())
 
     # Initialize the database if necessary.
     init_db()

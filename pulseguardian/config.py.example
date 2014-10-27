@@ -33,3 +33,6 @@ polling_interval = 5
 GUARDIAN_LOG_PATH = 'log_guardian.log'
 WEBAPP_LOG_PATH = 'log_web_guardian.log'
 MAX_LOG_SIZE = 20480
+BACKUP_COUNT = 5
+DEBUG = False
+
