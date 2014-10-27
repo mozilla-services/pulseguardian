@@ -279,7 +279,6 @@ def update_info():
 
 @app.route('/register', methods=['POST'])
 def register_handler():
-    logger.info('Registering new Pulse user "{0}".'.format(request.form['username']))
     username = request.form['username']
     password = request.form['password']
     password_verification = request.form['password-verification']
