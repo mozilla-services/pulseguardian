@@ -7,28 +7,50 @@ information on [the wiki][].
 
 * RabbitMQ (tested on 3.3.0)
 * Python (2.6+)
+ * Python 2.6 **must** be supported
 * pip (to install external dependencies)
 * MySQL (if you're using the sqlalchemy MySQL engine, see below)
 
 ## Setup
 
-* Clone the repository and cd into it
+Using a virtualenv is highly recommended. One possible installation would be
+
+* Clone the repository and cd into it.
 * Create and activate a virtualenv:
-```
-  virtualenv venv
-  source venv/bin/activate
-```
+
+  ```
+    virtualenv venv
+    source venv/bin/activate
+  ```
+
+Within the chosen environment, install and configure PulseGuardian:
+
 * Install the requirements:
-```
-  pip install -r requirements.txt
-```
-* If you are planning to run the development version, you will also need
-  pyOpenSSL:
-```
-  pip install pyOpenSSL
-```
+
+  ```
+    pip install -r requirements.txt
+  ```
+
 * Copy `pulseguardian/config.py.example` to `pulseguardian/config.py` and
   update it with the correct settings (database, email password, etc.)
+
+Because Persona requires an https connection, if you are running the
+development server without the --fake-account option (see below), you
+will also need the pyOpenSSL package.
+
+Due to a bug in pyOpenSSL, development under Python 2.6 currently
+requires unreleased code:
+
+    pip install -e git+git://github.com/pyca/pyopenssl#egg=PyOpenSSL
+
+Python 2.7 can use released versions:
+
+    pip install pyOpenSSL
+
+Note that, due to deployment logistics, PulseGuardian **must** run under
+Python 2.6. Feel free to develop under 2.7, but don't use any
+2.7-specific features, and try to test under 2.6 before submitting a
+patch.
 
 ## Usage
 

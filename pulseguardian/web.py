@@ -5,12 +5,14 @@
 import argparse
 import logging
 import logging.handlers
+import os.path
 import re
 import sys
 from functools import wraps
 
 import requests
 import sqlalchemy.orm.exc
+import werkzeug.serving
 from flask import Flask, render_template, session, g, redirect, request, jsonify
 
 import config
@@ -19,6 +21,50 @@ from model.pulse_user import PulseUser
 from model.user import User
 from model.queue import Queue
 from management import PulseManagementAPI, PulseManagementException
+
+# Development cert/key base filename.
+DEV_CERT_BASE = 'dev'
+
+# Monkey-patch werkzeug.
+
+def generate_adhoc_ssl_pair(cn=None):
+    """Generate a 1024-bit self-signed SSL pair.
+    This is a verbatim copy of werkzeug.serving.generate_adhoc_ssl_pair
+    from commit 91ec97963c77188cc75ba19b66e1ba0929376a34 except the key
+    length has been increased from 768 bits to 1024 bits, since recent
+    versions of Firefox and other browsers have increased key-length
+    requirements.
+    """
+    from random import random
+    from OpenSSL import crypto
+
+    # pretty damn sure that this is not actually accepted by anyone
+    if cn is None:
+        cn = '*'
+
+    cert = crypto.X509()
+    cert.set_serial_number(int(random() * sys.maxint))
+    cert.gmtime_adj_notBefore(0)
+    cert.gmtime_adj_notAfter(60 * 60 * 24 * 365)
+
+    subject = cert.get_subject()
+    subject.CN = cn
+    subject.O = 'Dummy Certificate'
+
+    issuer = cert.get_issuer()
+    issuer.CN = 'Untrusted Authority'
+    issuer.O = 'Self-Signed'
+
+    pkey = crypto.PKey()
+    pkey.generate_key(crypto.TYPE_RSA, 1024)
+    cert.set_pubkey(pkey)
+    cert.sign(pkey, 'md5')
+
+    return cert, pkey
+
+# This is used by werkzeug.serving.make_ssl_devcert().
+werkzeug.serving.generate_adhoc_ssl_pair = generate_adhoc_ssl_pair
+
 
 # Initializing the web app and the database
 app = Flask(__name__)
@@ -119,8 +165,6 @@ def shutdown_session(exception=None):
 
 @app.route('/')
 def index():
-    global fake_account
-
     if session.get('email'):
         if g.user.pulse_users:
             return redirect('/profile')
@@ -323,16 +367,20 @@ def cli(args):
     parser = argparse.ArgumentParser()
     parser.add_argument('--fake-account', help='Email for fake dev account',
                         default=None)
-
     args = parser.parse_args(args)
-    # Default value for SSL context.
-    ssl_context = 'adhoc'
 
     # If fake account is provided we need to do some setup
     if args.fake_account:
         ssl_context = None
         fake_account = args.fake_account
         app.config['SESSION_COOKIE_SECURE'] = False
+    else:
+        dev_cert = '%s.crt' % DEV_CERT_BASE
+        dev_cert_key = '%s.key' % DEV_CERT_BASE
+        if not os.path.exists(dev_cert) or not os.path.exists(dev_cert_key):
+            app.logger.info('Creating dev certificate and key.')
+            werkzeug.serving.make_ssl_devcert(DEV_CERT_BASE, host='localhost')
+        ssl_context = (dev_cert, dev_cert_key)
 
     app.run(host=config.flask_host,
             port=config.flask_port,
