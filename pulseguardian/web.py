@@ -74,7 +74,8 @@ app.config['SESSION_COOKIE_SECURE'] = True
 # Setting up the web app's logger
 file_handler = logging.handlers.RotatingFileHandler(
     config.WEBAPP_LOG_PATH, mode='a+',
-    maxBytes=config.MAX_LOG_SIZE)
+    maxBytes=config.MAX_LOG_SIZE,
+    backupCount=5)
 file_handler.setLevel(logging.INFO)
 formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s",
                               "%Y-%m-%d %H:%M:%S")
