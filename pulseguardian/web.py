@@ -29,7 +29,7 @@ app.config['SESSION_COOKIE_SECURE'] = True
 file_handler = logging.handlers.RotatingFileHandler(
     config.WEBAPP_LOG_PATH, mode='a+',
     maxBytes=config.MAX_LOG_SIZE)
-file_handler.setLevel(logging.WARNING)
+file_handler.setLevel(logging.INFO)
 formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s",
                               "%Y-%m-%d %H:%M:%S")
 file_handler.setFormatter(formatter)
@@ -38,14 +38,7 @@ app.logger.addHandler(file_handler)
 
 # Setting default logger
 logger = logging.getLogger(__name__)
-handler = logging.handlers.RotatingFileHandler(config.WEBAPP_LOG_PATH,
-                                               mode='a+',
-                                               maxBytes=config.MAX_LOG_SIZE)
-formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s",
-                              "%Y-%m-%d %H:%M:%S")
-handler.setFormatter(formatter)
-
-logger.addHandler(handler)
+logger.addHandler(file_handler)
 logger.setLevel(logging.INFO)
 
 
