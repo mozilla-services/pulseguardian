@@ -76,7 +76,7 @@ file_handler = logging.handlers.RotatingFileHandler(
     config.WEBAPP_LOG_PATH, mode='a+',
     maxBytes=config.MAX_LOG_SIZE,
     backupCount=config.BACKUP_COUNT)
-file_handler.setLevel(logging.DEBUG)
+file_handler.setLevel(logging.INFO)
 formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s",
                               "%Y-%m-%d %H:%M:%S")
 file_handler.setFormatter(formatter)
@@ -85,7 +85,11 @@ app.logger.addHandler(file_handler)
 
 # Setting root logger
 logging.getLogger().addHandler(file_handler)
-logging.getLogger().setLevel(logging.DEBUG)
+
+if config.DEBUG:
+    logging.getLogger().setLevel(logging.DEBUG)
+else:
+    logging.getLogger().setLevel(logging.INFO)
 
 # Initializing the rabbitmq management API
 pulse_management = PulseManagementAPI(host=config.rabbit_host,
@@ -118,7 +122,7 @@ def load_fake_account(fake_account):
 def requires_login(f):
     """Decorator for views that require the user to be logged-in."""
     @wraps(f)
-    def decorated_function(*args, **kwargs):        
+    def decorated_function(*args, **kwargs):
         if session.get('email') is None:
             return redirect('/')
         return f(*args, **kwargs)
@@ -380,10 +384,10 @@ def cli(args):
             app.logger.info('Creating dev certificate and key.')
             werkzeug.serving.make_ssl_devcert(DEV_CERT_BASE, host='localhost')
         ssl_context = (dev_cert, dev_cert_key)
-    
-    # Add StreamHandler for development purposes    
+
+    # Add StreamHandler for development purposes
     logging.getLogger().addHandler(logging.StreamHandler())
-    
+
     app.run(host=config.flask_host,
             port=config.flask_port,
             debug=config.flask_debug_mode,
