@@ -76,18 +76,16 @@ file_handler = logging.handlers.RotatingFileHandler(
     config.WEBAPP_LOG_PATH, mode='a+',
     maxBytes=config.MAX_LOG_SIZE,
     backupCount=config.BACKUP_COUNT)
-file_handler.setLevel(logging.INFO)
+file_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s",
                               "%Y-%m-%d %H:%M:%S")
 file_handler.setFormatter(formatter)
 
 app.logger.addHandler(file_handler)
 
-# Setting default logger
-logger = logging.getLogger(__name__)
-logger.addHandler(file_handler)
-logger.setLevel(logging.INFO)
-
+# Setting root logger
+logging.getLogger().addHandler(file_handler)
+logging.getLogger().setLevel(logging.DEBUG)
 
 # Initializing the rabbitmq management API
 pulse_management = PulseManagementAPI(host=config.rabbit_host,
@@ -120,7 +118,7 @@ def load_fake_account(fake_account):
 def requires_login(f):
     """Decorator for views that require the user to be logged-in."""
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def decorated_function(*args, **kwargs):        
         if session.get('email') is None:
             return redirect('/')
         return f(*args, **kwargs)
