@@ -380,7 +380,10 @@ def cli(args):
             app.logger.info('Creating dev certificate and key.')
             werkzeug.serving.make_ssl_devcert(DEV_CERT_BASE, host='localhost')
         ssl_context = (dev_cert, dev_cert_key)
-
+    
+    # Add StreamHandler for development purposes    
+    logging.getLogger().addHandler(logging.StreamHandler())
+    
     app.run(host=config.flask_host,
             port=config.flask_port,
             debug=config.flask_debug_mode,
