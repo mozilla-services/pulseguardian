@@ -251,7 +251,7 @@ now back to normal ({2} ready messages, {3} total messages).
 if __name__ == '__main__':
     # Add StreamHandler for development purposes
     logging.getLogger().addHandler(logging.StreamHandler())
-    
+
     # Initialize the database if necessary.
     init_db()
 
