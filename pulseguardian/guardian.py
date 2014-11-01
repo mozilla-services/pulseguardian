@@ -27,10 +27,8 @@ logging.getLogger().addHandler(handler)
 
 if config.DEBUG:
     logging.getLogger().setLevel(logging.DEBUG)
-    DEFAULT_LOGLEVEL = 'DEBUG'
 else:
     logging.getLogger().setLevel(logging.INFO)
-    DEFAULT_LOGLEVEL = 'INFO'
 
 
 class PulseGuardian(object):
@@ -251,21 +249,6 @@ now back to normal ({2} ready messages, {3} total messages).
 
 
 if __name__ == '__main__':
-    # Parsing parameters
-    parser = optparse.OptionParser()
-    parser.add_option('--log', action='store', dest='loglevel',
-                      default=DEFAULT_LOGLEVEL,
-                      help='logging level; defaults to "%s"'
-                      % DEFAULT_LOGLEVEL)
-    (opts, args) = parser.parse_args()
-
-    # Configuring logging
-    loglevel = opts.loglevel
-    numeric_level = getattr(logging, loglevel.upper(), None)
-    if not isinstance(numeric_level, int):
-        raise ValueError('Invalid log level: %s' % loglevel)
-    logging.getLogger().setLevel(level=numeric_level)
-
     # Initialize the database if necessary.
     init_db()
 
