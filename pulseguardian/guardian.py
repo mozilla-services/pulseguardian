@@ -86,7 +86,7 @@ class PulseGuardian(object):
 
         # If the queue doesn't exist in the db, create it.
         if queue is None:
-            loggging.info("New queue '{0}' encountered. "
+            logging.info("New queue '{0}' encountered. "
                         "Adding to the database.".format(q_name))
             queue = Queue(name=q_name, owner=None)
 
