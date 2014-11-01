@@ -76,7 +76,7 @@ file_handler = logging.handlers.RotatingFileHandler(
     config.WEBAPP_LOG_PATH, mode='a+',
     maxBytes=config.MAX_LOG_SIZE,
     backupCount=config.BACKUP_COUNT)
-file_handler.setLevel(logging.INFO)
+
 formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s",
                               "%Y-%m-%d %H:%M:%S")
 file_handler.setFormatter(formatter)
