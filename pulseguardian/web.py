@@ -70,7 +70,7 @@ werkzeug.serving.generate_adhoc_ssl_pair = generate_adhoc_ssl_pair
 app = Flask(__name__)
 app.secret_key = config.flask_secret_key
 app.config['SESSION_COOKIE_SECURE'] = True
-    
+
 # Setting up the web app's logger
 file_handler = logging.handlers.RotatingFileHandler(
     config.WEBAPP_LOG_PATH, mode='a+',
