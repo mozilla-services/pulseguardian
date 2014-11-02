@@ -61,6 +61,8 @@ Make sure `rabbitmq-server` is running and you're inside the source directory
 existing queues, possibly deleting users) so make sure you don't run the tests
 on a production instance.
 
+TODO: Run with a docker/vagrant image (bug 1089457).
+
 * Initialize the db with: `python dbinit.py`. *WARNING*: This removes any
   existing data the app might have previously stored in the databse.
 * Optional: Generate some dummy data (dummy user account, admin account):

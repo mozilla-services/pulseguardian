@@ -2,12 +2,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import logging
 import multiprocessing
+import sys
 import time
 import unittest
 import uuid
-import sys
-import logging
 
 from mozillapulse import consumers, publishers
 from mozillapulse.messages.test import TestMessage
@@ -15,12 +15,13 @@ from mozillapulse.messages.test import TestMessage
 import config
 # Changing the DB for the tests before the model is initialized
 config.sqlalchemy_engine_url = 'sqlite:///pulseguardian_test.db'
-from management import PulseManagementAPI
+from dbinit import init_and_clear_db
 from guardian import PulseGuardian
+from management import PulseManagementAPI
 from model.user import User
+from model.pulse_user import PulseUser
 from model.queue import Queue
 from model.base import db_session, init_db
-from dbinit import init_and_clear_db
 
 # Initializing test DB
 init_db()
@@ -82,18 +83,26 @@ class GuardianTest(unittest.TestCase):
     def setUp(self):
         init_and_clear_db()
         self.management_api = PulseManagementAPI()
-        self.guardian = PulseGuardian(self.management_api, warn_queue_size=TEST_WARN_SIZE,
-                                      del_queue_size=TEST_DELETE_SIZE, emails=False)
+        self.guardian = PulseGuardian(self.management_api,
+                                      warn_queue_size=TEST_WARN_SIZE,
+                                      del_queue_size=TEST_DELETE_SIZE,
+                                      emails=False)
 
         self.consumer_cfg = pulse_cfg.copy()
         self.consumer_cfg['applabel'] = str(uuid.uuid1())
 
-        # Configure / Create the test user to be used for message consumption
-        self.consumer_cfg['user'], self.consumer_cfg['password'] = CONSUMER_USER, CONSUMER_PASSWORD
-        username, password = self.consumer_cfg['user'], self.consumer_cfg['password']
-        self.user = User.new_user(username=username, email=CONSUMER_EMAIL,
-                                  password=password, management_api=self.management_api)
+        # Configure/create the test user to be used for message consumption.
+        self.consumer_cfg['user'] =  CONSUMER_USER
+        self.consumer_cfg['password'] = CONSUMER_PASSWORD
+        self.user = User.new_user(email=CONSUMER_EMAIL, admin=False)
         db_session.add(self.user)
+        db_session.commit()
+        self.pulse_user = PulseUser.new_user(
+            username=CONSUMER_USER,
+            password=CONSUMER_PASSWORD,
+            owner=self.user,
+            management_api=self.management_api)
+        db_session.add(self.pulse_user)
         db_session.commit()
 
         self.publisher = self.publisher_class(**pulse_cfg)
@@ -101,7 +110,8 @@ class GuardianTest(unittest.TestCase):
     def tearDown(self):
         self._terminate_proc()
         for queue in Queue.query.all():
-            self.management_api.delete_queue(vhost=DEFAULT_RABBIT_VHOST, queue=queue.name)
+            self.management_api.delete_queue(vhost=DEFAULT_RABBIT_VHOST,
+                                             queue=queue.name)
         init_and_clear_db()
 
     def _build_message(self, msg_id):
@@ -152,7 +162,7 @@ class GuardianTest(unittest.TestCase):
         self._wait_for_queue(self.consumer_cfg)
 
         # Get the queue's object
-        db_session.refresh(self.user)
+        db_session.refresh(self.pulse_user)
 
         # Queue multiple messages while no consumer exists.
         for i in xrange(self.guardian.warn_queue_size + 1):
@@ -172,18 +182,18 @@ class GuardianTest(unittest.TestCase):
                 break
 
         # Test that no queue has been warned at the beginning of the process.
-        self.assertTrue(not any(q.warned for q in self.user.queues))
+        self.assertTrue(not any(q.warned for q in self.pulse_user.queues))
         # ... but some queues should be now.
-        self.assertGreater(len(queues_to_warn), 0)
+        self.assertTrue(len(queues_to_warn) > 0)
 
         # Monitor the queues; this should detect queues that should be warned.
         self.guardian.monitor_queues(self.management_api.queues())
 
         # Refresh the user's queues state.
-        db_session.refresh(self.user)
+        db_session.refresh(self.pulse_user)
 
         # Test that the queues that had to be "warned" were.
-        self.assertTrue(all(q.warned for q in self.user.queues
+        self.assertTrue(all(q.warned for q in self.pulse_user.queues
                             if q in queues_to_warn))
 
         # The queues that needed to be warned haven't been deleted.
@@ -219,9 +229,9 @@ class GuardianTest(unittest.TestCase):
         self._wait_for_queue(self.consumer_cfg)
 
         # Get the queue's object
-        db_session.refresh(self.user)
+        db_session.refresh(self.pulse_user)
 
-        self.assertTrue(len(self.user.queues) > 0)
+        self.assertTrue(len(self.pulse_user.queues) > 0)
 
         # Queue multiple messages while no consumer exists.
         for i in xrange(self.guardian.del_queue_size + 1):
@@ -276,16 +286,28 @@ class ModelTest(unittest.TestCase):
         init_and_clear_db()
 
     def test_user(self):
-        user = User.new_user(email='dUmMy@EmAil.com', username='dummy',
-                             password='DummyPassword', management_api=None)
+        user = User.new_user(email='dUmMy@EmAil.com', admin=False)
         db_session.add(user)
         db_session.commit()
 
-        self.assertIn(user, User.query.all())
+        pulse_user = PulseUser.new_user(username='dummy',
+                                        password='DummyPassword',
+                                        owner=user,
+                                        management_api=None)
+        db_session.add(pulse_user)
+        db_session.commit()
+
+        self.assertTrue(user in User.query.all())
+
         # Emails are normalized by putting them lower-case
-        self.assertEqual(User.query.filter(User.email == 'dummy@email.com').first(), user)
-        self.assertEqual(User.query.filter(User.username == 'dummy').first(), user)
-        self.assertIsNone(User.query.filter(User.username == 'DOMMY').first())
+        self.assertEqual(
+            User.query.filter(User.email == 'dummy@email.com').first(), user)
+        self.assertEqual(
+            PulseUser.query.filter(PulseUser.username == 'dummy').first(),
+            pulse_user)
+        self.assertEqual(
+            PulseUser.query.filter(PulseUser.username == 'DUMMY').first(),
+            None)
 
 
 def main(pulse_opts):

@@ -2,14 +2,16 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import sys
 import logging
+import sys
+
+import config
 
 from model.base import db_session, init_db
 from model.user import User
+from model.pulse_user import PulseUser
 from model.queue import Queue
 from management import PulseManagementAPI, PulseManagementException
-import config
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -21,19 +23,21 @@ pulse_management = PulseManagementAPI(host=config.rabbit_host,
 
 
 def init_and_clear_db():
-    # Initializing the database schema
+    # Initialize the database schema.
     init_db()
 
-    # Removing all pulse users created by the web app
-    for user in User.query.all():
+    # Remove all users and pulse users created by the web app.
+    for pulse_user in PulseUser.query.all():
         try:
-            pulse_management.delete_user(user.username)
+            pulse_management.delete_user(pulse_user.username)
         except PulseManagementException:
             pass
 
-    # Clearing the database from old data
+    # Clear the database of old data.
     for queue in Queue.query.all():
         db_session.delete(queue)
+    for pulse_user in PulseUser.query.all():
+        db_session.delete(pulse_user)
     for user in User.query.all():
         db_session.delete(user)
 
