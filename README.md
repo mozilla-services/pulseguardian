@@ -3,6 +3,8 @@
 A system to manage Pulse: creates users and handle overgrowing queues. More
 information on [the wiki][].
 
+[![Build Status](https://travis-ci.org/mozilla/pulseguardian.svg?branch=master)](https://travis-ci.org/mozilla/pulseguardian)
+
 ## Pre-requisites
 
 * RabbitMQ (tested on 3.3.0)
