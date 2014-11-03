@@ -13,3 +13,5 @@ install:
 script:
   - cp pulseguardian/config.py.travis pulseguardian/config.py
   - python pulseguardian/runtests.py
+notifications:
+  irc: "irc.mozilla.org#pulse"

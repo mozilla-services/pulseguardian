@@ -13,6 +13,9 @@ information on [the wiki][].
 
 ## Setup
 
+See the mozillapulse [HACKING.md][] file for instructions on setting
+up a local Pulse environment.
+
 Using a virtualenv is highly recommended. One possible installation would be
 
 * Clone the repository and cd into it.
@@ -59,9 +62,12 @@ Make sure `rabbitmq-server` is running and you're inside the source directory
 
 **WARNING**: The tests will mess with your local rabbitmq instance (wiping out
 existing queues, possibly deleting users) so make sure you don't run the tests
-on a production instance.
+on a production instance. (TODO: Support a docker/vagrant image (bug 1089457))
 
-TODO: Run with a docker/vagrant image (bug 1089457).
+Note that tests are run on [Travis CI][]. Before submitting a patch,
+it is highly recommended that you get a Travis CI account and
+activate it on a GitHub fork of the pulseguardian repo. That way the
+reviewer can quickly verify that all tests still pass with your changes.
 
 * Initialize the db with: `python dbinit.py`. *WARNING*: This removes any
   existing data the app might have previously stored in the databse.
@@ -69,7 +75,7 @@ TODO: Run with a docker/vagrant image (bug 1089457).
   `python dbinit.py --dummy`
 * Run the Pulse Guardian daemon with: `python guardian.py`
 * Run the web app (for development) with:
-    * `python web.py --fake-account fake@email.com`
+  `python web.py --fake-account fake@email.com`
 * For production, the web app can be run with [gunicorn][] and such.
 * Run tests with: `python runtests.py`
 
@@ -78,4 +84,6 @@ disable HTTPS and bypass Persona for testing. It will also create the
 given user, if necessary, and log in automatically.
 
 [the wiki]: https://wiki.mozilla.org/Auto-tools/Projects/Pulse/PulseGuardian
+[HACKING.md]: https://hg.mozilla.org/automation/mozillapulse/file/tip/HACKING.md
+[Travis CI]: https://travis-ci.org/mozilla/pulseguardian
 [gunicorn]: https://www.digitalocean.com/community/articles/how-to-deploy-python-wsgi-apps-using-gunicorn-http-server-behind-nginx
