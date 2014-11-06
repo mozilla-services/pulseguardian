@@ -338,10 +338,13 @@ def register_handler():
 
     # Checking if a user exists in RabbitMQ OR in our db
     try:
-        pulse_management.user(username=username)
+        user_response = pulse_management.user(username=username)
         in_rabbitmq = True
     except PulseManagementException:
         in_rabbitmq = False
+    else:
+        if 'error' in user_response:
+            in_rabbitmq = False
 
     if (in_rabbitmq or
         PulseUser.query.filter(PulseUser.username == username).first()):
