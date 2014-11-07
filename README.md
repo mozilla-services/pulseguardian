@@ -1,4 +1,4 @@
-# PulseGuardian
+'sqlite:////{0}/pulseguardian'.format(os.getcwd())'sqlite:////{0}/pulseguardian'.format(os.getcwd())# PulseGuardian
 
 A system to manage Pulse: creates users and handle overgrowing queues. More
 information on [the wiki][].
@@ -62,9 +62,22 @@ patch.
 Make sure `rabbitmq-server` is running and you're inside the source directory
 (`pulseguardian`) before you run the following commands.
 
+You can use a Docker container to run the `rabbitmq-server`. If you want to 
+know more and/or install and use Docker please go to https://www.docker.com/. 
+In order create a Docker container running a `rabbitmq-server` please follow 
+the following steps:
+* `cd /path/to/pulseguardian/pulseguardian` - make sure you inside the folder which contains the Dockerfile
+* `docker build -t="USERNAME/pulse:v1" .` - this will create an image that will be the base for your container
+* `docker run -d -p 15672:15672 --name pulse rcastro/pulse:v1` - this will create a container named `pulse` and setup `rabbitmq-server`
+* `docker ps -l` - make sure you have container named `pulse` with ports ` 0.0.0.0:15672->15672/tcp`
+
+**NOTE 1**: You might need to run docker commands with sudo.
+
+**NOTE 2**: If you're developing on OS X, you're using `boot2docker`. That means that you can't use `localhost` as `rabbit_host` in your config file (you need the VM ip address). To find that out just run: `boot2docker ip`.
+
 **WARNING**: The tests will mess with your local rabbitmq instance (wiping out
 existing queues, possibly deleting users) so make sure you don't run the tests
-on a production instance. (TODO: Support a docker/vagrant image (bug 1089457))
+on a production instance.
 
 Note that tests are run on [Travis CI][]. Before submitting a patch,
 it is highly recommended that you get a Travis CI account and
