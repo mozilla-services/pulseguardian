@@ -62,10 +62,6 @@ patch.
 Make sure `rabbitmq-server` is running and you're inside the source directory
 (`pulseguardian`) before you run the following commands.
 
-**WARNING**: The tests will mess with your local rabbitmq instance (wiping out
-existing queues, possibly deleting users) so make sure you don't run the tests
-on a production instance. (TODO: Support a docker/vagrant image (bug 1089457))
-
 Note that tests are run on [Travis CI][]. Before submitting a patch,
 it is highly recommended that you get a Travis CI account and
 activate it on a GitHub fork of the pulseguardian repo. That way the
@@ -79,13 +75,48 @@ reviewer can quickly verify that all tests still pass with your changes.
 * Run the web app (for development) with:
   `python web.py --fake-account fake@email.com`
 * For production, the web app can be run with [gunicorn][] and such.
-* Run tests with: `python runtests.py`
 
 The fake account option will make development easier. This feature will
 disable HTTPS and bypass Persona for testing. It will also create the
 given user, if necessary, and log in automatically.
 
+## Testing
+
+PulseGuardian uses docker to run its test suite. Please follow the
+[docker installation docs][] on how to install it in your system.
+
+If you're installing on OS X, you'll be using `boot2docker`. During
+initialization, you'll prompted to set some environment variables. Don't forget
+to set them; that way the test suite will be able to pick up your docker host.
+
+The docker container container will forward ports 5673 and 15673. Please be
+sure that those ports are available.
+
+The docker daemon must always run as the root user, but you need to be able to
+run docker client commands without `sudo`. To achieve that you can:
+
+* Add the docker group if it doesn't already exist:  `sudo groupadd docker`
+
+* Add the connected user "${USER}" to the docker group. Change the user name
+to match your preferred user:  `sudo gpasswd -a ${USER} docker`
+
+* Restart the Docker daemon:  `sudo service docker restart`
+
+* You need to log out and log back in again if you added the currently logged-in
+user.
+
+Finally, you can run tests with (from your project root folder):
+`python test/runtests.py`.
+
+If you prefer, you can run the tests against a local RabbitMQ installation. For
+that you can run: `python test/runtests.py --use-local`.
+
+**WARNING**: If you use your local RabbitMQ instance the tests will mess with it
+(wiping out existing queues, possibly deleting users) so make sure you don't
+run the tests on a production instance.
+
 [the wiki]: https://wiki.mozilla.org/Auto-tools/Projects/Pulse/PulseGuardian
 [HACKING.md]: https://hg.mozilla.org/automation/mozillapulse/file/tip/HACKING.md
 [Travis CI]: https://travis-ci.org/mozilla/pulseguardian
 [gunicorn]: https://www.digitalocean.com/community/articles/how-to-deploy-python-wsgi-apps-using-gunicorn-http-server-behind-nginx
+[docker installation docs]: https://docs.docker.com/installation/#installation
