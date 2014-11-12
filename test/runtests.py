@@ -27,8 +27,8 @@ from model.base import db_session, init_db
 init_db()
 
 # Default RabbitMQ host settings
-DEFAULT_RABBIT_HOST = 'localhost'
-DEFAULT_RABBIT_PORT = 5672
+DEFAULT_RABBIT_HOST = '192.168.59.103'
+DEFAULT_RABBIT_PORT = 15672
 DEFAULT_RABBIT_VHOST = '/'
 DEFAULT_RABBIT_USER = 'guest'
 DEFAULT_RABBIT_PASSWORD = 'guest'
@@ -81,8 +81,12 @@ class GuardianTest(unittest.TestCase):
     QUEUE_CHECK_ATTEMPTS = 4000
 
     def setUp(self):
+        global pulse_cfg
         init_and_clear_db()
-        self.management_api = PulseManagementAPI()
+        print pulse_cfg['host']
+        self.management_api = PulseManagementAPI(host=DEFAULT_RABBIT_HOST,
+                                      user=DEFAULT_RABBIT_USER,
+                                      password=DEFAULT_RABBIT_PASSWORD)
         self.guardian = PulseGuardian(self.management_api,
                                       warn_queue_size=TEST_WARN_SIZE,
                                       del_queue_size=TEST_DELETE_SIZE,
