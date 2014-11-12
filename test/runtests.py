@@ -30,7 +30,7 @@ from model.base import db_session, init_db
 init_db()
 
 # Default RabbitMQ host settings
-DEFAULT_RABBIT_HOST = '192.168.59.103'
+DEFAULT_RABBIT_HOST = 'localhost'
 DEFAULT_RABBIT_PORT = 15672
 DEFAULT_RABBIT_VHOST = '/'
 DEFAULT_RABBIT_USER = 'guest'
