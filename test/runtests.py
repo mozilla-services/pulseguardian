@@ -86,10 +86,10 @@ class GuardianTest(unittest.TestCase):
     def setUp(self):
         global pulse_cfg
         init_and_clear_db()
-        print pulse_cfg['host']
-        self.management_api = PulseManagementAPI(host=DEFAULT_RABBIT_HOST,
-                                      user=DEFAULT_RABBIT_USER,
-                                      password=DEFAULT_RABBIT_PASSWORD)
+        
+        self.management_api = PulseManagementAPI(host=pulse_cfg['host'],
+                                      user=pulse_cfg['user'],
+                                      password=pulse_cfg['password'])
         self.guardian = PulseGuardian(self.management_api,
                                       warn_queue_size=TEST_WARN_SIZE,
                                       del_queue_size=TEST_DELETE_SIZE,
