@@ -4,6 +4,7 @@
 
 import logging
 import multiprocessing
+import os
 import sys
 import time
 import unittest
@@ -12,6 +13,8 @@ import uuid
 from mozillapulse import consumers, publishers
 from mozillapulse.messages.test import TestMessage
 
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(parent_dir, 'pulseguardian'))
 import config
 # Changing the DB for the tests before the model is initialized
 config.sqlalchemy_engine_url = 'sqlite:///pulseguardian_test.db'
