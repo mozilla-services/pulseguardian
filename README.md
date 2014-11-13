@@ -123,6 +123,8 @@ to the testing script:
 
 `python test/runtests.py --host=BOOT2DOCKER_IP --use-docker`
 
+You will also need to update `config.py` with that ip address.
+
 [the wiki]: https://wiki.mozilla.org/Auto-tools/Projects/Pulse/PulseGuardian
 [HACKING.md]: https://hg.mozilla.org/automation/mozillapulse/file/tip/HACKING.md
 [Travis CI]: https://travis-ci.org/mozilla/pulseguardian
