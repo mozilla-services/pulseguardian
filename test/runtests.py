@@ -26,6 +26,8 @@ from model.pulse_user import PulseUser
 from model.queue import Queue
 from model.base import db_session, init_db
 
+from docker_setup import create_image, setup_container, teardown_container
+
 # Initializing test DB
 init_db()
 
@@ -35,6 +37,7 @@ DEFAULT_RABBIT_PORT = 15672
 DEFAULT_RABBIT_VHOST = '/'
 DEFAULT_RABBIT_USER = 'guest'
 DEFAULT_RABBIT_PASSWORD = 'guest'
+DEFAULT_USE_DOCKER = False
 
 CONSUMER_USER = 'guardtest'
 CONSUMER_PASSWORD = 'guardtest'
@@ -328,8 +331,24 @@ def main(pulse_opts):
     logging.disable(level=numeric_level - 1)
 
     pulse_cfg.update(pulse_opts)
-    unittest.main(argv=sys.argv[0:1])
+    
+    if  pulse_cfg['use_docker']:
+        try:
+            # Create image and container.
+            # If the image already exists, it will use that one.
+            create_image()
+            setup_container()
 
+            # Although the container has started, the rabbitmq-server needs a few
+            # seconds to start.
+            logging.info('Waiting a few seconds. Rabbitmq-server needs to start.')
+            time.sleep(5)       
+
+            unittest.main(argv=sys.argv[0:1])
+        finally:        
+            teardown_container()
+    else:
+        unittest.main(argv=sys.argv[0:1])
 
 if __name__ == '__main__':
     from optparse import OptionParser
@@ -354,6 +373,10 @@ if __name__ == '__main__':
                       default=DEFAULT_RABBIT_PASSWORD,
                       help='password of pulse RabbitMQ user; defaults to "%s"'
                       % DEFAULT_RABBIT_PASSWORD)
+    parser.add_option('--use-docker', action='store_true', dest='use_docker',
+                      default=DEFAULT_USE_DOCKER,
+                      help='use docker container; defaults to "%s"'
+                      % DEFAULT_USE_DOCKER)
     parser.add_option('--log', action='store', dest='loglevel',
                       default=DEFAULT_LOGLEVEL,
                       help='logging level; defaults to "%s"'
