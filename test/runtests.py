@@ -89,10 +89,10 @@ class GuardianTest(unittest.TestCase):
     def setUp(self):
         global pulse_cfg
         init_and_clear_db()
-        
+
         self.management_api = PulseManagementAPI(host=pulse_cfg['host'],
-                                      user=pulse_cfg['user'],
-                                      password=pulse_cfg['password'])
+                                                 user=pulse_cfg['user'],
+                                                 password=pulse_cfg['password'])
         self.guardian = PulseGuardian(self.management_api,
                                       warn_queue_size=TEST_WARN_SIZE,
                                       del_queue_size=TEST_DELETE_SIZE,
@@ -102,7 +102,7 @@ class GuardianTest(unittest.TestCase):
         self.consumer_cfg['applabel'] = str(uuid.uuid1())
 
         # Configure/create the test user to be used for message consumption.
-        self.consumer_cfg['user'] =  CONSUMER_USER
+        self.consumer_cfg['user'] = CONSUMER_USER
         self.consumer_cfg['password'] = CONSUMER_PASSWORD
         self.user = User.new_user(email=CONSUMER_EMAIL, admin=False)
         db_session.add(self.user)
@@ -331,21 +331,21 @@ def main(pulse_opts):
     logging.disable(level=numeric_level - 1)
 
     pulse_cfg.update(pulse_opts)
-    
-    if  pulse_cfg['use_docker']:
+
+    if pulse_cfg['use_docker']:
         try:
             # Create image and container.
             # If the image already exists, it will use that one.
             create_image()
             setup_container()
 
-            # Although the container has started, the rabbitmq-server needs a few
-            # seconds to start.
-            logging.info('Waiting a few seconds. Rabbitmq-server needs to start.')
-            time.sleep(5)       
+            # Although the container has started, the rabbitmq-server needs a
+            # few seconds to start.
+            logging.info('Waiting a few seconds for rabbitmq-server to start.')
+            time.sleep(5)
 
             unittest.main(argv=sys.argv[0:1])
-        finally:        
+        finally:
             teardown_container()
     else:
         unittest.main(argv=sys.argv[0:1])

@@ -4,24 +4,28 @@
 
 from subprocess import call
 
+
 def create_image():
-	create_image_command = 'docker build -t="pulse:testing" .'
-	call(create_image_command.split(' '))
+    create_image_command = 'docker build -t="pulse:testing" .'
+    call(create_image_command.split(' '))
+
 
 def delete_image():
-	delete_image_pulse_command = 'docker rmi pulse:testing'
-	delete_image_ubuntu_command = 'docker rmi ubuntu:14.04'
-	
-	call(delete_image_pulse_command.split(' '))
-	call(delete_image_ubuntu_command.split(' '))
+    delete_image_pulse_command = 'docker rmi pulse:testing'
+    delete_image_ubuntu_command = 'docker rmi ubuntu:14.04'
+
+    call(delete_image_pulse_command.split(' '))
+    call(delete_image_ubuntu_command.split(' '))
+
 
 def setup_container():
-	setup_command = 'docker run -d -p 15672:15672 --name pulse pulse:testing'
-	call(setup_command.split(' '))
+    setup_command = 'docker run -d -p 15672:15672 --name pulse pulse:testing'
+    call(setup_command.split(' '))
+
 
 def teardown_container():
-	stop_command = 'docker stop pulse'
-	remove_command = 'docker rm pulse'
-	
-	call(stop_command.split(' '))
-	call(remove_command.split(' '))
+    stop_command = 'docker stop pulse'
+    remove_command = 'docker rm pulse'
+
+    call(stop_command.split(' '))
+    call(remove_command.split(' '))
