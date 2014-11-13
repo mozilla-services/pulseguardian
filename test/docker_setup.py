@@ -6,7 +6,7 @@ from subprocess import call
 
 
 def create_image():
-    create_image_command = 'docker build -t="pulse:testing" .'
+    create_image_command = 'docker build -t="pulse:testing" test'
     call(create_image_command.split(' '))
 
 
