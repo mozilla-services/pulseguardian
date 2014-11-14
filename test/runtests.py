@@ -26,7 +26,9 @@ from model.pulse_user import PulseUser
 from model.queue import Queue
 from model.base import db_session, init_db
 
-from docker_setup import create_image, setup_container, teardown_container
+from docker_setup import (
+    create_image, setup_container, teardown_container, check_rabbitmq
+)
 
 # Initializing test DB
 init_db()
@@ -37,7 +39,9 @@ DEFAULT_RABBIT_PORT = 5672
 DEFAULT_RABBIT_VHOST = '/'
 DEFAULT_RABBIT_USER = 'guest'
 DEFAULT_RABBIT_PASSWORD = 'guest'
+
 DEFAULT_USE_DOCKER = False
+DEFAULT_RABBITMQ_TIMEOUT = 20  # in seconds
 
 CONSUMER_USER = 'guardtest'
 CONSUMER_PASSWORD = 'guardtest'
@@ -339,11 +343,24 @@ def main(pulse_opts):
             create_image()
             setup_container()
 
-            # Although the container has started, the rabbitmq-server needs a
-            # few seconds to start.
-            logging.info('Waiting a few seconds for rabbitmq-server to start.')
-            time.sleep(5)
+            # Although the container has started, the rabbitmq-server needs
+            # some time to start.
+            logging.info('Waiting for rabbitmq-server to start.')
+            timeout = time.time() + DEFAULT_RABBITMQ_TIMEOUT
+            while True:
+                # Check if rabbitmq-server has started
+                if check_rabbitmq():
+                    break
 
+                # Timeout exceeded
+                if time.time() > timeout:
+                    raise RuntimeError('rabbitmq-server startup timeout exceeded')
+
+                # We don't want to hog the CPU, so we sleep 1 second before
+                # trying again.
+                time.sleep(1)
+
+            # rabbitmq-server is already running, we can run our tests
             unittest.main(argv=sys.argv[0:1])
         finally:
             teardown_container()

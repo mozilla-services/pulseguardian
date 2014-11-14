@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-from subprocess import call
+from subprocess import call, check_output
 
 
 def create_image():
@@ -29,3 +29,12 @@ def teardown_container():
 
     call(stop_command.split(' '))
     call(remove_command.split(' '))
+
+def check_rabbitmq():
+    string_to_check = 'Starting broker... completed'
+    get_logs_command = 'docker logs pulse'
+    
+    logs_output = check_output(get_logs_command.split(' '))
+        
+    return string_to_check in logs_output
+
