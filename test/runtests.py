@@ -325,7 +325,22 @@ class ModelTest(unittest.TestCase):
 
 
 def setup_host():
-    pass
+    global pulse_cfg
+
+    if pulse_cfg['host'] != DEFAULT_RABBIT_HOST:
+        # Not equal to deatual: use the supplied host
+        return
+    else:
+        try:
+            # IF DOCKER_HOST env variable exists, use as the host value
+            host = os.environ['DOCKER_HOST']
+
+            # Value of env variable will be something similar to:
+            # 'tcp://192.168.59.103:2376'. We only need the ip
+            pulse_cfg['host'] = host.split(':')[1].split('//')[1]
+        except KeyError:
+            # Env variable doesen't exist, use default
+            return
 
 
 def main(pulse_opts):
