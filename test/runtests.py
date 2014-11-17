@@ -323,6 +323,8 @@ class ModelTest(unittest.TestCase):
             PulseUser.query.filter(PulseUser.username == 'DUMMY').first(),
             None)
 
+def setup_host():
+    pass
 
 def main(pulse_opts):
     global pulse_cfg
@@ -337,7 +339,9 @@ def main(pulse_opts):
     pulse_cfg.update(pulse_opts)
 
     if not pulse_cfg['use_local']:
-        try:
+        try:                
+            setup_host()
+
             # Create image and container.
             # If the image already exists, it will use that one.
             create_image()
