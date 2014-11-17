@@ -40,7 +40,7 @@ DEFAULT_RABBIT_VHOST = '/'
 DEFAULT_RABBIT_USER = 'guest'
 DEFAULT_RABBIT_PASSWORD = 'guest'
 
-DEFAULT_USE_DOCKER = False
+DEFAULT_USE_LOCAL = False
 DEFAULT_RABBITMQ_TIMEOUT = 20  # in seconds
 
 CONSUMER_USER = 'guardtest'
@@ -336,7 +336,7 @@ def main(pulse_opts):
 
     pulse_cfg.update(pulse_opts)
 
-    if pulse_cfg['use_docker']:
+    if not pulse_cfg['use_local']:
         try:
             # Create image and container.
             # If the image already exists, it will use that one.
@@ -390,10 +390,10 @@ if __name__ == '__main__':
                       default=DEFAULT_RABBIT_PASSWORD,
                       help='password of pulse RabbitMQ user; defaults to "%s"'
                       % DEFAULT_RABBIT_PASSWORD)
-    parser.add_option('--use-docker', action='store_true', dest='use_docker',
-                      default=DEFAULT_USE_DOCKER,
-                      help='use docker container; defaults to "%s"'
-                      % DEFAULT_USE_DOCKER)
+    parser.add_option('--use-local', action='store_true', dest='use_local',
+                      default=DEFAULT_USE_LOCAL,
+                      help='use local setup; defaults to "%s"'
+                      % DEFAULT_USE_LOCAL)
     parser.add_option('--log', action='store', dest='loglevel',
                       default=DEFAULT_LOGLEVEL,
                       help='logging level; defaults to "%s"'
