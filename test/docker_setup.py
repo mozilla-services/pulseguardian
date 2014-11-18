@@ -19,7 +19,7 @@ def delete_image():
 
 
 def setup_container():
-    setup_command = 'docker run -d -p 5672:5672 -p 15672:15672 --name pulse pulse:testing'
+    setup_command = 'docker run -d -p 5673:5672 -p 15673:15672 --name pulse pulse:testing'
     call(setup_command.split(' '))
 
 

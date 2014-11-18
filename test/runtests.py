@@ -37,7 +37,8 @@ init_db()
 
 # Default RabbitMQ host settings
 DEFAULT_RABBIT_HOST = 'localhost'
-DEFAULT_RABBIT_PORT = 5672
+DEFAULT_RABBIT_PORT = 5673
+DEFAULT_RABBIT_MANAGEMENT_PORT = 15673
 DEFAULT_RABBIT_VHOST = '/'
 DEFAULT_RABBIT_USER = 'guest'
 DEFAULT_RABBIT_PASSWORD = 'guest'
@@ -97,6 +98,7 @@ class GuardianTest(unittest.TestCase):
 
         self.management_api = PulseManagementAPI(host=pulse_cfg['host'],
                                                  user=pulse_cfg['user'],
+                                                 management_port=pulse_cfg['management_port'],
                                                  password=pulse_cfg['password'])
         self.guardian = PulseGuardian(self.management_api,
                                       warn_queue_size=TEST_WARN_SIZE,
@@ -403,6 +405,10 @@ if __name__ == '__main__':
                       default=DEFAULT_RABBIT_PORT,
                       help='port on which RabbitMQ is running; defaults to %d'
                       % DEFAULT_RABBIT_PORT)
+    parser.add_option('--management_port', action='store', type='int', dest='management_port',
+                      default=DEFAULT_RABBIT_MANAGEMENT_PORT,
+                      help='RabbitMQ managment port; defaults to %d'
+                      % DEFAULT_RABBIT_MANAGEMENT_PORT)
     parser.add_option('--vhost', action='store', dest='vhost',
                       default=DEFAULT_RABBIT_VHOST,
                       help='name of pulse vhost; defaults to "%s"' %
