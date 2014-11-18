@@ -15,10 +15,12 @@ from mozillapulse.messages.test import TestMessage
 
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.join(parent_dir, 'pulseguardian'))
+
 import config
 # Changing the DB for the tests before the model is initialized
 config.sqlalchemy_engine_url = 'sqlite:///pulseguardian_test.db'
-from dbinit import init_and_clear_db
+
+import dbinit
 from guardian import PulseGuardian
 from management import PulseManagementAPI
 from model.user import User
@@ -92,7 +94,6 @@ class GuardianTest(unittest.TestCase):
 
     def setUp(self):
         global pulse_cfg
-        init_and_clear_db()
 
         self.management_api = PulseManagementAPI(host=pulse_cfg['host'],
                                                  user=pulse_cfg['user'],
@@ -101,6 +102,9 @@ class GuardianTest(unittest.TestCase):
                                       warn_queue_size=TEST_WARN_SIZE,
                                       del_queue_size=TEST_DELETE_SIZE,
                                       emails=False)
+
+        dbinit.pulse_management = self.management_api
+        dbinit.init_and_clear_db()
 
         self.consumer_cfg = pulse_cfg.copy()
         self.consumer_cfg['applabel'] = str(uuid.uuid1())
@@ -126,7 +130,7 @@ class GuardianTest(unittest.TestCase):
         for queue in Queue.query.all():
             self.management_api.delete_queue(vhost=DEFAULT_RABBIT_VHOST,
                                              queue=queue.name)
-        init_and_clear_db()
+        dbinit.init_and_clear_db()
 
     def _build_message(self, msg_id):
         msg = TestMessage()
@@ -294,10 +298,10 @@ class ModelTest(unittest.TestCase):
     """Tests the underlying model (users and queues)."""
 
     def setUp(self):
-        init_and_clear_db()
+        dbinit.init_and_clear_db()
 
     def tearDown(self):
-        init_and_clear_db()
+        dbinit.init_and_clear_db()
 
     def test_user(self):
         user = User.new_user(email='dUmMy@EmAil.com', admin=False)
