@@ -37,8 +37,8 @@ init_db()
 
 # Default RabbitMQ host settings
 DEFAULT_RABBIT_HOST = 'localhost'
-DEFAULT_RABBIT_PORT = 5673
-DEFAULT_RABBIT_MANAGEMENT_PORT = 15673
+DEFAULT_RABBIT_PORT = 5672
+DEFAULT_RABBIT_MANAGEMENT_PORT = 15672
 DEFAULT_RABBIT_VHOST = '/'
 DEFAULT_RABBIT_USER = 'guest'
 DEFAULT_RABBIT_PASSWORD = 'guest'
@@ -343,10 +343,13 @@ def setup_host():
 
             # Value of env variable will be something similar to:
             # 'tcp://192.168.59.103:2376'. We only need the ip
-            pulse_cfg['host'] = host.split(':')[1].split('//')[1]
+            pulse_cfg['host'] = host.split(':')[1].split('//')[1]           
         except KeyError:
             # Env variable doesen't exist, use default
-            return
+            pass
+        finally:
+            pulse_cfg['port'] = 5673
+            pulse_cfg['management_port'] = 15673
 
 
 def main(pulse_opts):
@@ -391,7 +394,7 @@ def main(pulse_opts):
             unittest.main(argv=sys.argv[0:1])
         finally:
             teardown_container()
-    else:
+    else:    
         unittest.main(argv=sys.argv[0:1])
 
 if __name__ == '__main__':
