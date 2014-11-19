@@ -408,7 +408,7 @@ if __name__ == '__main__':
                       default=DEFAULT_RABBIT_PORT,
                       help='port on which RabbitMQ is running; defaults to %d'
                       % DEFAULT_RABBIT_PORT)
-    parser.add_option('--management_port', action='store', type='int', dest='management_port',
+    parser.add_option('--management-port', action='store', type='int', dest='management_port',
                       default=DEFAULT_RABBIT_MANAGEMENT_PORT,
                       help='RabbitMQ managment port; defaults to %d'
                       % DEFAULT_RABBIT_MANAGEMENT_PORT)
