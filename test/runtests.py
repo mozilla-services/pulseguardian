@@ -9,6 +9,7 @@ import sys
 import time
 import unittest
 import uuid
+from urlparse import urlparse
 
 from mozillapulse import consumers, publishers
 from mozillapulse.messages.test import TestMessage
@@ -343,7 +344,7 @@ def setup_host():
 
             # Value of env variable will be something similar to:
             # 'tcp://192.168.59.103:2376'. We only need the ip
-            pulse_cfg['host'] = host.split(':')[1].split('//')[1]           
+            pulse_cfg['host'] = urlparse(host).hostname
         except KeyError:
             # Env variable doesn't exist, use default
             pass
@@ -394,7 +395,7 @@ def main(pulse_opts):
             unittest.main(argv=sys.argv[0:1])
         finally:
             teardown_container()
-    else:    
+    else:
         unittest.main(argv=sys.argv[0:1])
 
 if __name__ == '__main__':
