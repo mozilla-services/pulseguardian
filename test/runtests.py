@@ -4,18 +4,24 @@
 
 import logging
 import multiprocessing
+import os
 import sys
 import time
 import unittest
 import uuid
+from urlparse import urlparse
 
 from mozillapulse import consumers, publishers
 from mozillapulse.messages.test import TestMessage
 
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(parent_dir, 'pulseguardian'))
+
 import config
 # Changing the DB for the tests before the model is initialized
 config.sqlalchemy_engine_url = 'sqlite:///pulseguardian_test.db'
-from dbinit import init_and_clear_db
+
+import dbinit
 from guardian import PulseGuardian
 from management import PulseManagementAPI
 from model.user import User
@@ -23,15 +29,20 @@ from model.pulse_user import PulseUser
 from model.queue import Queue
 from model.base import db_session, init_db
 
-# Initializing test DB
-init_db()
+from docker_setup import (
+    create_image, setup_container, teardown_container, check_rabbitmq
+)
 
 # Default RabbitMQ host settings
 DEFAULT_RABBIT_HOST = 'localhost'
 DEFAULT_RABBIT_PORT = 5672
+DEFAULT_RABBIT_MANAGEMENT_PORT = 15672
 DEFAULT_RABBIT_VHOST = '/'
 DEFAULT_RABBIT_USER = 'guest'
 DEFAULT_RABBIT_PASSWORD = 'guest'
+
+DEFAULT_USE_LOCAL = False
+DEFAULT_RABBITMQ_TIMEOUT = 20  # in seconds
 
 CONSUMER_USER = 'guardtest'
 CONSUMER_PASSWORD = 'guardtest'
@@ -81,18 +92,25 @@ class GuardianTest(unittest.TestCase):
     QUEUE_CHECK_ATTEMPTS = 4000
 
     def setUp(self):
-        init_and_clear_db()
-        self.management_api = PulseManagementAPI()
+        global pulse_cfg
+
+        self.management_api = PulseManagementAPI(host=pulse_cfg['host'],
+                                                 user=pulse_cfg['user'],
+                                                 management_port=pulse_cfg['management_port'],
+                                                 password=pulse_cfg['password'])
         self.guardian = PulseGuardian(self.management_api,
                                       warn_queue_size=TEST_WARN_SIZE,
                                       del_queue_size=TEST_DELETE_SIZE,
                                       emails=False)
 
+        dbinit.pulse_management = self.management_api
+        dbinit.init_and_clear_db()
+
         self.consumer_cfg = pulse_cfg.copy()
         self.consumer_cfg['applabel'] = str(uuid.uuid1())
 
         # Configure/create the test user to be used for message consumption.
-        self.consumer_cfg['user'] =  CONSUMER_USER
+        self.consumer_cfg['user'] = CONSUMER_USER
         self.consumer_cfg['password'] = CONSUMER_PASSWORD
         self.user = User.new_user(email=CONSUMER_EMAIL, admin=False)
         db_session.add(self.user)
@@ -112,7 +130,6 @@ class GuardianTest(unittest.TestCase):
         for queue in Queue.query.all():
             self.management_api.delete_queue(vhost=DEFAULT_RABBIT_VHOST,
                                              queue=queue.name)
-        init_and_clear_db()
 
     def _build_message(self, msg_id):
         msg = TestMessage()
@@ -280,10 +297,7 @@ class ModelTest(unittest.TestCase):
     """Tests the underlying model (users and queues)."""
 
     def setUp(self):
-        init_and_clear_db()
-
-    def tearDown(self):
-        init_and_clear_db()
+        dbinit.init_and_clear_db()
 
     def test_user(self):
         user = User.new_user(email='dUmMy@EmAil.com', admin=False)
@@ -310,6 +324,28 @@ class ModelTest(unittest.TestCase):
             None)
 
 
+def setup_host():
+    global pulse_cfg
+
+    if pulse_cfg['host'] != DEFAULT_RABBIT_HOST:
+        # Not equal to default: use the supplied host
+        return
+    else:
+        try:
+            # IF DOCKER_HOST env variable exists, use as the host value
+            host = os.environ['DOCKER_HOST']
+
+            # Value of env variable will be something similar to:
+            # 'tcp://192.168.59.103:2376'. We only need the ip
+            pulse_cfg['host'] = urlparse(host).hostname
+        except KeyError:
+            # Env variable doesn't exist, use default
+            pass
+        finally:
+            pulse_cfg['port'] = 5673
+            pulse_cfg['management_port'] = 15673
+
+
 def main(pulse_opts):
     global pulse_cfg
 
@@ -321,8 +357,39 @@ def main(pulse_opts):
     logging.disable(level=numeric_level - 1)
 
     pulse_cfg.update(pulse_opts)
-    unittest.main(argv=sys.argv[0:1])
 
+    if not pulse_cfg['use_local']:
+        try:
+            setup_host()
+
+            # Create image and container.
+            # If the image already exists, it will use that one.
+            create_image()
+            setup_container()
+
+            # Although the container has started, the rabbitmq-server needs
+            # some time to start.
+            logging.info('Waiting for rabbitmq-server to start.')
+            timeout = time.time() + DEFAULT_RABBITMQ_TIMEOUT
+            while True:
+                # Check if rabbitmq-server has started
+                if check_rabbitmq():
+                    break
+
+                # Timeout exceeded
+                if time.time() > timeout:
+                    raise RuntimeError('rabbitmq-server startup timeout exceeded')
+
+                # We don't want to hog the CPU, so we sleep 1 second before
+                # trying again.
+                time.sleep(1)
+
+            # rabbitmq-server is already running, we can run our tests
+            unittest.main(argv=sys.argv[0:1])
+        finally:
+            teardown_container()
+    else:
+        unittest.main(argv=sys.argv[0:1])
 
 if __name__ == '__main__':
     from optparse import OptionParser
@@ -335,6 +402,10 @@ if __name__ == '__main__':
                       default=DEFAULT_RABBIT_PORT,
                       help='port on which RabbitMQ is running; defaults to %d'
                       % DEFAULT_RABBIT_PORT)
+    parser.add_option('--management-port', action='store', type='int', dest='management_port',
+                      default=DEFAULT_RABBIT_MANAGEMENT_PORT,
+                      help='RabbitMQ managment port; defaults to %d'
+                      % DEFAULT_RABBIT_MANAGEMENT_PORT)
     parser.add_option('--vhost', action='store', dest='vhost',
                       default=DEFAULT_RABBIT_VHOST,
                       help='name of pulse vhost; defaults to "%s"' %
@@ -347,6 +418,10 @@ if __name__ == '__main__':
                       default=DEFAULT_RABBIT_PASSWORD,
                       help='password of pulse RabbitMQ user; defaults to "%s"'
                       % DEFAULT_RABBIT_PASSWORD)
+    parser.add_option('--use-local', action='store_true', dest='use_local',
+                      default=DEFAULT_USE_LOCAL,
+                      help='use local setup; defaults to "%s"'
+                      % DEFAULT_USE_LOCAL)
     parser.add_option('--log', action='store', dest='loglevel',
                       default=DEFAULT_LOGLEVEL,
                       help='logging level; defaults to "%s"'
