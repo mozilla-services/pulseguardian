@@ -33,9 +33,6 @@ from docker_setup import (
     create_image, setup_container, teardown_container, check_rabbitmq
 )
 
-# Initializing test DB
-init_db()
-
 # Default RabbitMQ host settings
 DEFAULT_RABBIT_HOST = 'localhost'
 DEFAULT_RABBIT_PORT = 5672
@@ -133,7 +130,6 @@ class GuardianTest(unittest.TestCase):
         for queue in Queue.query.all():
             self.management_api.delete_queue(vhost=DEFAULT_RABBIT_VHOST,
                                              queue=queue.name)
-        dbinit.init_and_clear_db()
 
     def _build_message(self, msg_id):
         msg = TestMessage()
@@ -301,9 +297,6 @@ class ModelTest(unittest.TestCase):
     """Tests the underlying model (users and queues)."""
 
     def setUp(self):
-        dbinit.init_and_clear_db()
-
-    def tearDown(self):
         dbinit.init_and_clear_db()
 
     def test_user(self):
