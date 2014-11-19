@@ -334,7 +334,7 @@ def setup_host():
     global pulse_cfg
 
     if pulse_cfg['host'] != DEFAULT_RABBIT_HOST:
-        # Not equal to deatual: use the supplied host
+        # Not equal to default: use the supplied host
         return
     else:
         try:
@@ -345,7 +345,7 @@ def setup_host():
             # 'tcp://192.168.59.103:2376'. We only need the ip
             pulse_cfg['host'] = host.split(':')[1].split('//')[1]           
         except KeyError:
-            # Env variable doesen't exist, use default
+            # Env variable doesn't exist, use default
             pass
         finally:
             pulse_cfg['port'] = 5673
