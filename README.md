@@ -82,13 +82,15 @@ given user, if necessary, and log in automatically.
 
 ## Testing
 
-PulseGuardian uses docker to run it's test suite. Please follow the 
-[docs](https://docs.docker.com/installation/#installation) on how to install
-docker in your system. 
+PulseGuardian uses docker to run it test suite. Please follow the 
+docker installation docs on how to install it in your system. 
 
 If you're installing on OS X, you'll be using `boot2docker`. During
 initialization, you'll prompted to set some environment variables. Don't forget
-to set them; that way the test suite will be able to pick up you docker host.
+to set them; that way the test suite will be able to pick up your docker host.
+
+The docker container container will forward ports 5673 and 15673. Please be
+sure that those ports are available.
 
 The docker daemon must always run as the root user, but you need to be able to
 run docker client commands without `sudo`. To achieve that you can:
@@ -100,15 +102,16 @@ to match your preferred user:  `sudo gpasswd -a ${USER} docker`
 
 * Restart the Docker daemon:  `sudo service docker restart`
 
-* You need to log out and log back in again if you added the current logged in
+* You need to log out and log back in again if you added the currently logged-in
 user.
 
-Finally, you can run tests with (from you project root folder): 
+Finally, you can run tests with (from your project root folder): 
 `python test/runtests.py`. 
 
-If you prefer, you can run the tests against you local installation. For that you can run: `python test/runtests.py --use-local`.
+If you prefer, you can run the tests against a local RabbitMQ installation. For
+that you can run: `python test/runtests.py --use-local`.
 
-**WARNING**: If you use you local rabbitmq instance the tests will mess with it
+**WARNING**: If you use your local rabbitmq instance the tests will mess with it
 (wiping out existing queues, possibly deleting users) so make sure you don't 
 run the tests on a production instance.
 
@@ -116,3 +119,4 @@ run the tests on a production instance.
 [HACKING.md]: https://hg.mozilla.org/automation/mozillapulse/file/tip/HACKING.md
 [Travis CI]: https://travis-ci.org/mozilla/pulseguardian
 [gunicorn]: https://www.digitalocean.com/community/articles/how-to-deploy-python-wsgi-apps-using-gunicorn-http-server-behind-nginx
+[Docker installation]: https://docs.docker.com/installation/#installation
