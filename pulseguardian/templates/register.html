@@ -1,44 +1,44 @@
 {% extends 'base.html' %}
 
 {% block body %}
+<div id="message_info" class="col-md-12">
+  <h2>Register a Pulse user</h2>
 
-<h2>Register a Pulse user</h2>
+  {% if signup_errors %}
+    <div class="alert alert-danger">
+      {% for err in signup_errors %}
+        <p>{{err}}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
 
-{% if signup_errors %}
-  <div class="alert alert-danger">
-    {% for err in signup_errors %}
-      <p>{{err}}</p>
-    {% endfor %}
-  </div>
-{% endif %}
+  <form role="form" action="/register" method="post">
+    <div class="form-group">
+      <label>Username</label>
+      <small>No special characters or spaces. Only alphanumeric
+        characters are accepted.</small>
+      <input name="username" type="text" placeholder="Username"
+             class="form-control"/>
+    </div>
 
-<form role="form" action="/register" method="post">
-  <div class="form-group">
-    <label>Username</label>
-    <small>No special characters or spaces. Only alphanumeric
-      characters are accepted.</small>
-    <input name="username" type="text" placeholder="Username"
-           class="form-control"/>
-  </div>
+    <div class="form-group">
+      <label>Password</label>
+      <small>Must contain a mix of letters and numerical characters
+        and be at least 6 characters long.</small>
+      <input name="password" type="password" placeholder="Password"
+             type="password" class="form-control"/>
+    </div>
+    <div class="form-group">
+      <strong>Password verification:</strong>
+      <input name="password-verification" type="password" placeholder="Password"
+             class="form-control"/>
+    </div>
 
-  <div class="form-group">
-    <label>Password</label>
-    <small>Must contain a mix of letters and numerical characters
-      and be at least 6 characters long.</small>
-    <input name="password" type="password" placeholder="Password"
-           type="password" class="form-control"/>
-  </div>
-  <div class="form-group">
-    <strong>Password verification:</strong>
-    <input name="password-verification" type="password" placeholder="Password"
-           class="form-control"/>
-  </div>
-
-  <button type="submit" role="button" class="btn btn-primary form-control">
-    Add user
-  </button>
-</form>
-
+    <button type="submit" role="button" class="btn btn-primary form-control">
+      Add user
+    </button>
+  </form>
+</div>
 {% endblock %}
 
 

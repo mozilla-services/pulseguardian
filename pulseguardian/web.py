@@ -112,6 +112,7 @@ def load_fake_account(fake_account):
     # Set session user.
     session['email'] = fake_account
     session['fake_account'] = True
+    session['logged_in'] = True
 
     # Check if user already exists in the database, creating it if not.
     g.user = User.query.filter(User.email == fake_account).first()
@@ -204,6 +205,16 @@ def queues():
                            no_owner_queues=no_owner_queues)
 
 
+@app.route('/queues_listing')
+@requires_login
+def queues_listing():
+    users = no_owner_queues = []
+    if g.user.admin:
+        users = User.query.all()
+        no_owner_queues = list(Queue.query.filter(Queue.owner == None))
+    return render_template('queues_listing.html', users=users,
+                           no_owner_queues=no_owner_queues)
+
 # API
 
 @app.route('/queue/<path:queue_name>', methods=['DELETE'])
@@ -267,6 +278,7 @@ def auth_handler():
         if verification_data['status'] == 'okay':
             email = verification_data['email']
             session['email'] = email
+            session['logged_in'] = True
 
             user = User.query.filter(User.email == email).first()
             if user is None:
@@ -362,7 +374,13 @@ def register_handler():
 @app.route('/auth/logout', methods=['POST'])
 def logout_handler():
     session['email'] = None
+    session['logged_in'] = False
     return jsonify(ok=True, redirect='/')
+
+
+@app.route('/whats_pulse')
+def why():
+    return render_template('index.html')
 
 
 def cli(args):
