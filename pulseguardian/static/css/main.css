@@ -122,8 +122,7 @@ a:hover, a:active, a:focus {
 
 /* Menu */
 .menu {
-  background: #2249B1;
-  color: #FFF;
+  background: #2249B1; 
   text-shadow: -1px 1px 0px rgba(0, 0, 0, 0.5);
 }
 
@@ -132,5 +131,11 @@ a:hover, a:active, a:focus {
   float: left;
   margin-left: 10px;
   margin-right: 10px;
+  padding-bottom: 10px;
+  color: #FFF;
 }
 
+.menu .menuitem:hover {
+  color: #B6C9FD;
+  text-decoration: none;
+}
