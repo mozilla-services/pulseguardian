@@ -15,7 +15,7 @@ class TestCommand(Command):
         pass
     def run(self):
         import subprocess
-        errno = subprocess.call(['python', 'pulseguardian/runtests.py', '--log=INFO'])
+        errno = subprocess.call(['python', 'test/runtests.py', '--log=INFO'])
         raise SystemExit(errno)
 
 
@@ -28,6 +28,7 @@ setup(name='PulseGuardian',
       author_email='akachkach@mozilla.com',
       license='MPL',
       packages=['pulseguardian'],
-      install_requires=['Flask', 'MozillaPulse', 'SQLAlchemy', 'requests', 'MySQL-python'],
+      install_requires=['Flask', 'MozillaPulse', 'SQLAlchemy', 'requests',
+                        'MySQL-python'],
       cmdclass={'test': TestCommand}
 )

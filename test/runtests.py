@@ -5,6 +5,7 @@
 import logging
 import multiprocessing
 import os
+import socket
 import sys
 import time
 import unittest
@@ -27,7 +28,7 @@ from management import PulseManagementAPI
 from model.user import User
 from model.pulse_user import PulseUser
 from model.queue import Queue
-from model.base import db_session, init_db
+from model.base import db_session
 
 from docker_setup import (
     create_image, setup_container, teardown_container, check_rabbitmq
@@ -54,6 +55,15 @@ DEFAULT_LOGLEVEL = 'INFO'
 
 # Global pulse configuration.
 pulse_cfg = dict(ssl=False)
+
+
+class AbnormalQueueConsumer(consumers.PulseTestConsumer):
+
+    QUEUE_NAME = 'abnormal.queue'
+
+    @property
+    def queue_name(self):
+        return self.QUEUE_NAME
 
 
 class ConsumerSubprocess(multiprocessing.Process):
@@ -84,49 +94,58 @@ class GuardianTest(unittest.TestCase):
     size.
     """
 
+    # Defaults; can be overridden for particular tests.
     consumer_class = consumers.PulseTestConsumer
     publisher_class = publishers.PulseTestPublisher
 
     proc = None
     QUEUE_CHECK_PERIOD = 0.05
     QUEUE_CHECK_ATTEMPTS = 4000
+    QUEUE_RECORD_CHECK_PERIOD = 0.1
+    QUEUE_RECORD_CHECK_ATTEMPTS = 50
+    PUBLISHER_CONNECT_ATTEMPTS = 50
 
     def setUp(self):
         global pulse_cfg
 
-        self.management_api = PulseManagementAPI(host=pulse_cfg['host'],
-                                                 user=pulse_cfg['user'],
-                                                 management_port=pulse_cfg['management_port'],
-                                                 password=pulse_cfg['password'])
+        self.proc = None
+        self.publisher = None
+        self.management_api = PulseManagementAPI(
+            host=pulse_cfg['host'],
+            user=pulse_cfg['user'],
+            management_port=pulse_cfg['management_port'],
+            password=pulse_cfg['password'])
         self.guardian = PulseGuardian(self.management_api,
                                       warn_queue_size=TEST_WARN_SIZE,
                                       del_queue_size=TEST_DELETE_SIZE,
                                       emails=False)
 
+        # Hack in a test config.
         dbinit.pulse_management = self.management_api
         dbinit.init_and_clear_db()
 
         self.consumer_cfg = pulse_cfg.copy()
         self.consumer_cfg['applabel'] = str(uuid.uuid1())
-
         # Configure/create the test user to be used for message consumption.
         self.consumer_cfg['user'] = CONSUMER_USER
         self.consumer_cfg['password'] = CONSUMER_PASSWORD
+
         self.user = User.new_user(email=CONSUMER_EMAIL, admin=False)
+
         db_session.add(self.user)
         db_session.commit()
+
         self.pulse_user = PulseUser.new_user(
             username=CONSUMER_USER,
             password=CONSUMER_PASSWORD,
             owner=self.user,
             management_api=self.management_api)
+
         db_session.add(self.pulse_user)
         db_session.commit()
 
-        self.publisher = self.publisher_class(**pulse_cfg)
-
     def tearDown(self):
-        self._terminate_proc()
+        self._terminate_consumer_proc()  # Just in case.
         for queue in Queue.query.all():
             self.management_api.delete_queue(vhost=DEFAULT_RABBIT_VHOST,
                                              queue=queue.name)
@@ -136,49 +155,100 @@ class GuardianTest(unittest.TestCase):
         msg.set_data('id', msg_id)
         return msg
 
-    def _terminate_proc(self):
+    def _create_publisher(self, create_exchange=True):
+        self.publisher = self.publisher_class(**pulse_cfg)
+
+        if create_exchange:
+            attempts = 0
+            exc = None
+
+            while attempts < self.PUBLISHER_CONNECT_ATTEMPTS:
+                attempts += 1
+                if attempts > 1:
+                    time.sleep(0.1)
+
+                try:
+                    self.publisher.publish(self._build_message(0))
+                except socket.error as e:
+                    exc = e
+                else:
+                    exc = None
+                    break
+
+            if exc:
+                raise exc
+
+    def _create_consumer_proc(self, durable=False):
+        self.proc = ConsumerSubprocess(self.consumer_class, self.consumer_cfg,
+                                       durable)
+        self.proc.start()
+
+    def _terminate_consumer_proc(self):
         if self.proc:
             self.proc.terminate()
             self.proc.join()
             self.proc = None
 
-    def _wait_for_queue(self, config, queue_should_exist=True):
+    def _wait_for_queue(self, queue_should_exist=True):
         # Wait until queue has been created by consumer process.
-        consumer = self.consumer_class(**config)
+        consumer = self.consumer_class(**self.consumer_cfg)
         consumer.configure(topic='#', callback=lambda x, y: None)
         attempts = 0
         while attempts < self.QUEUE_CHECK_ATTEMPTS:
             attempts += 1
+            if attempts > 1:
+                time.sleep(self.QUEUE_CHECK_PERIOD)
             if consumer.queue_exists() == queue_should_exist:
                 break
-            time.sleep(self.QUEUE_CHECK_PERIOD)
         self.assertEqual(consumer.queue_exists(), queue_should_exist)
 
-    def test_warning(self):
-        # Publish some messages
-        for i in xrange(10):
-            msg = self._build_message(0)
-            self.publisher.publish(msg)
-
-        # Start the consumer
-        self.proc = ConsumerSubprocess(self.consumer_class, self.consumer_cfg,
-                                       True)
-        self.proc.start()
-        self._wait_for_queue(self.consumer_cfg)
-
-        # Monitor the queues; this should create the queue object and assign
-        # it to the user.
-        for i in xrange(10):
+    def _wait_for_queue_record(self):
+        '''Wait until one or more queues have been added to the database.'''
+        attempts = 0
+        while attempts < self.QUEUE_RECORD_CHECK_ATTEMPTS:
+            attempts += 1
+            if attempts > 1:
+                time.sleep(self.QUEUE_RECORD_CHECK_PERIOD)
             self.guardian.monitor_queues(self.management_api.queues())
-            time.sleep(0.2)
+            if Queue.query.first():
+                break
 
-        # Terminate the consumer process
-        self._terminate_proc()
+    def test_abnormal_queue_name(self):
+        self.consumer_class = AbnormalQueueConsumer
+        # Use account with full permissions.
+        self.consumer_cfg['user'] = pulse_cfg['user']
+        self.consumer_cfg['password'] = pulse_cfg['password']
+
+        self._create_publisher()
+        self._create_consumer_proc()
+        self._wait_for_queue()
+        self._wait_for_queue_record()
+
+        queue = Queue.query.filter(Queue.name ==
+                                   AbnormalQueueConsumer.QUEUE_NAME).first()
+        owner = queue.owner
+
+        # Queue is not durable and will be cleaned up when consumer process
+        # exits; delete it from the queue to avoid assertion failure in
+        # tearDown().
+        self._terminate_consumer_proc()
+        self._wait_for_queue(False)
+        db_session.delete(queue)
+        db_session.commit()
+
+        self.assertEqual(owner, None)
+
+    def test_warning(self):
+        self._create_publisher()
+        self._create_consumer_proc(durable=True)
+        self._wait_for_queue()
+        self._wait_for_queue_record()
+        self._terminate_consumer_proc()
 
         # Queue should still exist.
-        self._wait_for_queue(self.consumer_cfg)
+        self._wait_for_queue()
 
-        # Get the queue's object
+        # Get the queue's object.
         db_session.refresh(self.pulse_user)
 
         # Queue multiple messages while no consumer exists.
@@ -222,28 +292,14 @@ class GuardianTest(unittest.TestCase):
         self.assertEqual(queues_to_warn_bis, queues_to_warn)
 
     def test_delete(self):
-        # Publish some messages
-        for i in xrange(10):
-            msg = self._build_message(0)
-            self.publisher.publish(msg)
-
-        # Start the consumer
-        self.proc = ConsumerSubprocess(self.consumer_class, self.consumer_cfg,
-                                       True)
-        self.proc.start()
-        self._wait_for_queue(self.consumer_cfg)
-
-        # Monitor the queues; this should create the queue object and assign
-        # it to the user.
-        for i in xrange(10):
-            self.guardian.monitor_queues(self.management_api.queues())
-            time.sleep(0.2)
-
-        # Terminate the consumer process
-        self._terminate_proc()
+        self._create_publisher()
+        self._create_consumer_proc(durable=True)
+        self._wait_for_queue()
+        self._wait_for_queue_record()
+        self._terminate_consumer_proc()
 
         # Queue should still exist.
-        self._wait_for_queue(self.consumer_cfg)
+        self._wait_for_queue()
 
         # Get the queue's object
         db_session.refresh(self.pulse_user)
@@ -288,7 +344,8 @@ class GuardianTest(unittest.TestCase):
         # And that no queue has overgrown.
         queues_to_delete = [q_data['name'] for q_data
                             in self.management_api.queues()
-                            if q_data['messages_ready'] > self.guardian.del_queue_size]
+                            if q_data['messages_ready'] >
+                               self.guardian.del_queue_size]
         self.assertTrue(len(queues_to_delete) == 0)
 
 
@@ -378,7 +435,8 @@ def main(pulse_opts):
 
                 # Timeout exceeded
                 if time.time() > timeout:
-                    raise RuntimeError('rabbitmq-server startup timeout exceeded')
+                    raise RuntimeError('rabbitmq-server startup timeout '
+                                       'exceeded')
 
                 # We don't want to hog the CPU, so we sleep 1 second before
                 # trying again.
@@ -391,6 +449,7 @@ def main(pulse_opts):
     else:
         unittest.main(argv=sys.argv[0:1])
 
+
 if __name__ == '__main__':
     from optparse import OptionParser
     parser = OptionParser()
@@ -402,7 +461,8 @@ if __name__ == '__main__':
                       default=DEFAULT_RABBIT_PORT,
                       help='port on which RabbitMQ is running; defaults to %d'
                       % DEFAULT_RABBIT_PORT)
-    parser.add_option('--management-port', action='store', type='int', dest='management_port',
+    parser.add_option('--management-port', action='store', type='int',
+                      dest='management_port',
                       default=DEFAULT_RABBIT_MANAGEMENT_PORT,
                       help='RabbitMQ managment port; defaults to %d'
                       % DEFAULT_RABBIT_MANAGEMENT_PORT)

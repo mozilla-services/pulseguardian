@@ -2,17 +2,17 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import time
 import logging
 import logging.handlers
-import optparse
+import re
+import time
 
+import config
 from model.base import init_db, db_session
 from model.user import PulseUser
 from model.queue import Queue
 from management import PulseManagementAPI
 from sendemail import sendemail
-import config
 
 handler = logging.handlers.RotatingFileHandler(
     config.GUARDIAN_LOG_PATH,
@@ -86,46 +86,34 @@ class PulseGuardian(object):
 
         # If the queue doesn't exist in the db, create it.
         if queue is None:
+            m = re.match('queue/([^/]+)/', q_name)
             logging.info("New queue '{0}' encountered. "
                         "Adding to the database.".format(q_name))
-            queue = Queue(name=q_name, owner=None)
+            if m:
+                owner_name = m.group(1)
+                owner = PulseUser.query.filter(
+                    PulseUser.username == owner_name).first()
+
+                # If the queue was created by a user that isn't in the
+                # pulseguardian database, skip the queue.
+                if owner is None:
+                    logging.info(
+                        "Queue '{0}' owner, {1}, isn't in the db. Creating "
+                        "the user.".format(q_name, owner_name))
+                    owner = PulseUser.new_user(owner_name)
+
+                # Assign the user to the queue.
+                logging.info("Assigning queue '{0}' to user "
+                             "{1}.".format(q_name, owner))
+            else:
+                logging.warn("'{0}' is not a standard queue name.")
+                owner = None
+            queue = Queue(name=q_name, owner=owner)
 
         # Update the saved queue size.
         queue.size = q_size
         db_session.add(queue)
         db_session.commit()
-
-        # If we don't know who created the queue...
-        if queue.owner is None:
-            logging.debug("Queue '{0}' owner's unknown.".format(q_name))
-
-            # If no client is currently consuming the queue, just skip it.
-            if queue_data['consumers'] == 0:
-                logging.debug("Queue '{0}' skipped (no owner, no current "
-                             "consumer).".format(q_name))
-                return queue
-
-            # Otherwise look for its user.
-            owner_name = self.api.queue_owner(queue_data)
-
-            pulse_user = PulseUser.query.filter(
-                PulseUser.username == owner_name).first()
-
-            # If the queue was created by a user that isn't in the
-            # pulseguardian database, skip the queue.
-            if pulse_user is None:
-                logging.info(
-                    "Queue '{0}' owner, {1}, isn't in the db. Creating the "
-                    "user.".format(q_name, owner_name))
-                pulse_user = PulseUser.new_user(owner_name)
-
-            # Assign the user to the queue.
-            logging.info(
-                "Assigning queue '{0}' to user {1}.".format(q_name, pulse_user))
-            queue.owner = pulse_user
-            db_session.add(queue)
-            db_session.commit()
-
         return queue
 
     def monitor_queues(self, queues):

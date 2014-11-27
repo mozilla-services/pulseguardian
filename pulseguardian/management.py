@@ -119,15 +119,3 @@ class PulseManagementAPI(object):
     def channel(self, channel):
         channel = quote(channel, '')
         return self._api_request('channels/{0}'.format(channel))
-
-    # Misc
-
-    def queue_owner(self, queue_data):
-        queue = self.queue(vhost=queue_data['vhost'], queue=queue_data['name'])
-
-        if queue['consumers'] < 1:
-            return None
-
-        channel_name = queue['consumer_details'][0]['channel_details']['name']
-        channel = self.channel(channel_name)
-        return channel['user']
