@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+
+{% block body %}
+    <div id="quickstart_info" class="container_12">
+        <div class="grid_12">
+            <h3>How to get started quickly</h3>
+
+                <p class="note">
+                     This quickstart will use Python, though there is nothing
+                     Python-specific about pulse.
+                </p>
+            <ol>
+                <li>Install pip (if needed)
+                    <pre class="brush: shell">sudo easy_install pip</pre>
+                </li>
+                <li>Install the mozillapulse helper library. The helper library
+                    isn't needed if you are experienced with AMQP and just want
+                    to use kombu directly, but it provides a lot of convenience
+                    classes.
+                    <pre class="brush: shell">pip install mozillapulse</pre>
+                </li>
+                <li>Get the sample code from <a href="http://hg.mozilla.org/users/clegnitto_mozilla.com/pulsequickstart/file/default/python/consumer.py">http://hg.mozilla.org/users/clegnitto_mozilla.com/pulsequickstart/file/default/python/consumer.py</a>
+                    <p>This script will only get messages while it is
+                       connected. If it is disconnected and messages come in
+                       it will not recieve them when it reconnects. To have the
+                       server spool messages in a queue so that the tool never
+                       misses anything, mark it as durable:
+                       <pre class="brush: python">
+                            # Mark as durable...the server spools messages
+                            # while the script is disconnected
+                            pulse.configure(topic='#', durable=True, callback=got_message)
+                       </pre>
+                    <strong>Please only do this if you need to and be sure to
+                            change the applabel above to something unique and
+                            static.  Be sure to delete your queue when you no
+                            longer need it so it doesn't grow indefinitely.</strong>
+                </li>
+                <li>Run the script
+                    <pre class="brush: shell">
+                        python consumer.py
+                    </pre>
+                </li>
+                <li>The script should just sit there until a test message
+                    comes through and it will then print the message data
+                    to the console
+                </li>
+                <li>Inspect the messages, edit the "got_message" function...
+                    <strong>do cool stuff</strong>!
+                </li>
+                <li>You can also replace "PulseTestConsumer" with
+                    "NormalizedBuildConsumer" to get events from BuildBot,
+                    but <strong>be sure to change the applabel to something
+                    else if your script is marked as durable and you change
+                    the consumer type</strong>. A full list of consumers can
+                    be found <a href="http://hg.mozilla.org/automation/mozillapulse/file/default/mozillapulse/consumers.py">at
+                    the bottom of this file in the helper lib</a>.
+                </li>
+            </ol>
+
+        <p>That's it!</p>
+
+        </div>
+    </div>
+
+{% endblock %}

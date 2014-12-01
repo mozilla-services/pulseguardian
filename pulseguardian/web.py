@@ -175,6 +175,21 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/quickstart')
+def quickstart():
+    return render_template('quickstart.html')
+
+
+@app.route('/msgformat')
+def msgformat():
+    return render_template('msgformat.html')
+
+
+@app.route('/roadmap')
+def roadmap():
+    return render_template('roadmap.html')
+
+
 @app.route('/register')
 @requires_login
 def register():
