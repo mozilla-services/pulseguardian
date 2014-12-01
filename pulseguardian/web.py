@@ -364,9 +364,16 @@ def logout_handler():
     session['email'] = None
     return jsonify(ok=True, redirect='/')
 
+
 @app.route('/quickstart')
-def quickstart():    
+def quickstart():
     return render_template('quickstart.html')
+
+
+@app.route('/message_formats')
+def message_formats():
+    return render_template('message_formats.html')
+
 
 def cli(args):
     """Process command line arguments and do some setup."""
