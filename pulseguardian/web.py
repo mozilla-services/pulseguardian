@@ -375,6 +375,11 @@ def message_formats():
     return render_template('message_formats.html')
 
 
+@app.route('/why')
+def why():
+    return render_template('index.html')
+
+
 def cli(args):
     """Process command line arguments and do some setup."""
     global fake_account
