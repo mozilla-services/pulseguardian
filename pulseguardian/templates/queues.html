@@ -2,6 +2,9 @@
 
 {% block body %}
 <div id="queues_info" class="col-md-12">
+  <a href="#" class="autoreload">
+    <span class="glyphicon glyphicon-refresh"></span> Auto-reload
+  </a>
   {% macro user_information(user) %}
   <div class="user" data-email="{{user.email}}">
     {% if user.pulse_users %}
@@ -76,5 +79,10 @@
     {{ user_information(cur_user) }}
   {% endif %}
 </div>
+
+{% endblock %}
+
+{% block javascript %}
+  <script type="text/javascript" src="/static/js/profile.js"></script>
 {% endblock %}
 
