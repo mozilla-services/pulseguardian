@@ -5,27 +5,7 @@
   <a href="#" class="autoreload">
     <span class="glyphicon glyphicon-refresh"></span> Auto-reload
   </a>
-  {% macro user_information(user) %}
-  <div class="user" data-email="{{user.email}}">
-    {% if user.pulse_users %}
-      {% for pulse_user in user.pulse_users %}
-        <h4>{{pulse_user.username}}</h4>
-        {% if pulse_user.queues %}
-          {{ list_queues(pulse_user.queues) }}
-        {% else %}
-          <p>
-            No queues for now!
-          </p>
-        {% endif %}
-      {% endfor %}
-    {% else %}
-      <p>
-        No Pulse users!
-      </p>
-    {% endif %}
-  </div>
-  {% endmacro %}
-
+  
   {% macro list_queues(queues) %}
   <ul class="list-group queues">
     {% for queue in queues %}
@@ -58,6 +38,27 @@
       </li>
     {% endfor %}
   </ul>
+  {% endmacro %}
+
+  {% macro user_information(user) %}
+  <div class="user" data-email="{{user.email}}">
+    {% if user.pulse_users %}
+      {% for pulse_user in user.pulse_users %}
+        <h4>{{pulse_user.username}}</h4>
+        {% if pulse_user.queues %}
+          {{ list_queues(pulse_user.queues) }}
+        {% else %}
+          <p>
+            No queues for now!
+          </p>
+        {% endif %}
+      {% endfor %}
+    {% else %}
+      <p>
+        No Pulse users!
+      </p>
+    {% endif %}
+  </div>
   {% endmacro %}
 
   {% if cur_user.admin %}
