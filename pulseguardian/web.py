@@ -205,6 +205,16 @@ def queues():
                            no_owner_queues=no_owner_queues)
 
 
+@app.route('/queues_listing')
+@requires_login
+def queues_listing():
+    users = no_owner_queues = []
+    if g.user.admin:
+        users = User.query.all()
+        no_owner_queues = list(Queue.query.filter(Queue.owner == None))
+    return render_template('queues_listing.html', users=users,
+                           no_owner_queues=no_owner_queues)
+
 # API
 
 @app.route('/queue/<path:queue_name>', methods=['DELETE'])
