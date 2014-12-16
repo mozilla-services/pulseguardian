@@ -378,16 +378,6 @@ def logout_handler():
     return jsonify(ok=True, redirect='/')
 
 
-@app.route('/quickstart')
-def quickstart():
-    return render_template('quickstart.html')
-
-
-@app.route('/message_formats')
-def message_formats():
-    return render_template('message_formats.html')
-
-
 @app.route('/why')
 def why():
     return render_template('index.html')
