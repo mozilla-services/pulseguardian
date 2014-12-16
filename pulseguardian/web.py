@@ -378,7 +378,7 @@ def logout_handler():
     return jsonify(ok=True, redirect='/')
 
 
-@app.route('/why')
+@app.route('/whats_pulse')
 def why():
     return render_template('index.html')
 
