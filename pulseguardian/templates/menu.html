@@ -1,0 +1,9 @@
+<div class="menu">
+  <div class="container">  	
+  	<h4><a class="menuitem" href="/whats_pulse">What's Pulse?</a></h4>
+  	{% if session.logged_in %}
+    	<h4><a class="menuitem" href="/profile">Users</a></h4>
+    	<h4><a class="menuitem" href="/queues">Queues</a></h4>
+  	{% endif %}
+  </div>
+</div>

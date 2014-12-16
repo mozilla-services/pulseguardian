@@ -27,6 +27,8 @@
         <div id="user" data-email="{{session['email']}}" />
         {% endif %}
 
+        {% include 'menu.html' %}
+
         <div class="container">
 
             <div id="error-bar" class="alert alert-danger">
@@ -41,12 +43,13 @@
         <script src="/static/js/jquery.min.js"></script>
         <script src="/static/js/bootstrap.min.js"></script>
 
-        <script src="/static/js/base.js"></script>
+
         {% block javascript %}
         {% endblock %}
 
         <!-- External JS files -->
         {% if not session.get('fake_account') %}
+            <script src="/static/js/persona.js"></script>
             <script src="https://login.persona.org/include.js"></script>
         {% endif %}
 

@@ -119,3 +119,23 @@ a:hover, a:active, a:focus {
 .autoreload.inactive {
     color: #b0bdd2;
 }
+
+/* Menu */
+.menu {
+  background: #2249B1; 
+  text-shadow: -1px 1px 0px rgba(0, 0, 0, 0.5);
+}
+
+.menu .menuitem {
+  font-size: 15px;
+  float: left;
+  margin-left: 10px;
+  margin-right: 10px;
+  padding-bottom: 10px;
+  color: #FFF;
+}
+
+.menu .menuitem:hover {
+  color: #B6C9FD;
+  text-decoration: none;
+}

@@ -1,73 +1,18 @@
-{% macro user_information(user) %}
-<div class="user" data-email="{{user.email}}">
-  {% if user.pulse_users %}
-    {% for pulse_user in user.pulse_users %}
-      <h4>{{pulse_user.username}}</h4>
-      {% if pulse_user.queues %}
-        {{ list_queues(pulse_user.queues) }}
-      {% else %}
-        <p>
-          No queues for now!
-        </p>
-      {% endif %}
-    {% endfor %}
-  {% else %}
-    <p>
-      No Pulse users!
-    </p>
-  {% endif %}
+{% extends 'base.html' %}
+
+{% block body %}
+<div class="col-md-12"> 
+  <a href="#" class="autoreload">
+    <span class="glyphicon glyphicon-refresh"></span> Auto-reload
+  </a>
 </div>
-{% endmacro %}
 
-{% macro list_queues(queues) %}
-<ul class="list-group queues">
-  {% for queue in queues %}
+<div id="queues-info" class="col-md-12"> 
+  {% include 'queues_listing.html' %}
+</div>
+{% endblock %}
 
-    {% set fill_perc = (100 * queue.size / config.del_queue_size) | int %}
-    {% set warning =  queue.size > config.warn_queue_size | int %}
-    {% set bar_class = 'progress-bar-danger' if warning else '' %}
+{% block javascript %}
+  <script type="text/javascript" src="/static/js/profile.js"></script>
+{% endblock %}
 
-    <li class="list-group-item queue"
-        data-queue-name="{{queue.name}}">
-      <span class="pull-right">
-        <span class="glyphicon glyphicon-remove delete"></span>
-      </span>
-      <h4>
-        {% if warning %}
-          <span class="label label-danger">Warning</span>
-        {% endif %}
-        {{queue.name}} <small>{{queue.size}} messages</small>
-      </h4>
-
-      <div class="progress">
-        <div class="progress-bar {{bar_class}}" role="progressbar"
-             aria-valuenow="{{queue.size}}" aria-valuemin="0"
-             aria-valuemax="{{config.del_queue_size}}"
-             style="width: {{fill_perc}}%;">
-          {% if fill_perc > 0 %} {{fill_perc}}% {% endif%}
-        </div>
-      </div>
-
-    </li>
-  {% endfor %}
-</ul>
-{% endmacro %}
-
-{% if cur_user.admin %}
-  <h2>Users</h2>
-
-  {% for user in users %}
-    <h3 class="text-primary" data-email="{{user.email}}">
-      {{user.email}}
-    </h3>
-    {{ user_information(user) }}
-  {% endfor %}
-
-  {% if no_owner_queues %}
-    <h3 class="text-primary">Queues with unknown owners</h3>
-    {{ list_queues(no_owner_queues) }}
-  {% endif %}
-{% else %}
-  <h3>Queues</h3>
-  {{ user_information(cur_user) }}
-{% endif %}
