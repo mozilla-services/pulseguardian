@@ -29,8 +29,8 @@ if sys.hexversion < 0x020603f0:
 
 def sendemail(from_addr=None, to_addrs=None, subject='No Subject',
               text_data=None, html_data=None,
-              server='mail.mozilla.com', port=465,
-              username=None, password=None, use_ssl=True):
+              server='smtp.mozilla.org', port=25,
+              username=None, password=None, use_ssl=False):
     """Sends an email.
 
      from_addr is an email address; to_addrs is a list of email adresses.
