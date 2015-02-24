@@ -117,7 +117,7 @@ def load_fake_account(fake_account):
     # Check if user already exists in the database, creating it if not.
     g.user = User.query.filter(User.email == fake_account).first()
     if g.user is None:
-        g.user = User.new_user(email=fake_account)
+        g.user = User.new_user(email=fake_account, admin = True)
 
 
 def requires_login(f):
@@ -193,6 +193,12 @@ def profile(error=None, messages=None):
                            no_owner_queues=no_owner_queues,
                            error=error, messages=messages)
 
+@app.route('/users_listing')
+@requires_login
+def users_listing(error=None, messages=None):
+    pulse_users = []
+    users = User.query.join(User.pulse_users) 
+    return render_template('users_listing.html', users=users)
 
 @app.route('/queues')
 @requires_login
