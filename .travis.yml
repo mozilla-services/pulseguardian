@@ -1,0 +1,18 @@
+language: python
+python:
+  - "2.7"
+  - "2.6"
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -y rabbitmq-server
+  - sudo rabbitmq-plugins enable rabbitmq_management
+  - sudo /etc/init.d/rabbitmq-server restart
+install:
+  - pip install -r requirements.txt
+  - pip install .
+script:
+  - cp pulseguardian/config.py.travis pulseguardian/config.py
+  - python test/runtests.py --use-local
+notifications:
+  irc: "irc.mozilla.org#pulse"
+  on_success: change
