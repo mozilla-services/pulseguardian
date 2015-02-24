@@ -14,6 +14,7 @@ import requests
 import sqlalchemy.orm.exc
 import werkzeug.serving
 from flask import Flask, render_template, session, g, redirect, request, jsonify
+from sqlalchemy.sql.expression import case
 
 import config
 from model.base import db_session, init_db
@@ -193,6 +194,14 @@ def profile(error=None, messages=None):
                            no_owner_queues=no_owner_queues,
                            error=error, messages=messages)
 
+@app.route('/all_pulse_users')
+@requires_login
+def all_pulse_users():
+    users = db_session.query(
+        PulseUser.username,
+        case([(User.email == None, "None")], else_=User.email)).outerjoin(
+            User, User.id == PulseUser.owner_id).all()
+    return render_template('all_pulse_users.html', users=users)
 
 @app.route('/queues')
 @requires_login
