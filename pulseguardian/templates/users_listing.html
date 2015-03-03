@@ -23,10 +23,10 @@
         </tr>
       </thead>
       <tbody>
-      {% for user in users %}
+      {% for pulse_user, user in users %}
         <tr>
-          <td>{{pulse_user.username}}</td>
-          <td>{{user.email}}</td>
+          <td>{{pulse_user}}</td>
+          <td>{{user}}</td>
         </tr>
       {% endfor %}
       </tbody>
