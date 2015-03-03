@@ -197,10 +197,10 @@ def profile(error=None, messages=None):
 @app.route('/users_listing')
 @requires_login
 def users_listing(error=None, messages=None):
-    users = db_session.query(PulseUser.username, 
-                             case([(User.email == None, "None")], 
+    users = db_session.query(PulseUser.username,
+                             case([(User.email == None, "None")],
                              else_=User.email)).outerjoin(
-                             User, User.id == PulseUser.owner_id).all() 
+                             User, User.id == PulseUser.owner_id).all()
     return render_template('users_listing.html', users=users)
 
 @app.route('/queues')
