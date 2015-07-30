@@ -36,8 +36,8 @@ Within the chosen environment, install and configure PulseGuardian:
     pip install -r requirements.txt
   ```
 
-* Copy `pulseguardian/config.py.example` to `pulseguardian/config.py` and
-  update it with the correct settings (database, email password, etc.)
+* Set environment variables as necessary for your local settings.  See
+  `pulseguardian/config.py`.
 
 Because Persona requires an https connection, if you are running the
 development server without the --fake-account option (see below), you
