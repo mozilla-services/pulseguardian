@@ -11,7 +11,7 @@ information on [the wiki][].
 * Python (2.6+)
  * Python 2.6 **must** be supported
 * pip (to install external dependencies)
-* MySQL (if you're using the sqlalchemy MySQL engine, see below)
+* PostgreSQL (for production; testing environments can use sqlite)
 
 ## Setup
 

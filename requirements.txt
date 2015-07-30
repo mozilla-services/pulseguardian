@@ -2,7 +2,6 @@ Flask==0.10.1
 Jinja2==2.7.2
 MarkupSafe==0.21
 MozillaPulse==1.0
-MySQL-python==1.2.5
 SQLAlchemy==0.9.4
 Werkzeug==0.9.4
 amqp==1.4.5
@@ -11,3 +10,4 @@ itsdangerous==0.24
 requests==2.2.1
 wsgiref==0.1.2
 argparse==1.2.1
+psycopg2==2.6.1

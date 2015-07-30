@@ -19,7 +19,7 @@ email_from = os.getenv('EMAIL_FROM', 'Mozilla A-Team <auto-tools@mozilla.com>')
 
 # Database
 sqlalchemy_engine_url = os.getenv('SQLALCHEMY_ENGINE_URL',
-                                  'mysql://root@localhost/pulseguardian')
+                                  'postgresql://root@localhost/pulseguardian')
 pool_recycle_interval = int(os.getenv('POOL_RECYCLE_INTERVAL', 60))
 
 # RabbitMQ
