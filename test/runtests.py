@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import base64
 import logging
 import multiprocessing
 import os
@@ -17,6 +18,8 @@ from mozillapulse.messages.test import TestMessage
 
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.join(parent_dir, 'pulseguardian'))
+
+os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24))
 
 import config
 # Changing the DB for the tests before the model is initialized
@@ -111,10 +114,10 @@ class GuardianTest(unittest.TestCase):
         self.proc = None
         self.publisher = None
         self.management_api = PulseManagementAPI(
-            host=pulse_cfg['host'],
+            management_url=config.rabbit_management_url,
             user=pulse_cfg['user'],
-            management_port=pulse_cfg['management_port'],
-            password=pulse_cfg['password'])
+            password=pulse_cfg['password']
+        )
         self.guardian = PulseGuardian(self.management_api,
                                       warn_queue_size=TEST_WARN_SIZE,
                                       del_queue_size=TEST_DELETE_SIZE,

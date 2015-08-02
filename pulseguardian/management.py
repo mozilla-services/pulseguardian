@@ -9,13 +9,8 @@ from urllib import quote
 
 import requests
 
-DEFAULT_RABBIT_HOST = 'localhost'
-DEFAULT_RABBIT_MANAGEMENT_PORT = 15672
-DEFAULT_RABBIT_VHOST = '/'
-DEFAULT_RABBIT_USER = 'guest'
-DEFAULT_RABBIT_PASSWORD = 'guest'
-
 MAX_RETRY = 5
+
 
 class PulseManagementException(Exception):
     pass
@@ -31,19 +26,14 @@ class PulseManagementAPI(object):
     """
     exception = PulseManagementException
 
-    def __init__(self, host=DEFAULT_RABBIT_HOST,
-                 management_port=DEFAULT_RABBIT_MANAGEMENT_PORT,
-                 user=DEFAULT_RABBIT_USER,
-                 password=DEFAULT_RABBIT_PASSWORD):
-        self.host = host
-        self.management_port = management_port
+    def __init__(self, management_url, user, password):
+        self.management_url = management_url.rstrip('/') + '/'
         self.management_user = user
         self.management_password = password
 
     def _api_request(self, path, method='GET', data=None):
         session = requests.Session()
-        url = 'http://{0}:{1}/api/{2}'.format(self.host, self.management_port,
-                                              path)
+        url = '{0}{1}'.format(self.management_url, path)
         request = requests.Request(method, url, auth=(self.management_user,
                                                       self.management_password),
                                    data=json.dumps(data)).prepare()

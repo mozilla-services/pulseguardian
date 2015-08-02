@@ -189,7 +189,10 @@ durable queues.
         if self.emails and user.email is not None:
             sendemail(subject=subject, from_addr=config.email_from,
                       to_addrs=[user.email], username=config.email_account,
-                      password=config.email_password, text_data=body)
+                      password=config.email_password, text_data=body,
+                      server=config.email_smtp_server,
+                      port=config.email_smtp_port,
+                      use_ssl=config.email_ssl)
 
     def deletion_email(self, user, queue_data):
         exchange = self._exchange_from_queue(queue_data)
@@ -208,7 +211,10 @@ durable queues.
         if self.emails and user.email is not None:
             sendemail(subject=subject, from_addr=config.email_from,
                       to_addrs=[user.email], username=config.email_account,
-                      password=config.email_password, text_data=body)
+                      password=config.email_password, text_data=body,
+                      server=config.email_smtp_server,
+                      port=config.email_smtp_port,
+                      use_ssl=config.email_ssl)
 
     def back_to_normal_email(self, user, queue_data):
         exchange = self._exchange_from_queue(queue_data)
@@ -220,11 +226,13 @@ now back to normal ({2} ready messages, {3} total messages).
 '''.format(queue_data['name'], exchange, queue_data['messages_ready'],
            queue_data['messages'], self.del_queue_size)
 
-
         if self.emails and user.email is not None:
             sendemail(subject=subject, from_addr=config.email_from,
                       to_addrs=[user.email], username=config.email_account,
-                      password=config.email_password, text_data=body)
+                      password=config.email_password, text_data=body,
+                      server=config.email_smtp_server,
+                      port=config.email_smtp_port,
+                      use_ssl=config.email_ssl)
 
     def guard(self):
         logging.info("PulseGuardian started")
@@ -243,8 +251,7 @@ if __name__ == '__main__':
     # Initialize the database if necessary.
     init_db()
 
-    api = PulseManagementAPI(host=config.rabbit_host,
-                             management_port=config.rabbit_management_port,
+    api = PulseManagementAPI(management_url=config.rabbit_management_url,
                              user=config.rabbit_user,
                              password=config.rabbit_password)
     pulse_guardian = PulseGuardian(api)

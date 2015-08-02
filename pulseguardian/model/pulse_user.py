@@ -7,6 +7,7 @@ import re
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
+from pulseguardian import config
 from base import Base, db_session
 from queue import Queue
 
@@ -34,18 +35,8 @@ class PulseUser(Base):
         pulse_user = PulseUser(owner=owner, username=username)
 
         if management_api is not None:
-            management_api.create_user(username=username, password=password)
-
-            esc_username = re.escape(username)
-            read_perms = '^(queue/{0}/.*|exchange/.*)'.format(esc_username)
-            write_conf_perms = '^(queue/{0}/.*|exchange/{0}/.*)'.format(
-                esc_username)
-
-            management_api.set_permission(username=username,
-                                          vhost='/',
-                                          read=read_perms,
-                                          configure=write_conf_perms,
-                                          write=write_conf_perms)
+            pulse_user._create_user(management_api, password)
+            pulse_user._set_permissions(management_api)
 
         db_session.add(pulse_user)
         db_session.commit()
@@ -66,13 +57,26 @@ class PulseUser(Base):
         except management_api.exception:
             pass
 
-        management_api.create_user(username=self.username,
-                                   password=new_password)
-        management_api.set_permission(username=self.username, vhost='/',
-                                      read='.*', configure='.*', write='.*')
+        self._create_user(management_api, new_password)
+        self._set_permissions(management_api)
 
         db_session.add(self)
         db_session.commit()
+
+    def _create_user(self, management_api, password):
+        management_api.create_user(username=self.username, password=password)
+
+    def _set_permissions(self, management_api):
+        esc_username = re.escape(self.username)
+        read_perms = '^(queue/{0}/.*|exchange/.*)'.format(esc_username)
+        write_conf_perms = '^(queue/{0}/.*|exchange/{0}/.*)'.format(
+            esc_username)
+
+        management_api.set_permission(username=self.username,
+                                      vhost=config.rabbit_vhost,
+                                      read=read_perms,
+                                      configure=write_conf_perms,
+                                      write=write_conf_perms)
 
     def __repr__(self):
         return "<PulseUser(username='{0}', owner='{1}')>".format(self.username,

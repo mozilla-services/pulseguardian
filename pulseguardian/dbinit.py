@@ -17,9 +17,11 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-pulse_management = PulseManagementAPI(host=config.rabbit_host,
-                                      user=config.rabbit_user,
-                                      password=config.rabbit_password)
+pulse_management = PulseManagementAPI(
+    management_url=config.rabbit_management_url,
+    user=config.rabbit_user,
+    password=config.rabbit_password
+)
 
 
 def init_and_clear_db():

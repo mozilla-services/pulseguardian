@@ -92,6 +92,11 @@ to set them; that way the test suite will be able to pick up your docker host.
 The docker container container will forward ports 5673 and 15673. Please be
 sure that those ports are available.
 
+Since PulseGuardian is configured via environment variables, you must ensure
+that you have a clean environment before running the tests, i.e., no
+PulseGuardian environment variables set. (FIXME: set up a full test environment
+from within runtests.py rather than relying on defaults.)
+
 The docker daemon must always run as the root user, but you need to be able to
 run docker client commands without `sudo`. To achieve that you can:
 

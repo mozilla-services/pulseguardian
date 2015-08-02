@@ -93,9 +93,10 @@ else:
     logging.getLogger().setLevel(logging.INFO)
 
 # Initializing the rabbitmq management API
-pulse_management = PulseManagementAPI(host=config.rabbit_host,
-                                      user=config.rabbit_user,
-                                      password=config.rabbit_password)
+pulse_management = PulseManagementAPI(
+    management_url=config.rabbit_management_url,
+    user=config.rabbit_user,
+    password=config.rabbit_password)
 
 # Initializing the databse
 init_db()
