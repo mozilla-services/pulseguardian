@@ -11,7 +11,6 @@ install:
   - pip install -r requirements.txt
   - pip install .
 script:
-  - cp pulseguardian/config.py.travis pulseguardian/config.py
   - python test/runtests.py --use-local
 notifications:
   irc: "irc.mozilla.org#pulse"
