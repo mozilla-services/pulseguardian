@@ -16,9 +16,6 @@ from urlparse import urlparse
 from mozillapulse import consumers, publishers
 from mozillapulse.messages.test import TestMessage
 
-parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(os.path.join(parent_dir, 'pulseguardian'))
-
 os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24))
 
 from pulseguardian import config
