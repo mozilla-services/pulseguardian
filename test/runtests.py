@@ -21,17 +21,17 @@ sys.path.append(os.path.join(parent_dir, 'pulseguardian'))
 
 os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24))
 
-import config
+from pulseguardian import config
 # Changing the DB for the tests before the model is initialized
 config.database_url = 'sqlite:///pulseguardian_test.db'
 
-import dbinit
-from guardian import PulseGuardian
-from management import PulseManagementAPI
-from model.user import User
-from model.pulse_user import PulseUser
-from model.queue import Queue
-from model.base import db_session
+from pulseguardian import dbinit
+from pulseguardian.guardian import PulseGuardian
+from pulseguardian.management import PulseManagementAPI
+from pulseguardian.model.base import db_session
+from pulseguardian.model.pulse_user import PulseUser
+from pulseguardian.model.queue import Queue
+from pulseguardian.model.user import User
 
 from docker_setup import (
     create_image, setup_container, teardown_container, check_rabbitmq
