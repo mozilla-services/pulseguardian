@@ -4,7 +4,7 @@
 
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 
-from base import Base
+from pulseguardian.model.base import Base
 
 
 class Queue(Base):

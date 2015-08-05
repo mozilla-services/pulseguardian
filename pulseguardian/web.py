@@ -2,9 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import argparse
 import logging
-import logging.handlers
 import os.path
 import re
 import sys
@@ -13,18 +11,27 @@ from functools import wraps
 import requests
 import sqlalchemy.orm.exc
 import werkzeug.serving
-from flask import Flask, render_template, session, g, redirect, request, jsonify
+from flask import (Flask,
+                   render_template,
+                   session,
+                   g,
+                   redirect,
+                   request,
+                   jsonify)
 from sqlalchemy.sql.expression import case
 
-import config
-from model.base import db_session, init_db
-from model.pulse_user import PulseUser
-from model.user import User
-from model.queue import Queue
-from management import PulseManagementAPI, PulseManagementException
+from pulseguardian import config
+from pulseguardian.logs import setup_logging
+from pulseguardian.management import (PulseManagementAPI,
+                                      PulseManagementException)
+from pulseguardian.model.base import db_session, init_db
+from pulseguardian.model.pulse_user import PulseUser
+from pulseguardian.model.user import User
+from pulseguardian.model.queue import Queue
 
 # Development cert/key base filename.
 DEV_CERT_BASE = 'dev'
+
 
 # Monkey-patch werkzeug.
 
@@ -63,34 +70,28 @@ def generate_adhoc_ssl_pair(cn=None):
 
     return cert, pkey
 
+
 # This is used by werkzeug.serving.make_ssl_devcert().
 werkzeug.serving.generate_adhoc_ssl_pair = generate_adhoc_ssl_pair
 
 
-# Initializing the web app and the database
+# Initialize the web app.
 app = Flask(__name__)
 app.secret_key = config.flask_secret_key
-app.config['SESSION_COOKIE_SECURE'] = True
 
-# Setting up the web app's logger
-file_handler = logging.handlers.RotatingFileHandler(
-    config.WEBAPP_LOG_PATH, mode='a+',
-    maxBytes=config.MAX_LOG_SIZE,
-    backupCount=config.BACKUP_COUNT)
+app.logger.addHandler(setup_logging(config.webapp_log_path))
 
-formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s",
-                              "%Y-%m-%d %H:%M:%S")
-file_handler.setFormatter(formatter)
 
-app.logger.addHandler(file_handler)
+# Log in with a fake account if set up.  This is an easy way to test
+# without requiring Persona (and thus https).
+fake_account = None
 
-# Setting root logger
-logging.getLogger().addHandler(file_handler)
-
-if config.DEBUG:
-    logging.getLogger().setLevel(logging.DEBUG)
+if config.fake_account:
+    fake_account = config.fake_account
+    app.config['SESSION_COOKIE_SECURE'] = False
 else:
-    logging.getLogger().setLevel(logging.INFO)
+    app.config['SESSION_COOKIE_SECURE'] = True
+
 
 # Initializing the rabbitmq management API
 pulse_management = PulseManagementAPI(
@@ -98,15 +99,13 @@ pulse_management = PulseManagementAPI(
     user=config.rabbit_user,
     password=config.rabbit_password)
 
-# Initializing the databse
+
+# Initialize the database.
 init_db()
 
-# Fake account
-fake_account = None
 
 # Decorators and instructions used to inject info into the context or
-# restrict access to some pages
-
+# restrict access to some pages.
 
 def load_fake_account(fake_account):
     """Load fake user and setup session."""
@@ -167,6 +166,7 @@ def load_user():
 def shutdown_session(exception=None):
     db_session.remove()
 
+
 # Views
 
 @app.route('/')
@@ -224,6 +224,7 @@ def queues_listing():
         no_owner_queues = list(Queue.query.filter(Queue.owner == None))
     return render_template('queues_listing.html', users=users,
                            no_owner_queues=no_owner_queues)
+
 
 # API
 
@@ -394,23 +395,20 @@ def why():
 
 
 def cli(args):
-    """Process command line arguments and do some setup."""
+    """Command-line handler.
+
+    Since moving to Heroku, it is preferable to set a .env file with
+    environment variables and start up the system with 'foreman start'
+    rather than executing web.py directly.
+    """
     global fake_account
 
     # Add StreamHandler for development purposes
     logging.getLogger().addHandler(logging.StreamHandler())
 
-    # Process command line arguments.
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--fake-account', help='Email for fake dev account',
-                        default=None)
-    args = parser.parse_args(args)
-
-    # If fake account is provided we need to do some setup
-    if args.fake_account:
+    # If fake account is provided we need to do some setup.
+    if fake_account:
         ssl_context = None
-        fake_account = args.fake_account
-        app.config['SESSION_COOKIE_SECURE'] = False
     else:
         dev_cert = '%s.crt' % DEV_CERT_BASE
         dev_cert_key = '%s.key' % DEV_CERT_BASE

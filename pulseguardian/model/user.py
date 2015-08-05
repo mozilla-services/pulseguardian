@@ -5,8 +5,9 @@
 from sqlalchemy import Boolean, Column, Integer, String
 from sqlalchemy.orm import relationship
 
-from base import Base, db_session
-from pulse_user import PulseUser
+from pulseguardian.model.base import Base, db_session
+from pulseguardian.model.pulse_user import PulseUser
+
 
 class User(Base):
     """Pulse Guardian User class, identified by an email address."""

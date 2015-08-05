@@ -8,8 +8,8 @@ from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from pulseguardian import config
-from base import Base, db_session
-from queue import Queue
+from pulseguardian.model.base import Base, db_session
+from pulseguardian.model.queue import Queue
 
 
 class PulseUser(Base):

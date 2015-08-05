@@ -5,13 +5,13 @@
 import logging
 import sys
 
-import config
-
-from model.base import db_session, init_db
-from model.user import User
-from model.pulse_user import PulseUser
-from model.queue import Queue
-from management import PulseManagementAPI, PulseManagementException
+from pulseguardian import config
+from pulseguardian.model.base import db_session, init_db
+from pulseguardian.model.user import User
+from pulseguardian.model.pulse_user import PulseUser
+from pulseguardian.model.queue import Queue
+from pulseguardian.management import (PulseManagementAPI,
+                                      PulseManagementException)
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)

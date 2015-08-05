@@ -3,32 +3,20 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import logging
-import logging.handlers
 import re
 import time
 
-import config
-from model.base import init_db, db_session
-from model.user import PulseUser
-from model.queue import Queue
-from management import PulseManagementAPI
-from sendemail import sendemail
+from pulseguardian import config
+from pulseguardian.logs import setup_logging
+from pulseguardian.management import PulseManagementAPI
+from pulseguardian.model.base import init_db, db_session
+from pulseguardian.model.user import PulseUser
+from pulseguardian.model.queue import Queue
+from pulseguardian.sendemail import sendemail
 
-handler = logging.handlers.RotatingFileHandler(
-    config.GUARDIAN_LOG_PATH,
-    mode='a+',
-    maxBytes=config.MAX_LOG_SIZE,
-    backupCount=config.BACKUP_COUNT)
-formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s",
-                              "%Y-%m-%d %H:%M:%S")
-handler.setFormatter(formatter)
+logging.getLogger("requests").setLevel(logging.WARNING)
 
-logging.getLogger().addHandler(handler)
-
-if config.DEBUG:
-    logging.getLogger().setLevel(logging.DEBUG)
-else:
-    logging.getLogger().setLevel(logging.INFO)
+setup_logging(config.guardian_log_path)
 
 
 class PulseGuardian(object):
