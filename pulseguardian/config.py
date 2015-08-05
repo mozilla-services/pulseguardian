@@ -27,8 +27,8 @@ email_smtp_port = int(os.getenv('EMAIL_SMTP_PORT', 25))
 email_ssl = bool(int(os.getenv('EMAIL_SSL', 0)))
 
 # Database
-sqlalchemy_engine_url = os.getenv('SQLALCHEMY_ENGINE_URL',
-                                  'postgresql://root@localhost/pulseguardian')
+database_url = os.getenv('DATABASE_URL',
+                         'postgresql://root@localhost/pulseguardian')
 pool_recycle_interval = int(os.getenv('POOL_RECYCLE_INTERVAL', 60))
 
 # RabbitMQ

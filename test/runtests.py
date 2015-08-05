@@ -23,7 +23,7 @@ os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24))
 
 import config
 # Changing the DB for the tests before the model is initialized
-config.sqlalchemy_engine_url = 'sqlite:///pulseguardian_test.db'
+config.database_url = 'sqlite:///pulseguardian_test.db'
 
 import dbinit
 from guardian import PulseGuardian

@@ -12,7 +12,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from pulseguardian import config
 
 Base = declarative_base()
-engine = create_engine(config.sqlalchemy_engine_url,
+engine = create_engine(config.database_url,
                        pool_recycle=config.pool_recycle_interval,
                        convert_unicode=True)
 db_session = scoped_session(sessionmaker(autocommit=False,
