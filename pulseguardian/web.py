@@ -18,6 +18,7 @@ from flask import (Flask,
                    redirect,
                    request,
                    jsonify)
+from flask_sslify import SSLify
 from sqlalchemy.sql.expression import case
 
 from pulseguardian import config
@@ -78,6 +79,10 @@ werkzeug.serving.generate_adhoc_ssl_pair = generate_adhoc_ssl_pair
 # Initialize the web app.
 app = Flask(__name__)
 app.secret_key = config.flask_secret_key
+
+# Redirect to https if running on Heroku dyno.
+if 'DYNO' in os.environ:
+    sslify = SSLify(app)
 
 app.logger.addHandler(setup_logging(config.webapp_log_path))
 

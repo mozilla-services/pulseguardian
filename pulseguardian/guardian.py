@@ -131,9 +131,10 @@ class PulseGuardian(object):
                 continue
 
             if queue.size > self.warn_queue_size and not queue.warned:
-                logging.warning("Warning queue '{0}' owner. Queue size = {1}; "
-                               "warn_queue_size = {2}".format(
-                    queue.name, queue.size, self.warn_queue_size))
+                logging.warning("Warning queue '{0}' owner. Queue size = "
+                                "{1}; warn_queue_size = {2}".format(
+                                    queue.name, queue.size,
+                                    self.warn_queue_size))
                 queue.warned = True
                 if self.on_warn:
                     self.on_warn(queue.name)

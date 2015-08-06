@@ -12,3 +12,4 @@ wsgiref==0.1.2
 argparse==1.2.1
 psycopg2==2.6.1
 gunicorn==19.3.0
+Flask-SSLify==0.1.5
