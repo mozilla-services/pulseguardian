@@ -34,8 +34,9 @@ class PulseManagementAPI(object):
     def _api_request(self, path, method='GET', data=None):
         session = requests.Session()
         url = '{0}{1}'.format(self.management_url, path)
-        request = requests.Request(method, url, auth=(self.management_user,
-                                                      self.management_password),
+        request = requests.Request(method, url,
+                                   auth=(self.management_user,
+                                         self.management_password),
                                    data=json.dumps(data)).prepare()
         request.headers['Content-type'] = 'application/json'
         response = None
@@ -74,7 +75,8 @@ class PulseManagementAPI(object):
     def delete_queue(self, vhost, queue):
         vhost = quote(vhost, '')
         queue = quote(queue, '')
-        self._api_request('queues/{0}/{1}'.format(vhost, queue), method='DELETE')
+        self._api_request('queues/{0}/{1}'.format(vhost, queue),
+                          method='DELETE')
 
     def delete_all_queues(self):
         for queue_data in self.queues():
@@ -86,10 +88,11 @@ class PulseManagementAPI(object):
         username = quote(username, '')
         return self._api_request('users/{0}'.format(username))
 
-    def create_user(self, username, password, tags='monitoring'):
+    def create_user(self, username, password, tags=''):
         username = quote(username, '')
         data = dict(password=password, tags=tags)
-        self._api_request('users/{0}'.format(username), method='PUT', data=data)
+        self._api_request('users/{0}'.format(username), method='PUT',
+                          data=data)
 
     def delete_user(self, username):
         username = quote(username, '')
