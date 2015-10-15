@@ -8,8 +8,7 @@ information on [the wiki][].
 ## Pre-requisites
 
 * RabbitMQ (tested on 3.3.0)
-* Python (2.6+)
- * Python 2.6 **must** be supported
+* Python 2.7
 * pip (to install external dependencies)
 * PostgreSQL (for production; testing environments can use sqlite)
 
