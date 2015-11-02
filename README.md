@@ -39,22 +39,10 @@ Within the chosen environment, install and configure PulseGuardian:
   `pulseguardian/config.py`.
 
 Because Persona requires an https connection, if you are running the
-development server without the --fake-account option (see below), you
-will also need the pyOpenSSL package.
-
-Due to a bug in pyOpenSSL, development under Python 2.6 currently
-requires unreleased code:
-
-    pip install -e git+git://github.com/pyca/pyopenssl#egg=PyOpenSSL
-
-Python 2.7 can use released versions:
+development server without the `--fake-account` option (see below), you
+will also need the pyOpenSSL package:
 
     pip install pyOpenSSL
-
-Note that, due to deployment logistics, PulseGuardian **must** run under
-Python 2.6. Feel free to develop under 2.7, but don't use any
-2.7-specific features, and try to test under 2.6 before submitting a
-patch.
 
 ## Usage
 
@@ -84,7 +72,7 @@ given user, if necessary, and log in automatically.
 PulseGuardian uses docker to run its test suite. Please follow the
 [docker installation docs][] on how to install it in your system.
 
-If you're installing on OS X, you'll be using `boot2docker`. During
+If you're installing on OS X, you'll be using `docker-machine`. During
 initialization, you'll prompted to set some environment variables. Don't forget
 to set them; that way the test suite will be able to pick up your docker host.
 
@@ -96,18 +84,20 @@ that you have a clean environment before running the tests, i.e., no
 PulseGuardian environment variables set. (FIXME: set up a full test environment
 from within runtests.py rather than relying on defaults.)
 
-The docker daemon must always run as the root user, but you need to be able to
-run docker client commands without `sudo`. To achieve that you can:
+Some Linux-specific notes:
 
-* Add the docker group if it doesn't already exist:  `sudo groupadd docker`
+* The docker daemon must always run as the root user, but you need to be able
+  to run docker client commands without `sudo`. To achieve that you can:
 
-* Add the connected user "${USER}" to the docker group. Change the user name
+ * Add the docker group if it doesn't already exist:  `sudo groupadd docker`
+
+ * Add the connected user "${USER}" to the docker group. Change the user name
 to match your preferred user:  `sudo gpasswd -a ${USER} docker`
 
-* Restart the Docker daemon:  `sudo service docker restart`
+ * Restart the Docker daemon:  `sudo service docker restart`
 
-* You need to log out and log back in again if you added the currently logged-in
-user.
+ * You need to log out and log back in again if you added the currently
+   logged-in user.
 
 Finally, you can run tests with (from your project root folder):
 `python test/runtests.py`.
