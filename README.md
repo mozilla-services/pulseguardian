@@ -15,7 +15,15 @@ information on [the wiki][].
 ## Setup
 
 See the mozillapulse [HACKING.md][] file for instructions on setting
-up a local Pulse environment.
+up a local Pulse environment.  You can also use a docker container.  There
+are no proper docs for this yet, but see the functions in
+`test/docker_setup.py`, which create an image and container running
+RabbitMQ, forwarding the AMQP and management API ports from 5672 and 15672
+to 5673 and 15673 on the local host, respectively.
+
+TODO: Docker is a more lightweight solution than Vagrant and should be
+considered the preferred way.  We need docs here, and the mozillapulse
+package's tests should be updated to use docker instead of Vagrant.
 
 Using a virtualenv is highly recommended. One possible installation would be
 
