@@ -76,7 +76,7 @@ class PulseGuardian(object):
         if queue is None:
             m = re.match('queue/([^/]+)/', q_name)
             logging.info("New queue '{0}' encountered. "
-                        "Adding to the database.".format(q_name))
+                         "Adding to the database.".format(q_name))
             if m:
                 owner_name = m.group(1)
                 owner = PulseUser.query.filter(
@@ -94,7 +94,8 @@ class PulseGuardian(object):
                 logging.info("Assigning queue '{0}' to user "
                              "{1}.".format(q_name, owner))
             else:
-                logging.warn("'{0}' is not a standard queue name.")
+                logging.warn("'{0}' is not a standard queue name.".format(
+                    q_name))
                 owner = None
             queue = Queue(name=q_name, owner=owner)
 

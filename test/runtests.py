@@ -3,6 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import base64
+import errno
 import logging
 import multiprocessing
 import os
@@ -111,7 +112,8 @@ class GuardianTest(unittest.TestCase):
         self.proc = None
         self.publisher = None
         self.management_api = PulseManagementAPI(
-            management_url=config.rabbit_management_url,
+            management_url='http://{}:{}/api'.format(
+                pulse_cfg['host'], pulse_cfg['management_port']),
             user=pulse_cfg['user'],
             password=pulse_cfg['password']
         )
@@ -189,10 +191,16 @@ class GuardianTest(unittest.TestCase):
             self.proc.join()
             self.proc = None
 
-    def _wait_for_queue(self, queue_should_exist=True):
-        # Wait until queue has been created by consumer process.
+    def _create_passive_consumer(self):
+        cfg = self.consumer_cfg.copy()
+        cfg['connect'] = False
         consumer = self.consumer_class(**self.consumer_cfg)
         consumer.configure(topic='#', callback=lambda x, y: None)
+        return consumer
+
+    def _wait_for_queue(self, queue_should_exist=True):
+        '''Wait until queue has been created by consumer process.'''
+        consumer = self._create_passive_consumer()
         attempts = 0
         while attempts < self.QUEUE_CHECK_ATTEMPTS:
             attempts += 1
@@ -204,13 +212,14 @@ class GuardianTest(unittest.TestCase):
 
     def _wait_for_queue_record(self):
         '''Wait until one or more queues have been added to the database.'''
+        consumer = self._create_passive_consumer()
         attempts = 0
         while attempts < self.QUEUE_RECORD_CHECK_ATTEMPTS:
             attempts += 1
             if attempts > 1:
                 time.sleep(self.QUEUE_RECORD_CHECK_PERIOD)
             self.guardian.monitor_queues(self.management_api.queues())
-            if Queue.query.first():
+            if Queue.query.filter(Queue.name == consumer.queue_name).first():
                 break
 
     def test_abnormal_queue_name(self):

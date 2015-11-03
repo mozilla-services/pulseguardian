@@ -19,7 +19,7 @@ class PulseManagementException(Exception):
 class PulseManagementAPI(object):
     """Wrapper around the RabbitMQ management plugin's REST API.
 
-    :param host: Hostname of the RabbitMQ instance.
+    :param url: Management API URL.
     :param management_port: Port used by the management plugin.
     :param user: RabbitMQ user with administrator privilege.
     :param password: Password of the RabbitMQ user.

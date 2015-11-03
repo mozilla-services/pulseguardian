@@ -72,12 +72,22 @@ given user, if necessary, and log in automatically.
 PulseGuardian uses docker to run its test suite. Please follow the
 [docker installation docs][] on how to install it in your system.
 
-If you're installing on OS X, you'll be using `docker-machine`. During
-initialization, you'll prompted to set some environment variables. Don't forget
-to set them; that way the test suite will be able to pick up your docker host.
+With docker installed and configured appropriately, run
 
-The docker container container will forward ports 5673 and 15673. Please be
-sure that those ports are available.
+    python test/runtests.py
+
+The required docker image will be built and container started before the tests
+are run.
+
+If you are using OS X with `docker-machine`, don't forget to set the
+environment variables before running the tests via
+
+    eval "$(docker-machine env <machine>)"
+
+where `<machine>` is your docker-machine name, quite possibly `default`.
+
+The docker container forwards ports 5673 and 15673. Please be sure that
+they are available.
 
 Since PulseGuardian is configured via environment variables, you must ensure
 that you have a clean environment before running the tests, i.e., no
@@ -98,9 +108,6 @@ to match your preferred user:  `sudo gpasswd -a ${USER} docker`
 
  * You need to log out and log back in again if you added the currently
    logged-in user.
-
-Finally, you can run tests with (from your project root folder):
-`python test/runtests.py`.
 
 If you prefer, you can run the tests against a local RabbitMQ installation. For
 that you can run: `python test/runtests.py --use-local`.
