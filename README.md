@@ -14,17 +14,6 @@ information on [the wiki][].
 
 ## Setup
 
-See the mozillapulse [HACKING.md][] file for instructions on setting
-up a local Pulse environment.  You can also use a docker container.  There
-are no proper docs for this yet, but see the functions in
-`test/docker_setup.py`, which create an image and container running
-RabbitMQ, forwarding the AMQP and management API ports from 5672 and 15672
-to 5673 and 15673 on the local host, respectively.
-
-TODO: Docker is a more lightweight solution than Vagrant and should be
-considered the preferred way.  We need docs here, and the mozillapulse
-package's tests should be updated to use docker instead of Vagrant.
-
 Using a virtualenv is highly recommended. One possible installation would be
 
 * Clone the repository and cd into it.
@@ -52,9 +41,22 @@ will also need the pyOpenSSL package:
 
     pip install pyOpenSSL
 
+You will also need a RabbitMQ instance running somewhere.  Docker provides a
+lightweight and isolated solution; however, there are no proper docs for this
+yet.  You can use the functions in `test/docker_setup.py` to create an image
+and container running RabbitMQ, which also forwards the AMQP and management
+API ports from 5672 and 15672 to 5673 and 15673 on the local host,
+respectively.
+
+You can also use either a local RabbitMQ server or a VM.  See the
+mozillapulse [HACKING.md][] file for instructions on setting up both of these.
+
+TODO: Add a script and docs to start up a Docker instance.
+
 ## Usage
 
-Make sure `rabbitmq-server` is running and you're inside the source directory
+Make sure `rabbitmq-server` is running, your environment variables are
+configured properly, and that you're inside the source directory
 (`pulseguardian`) before you run the following commands.
 
 Note that tests are run on [Travis CI][]. Before submitting a patch,
