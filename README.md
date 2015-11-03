@@ -32,9 +32,6 @@ Within the chosen environment, install and configure PulseGuardian:
     pip install -r requirements.txt
   ```
 
-* Set environment variables as necessary for your local settings.  See
-  `pulseguardian/config.py`.
-
 Because Persona requires an https connection, if you are running the
 development server without the `--fake-account` option (see below), you
 will also need the pyOpenSSL package:
@@ -42,16 +39,52 @@ will also need the pyOpenSSL package:
     pip install pyOpenSSL
 
 You will also need a RabbitMQ instance running somewhere.  Docker provides a
-lightweight and isolated solution; however, there are no proper docs for this
-yet.  You can use the functions in `test/docker_setup.py` to create an image
-and container running RabbitMQ, which also forwards the AMQP and management
-API ports from 5672 and 15672 to 5673 and 15673 on the local host,
-respectively.
+lightweight and isolated solution.  See the [docker installation docs][] for
+your system.
+
+To create a Pulse Docker image, run this from within the `test` directory
+(which contains the necessary `Dockerfile`):
+
+    docker build -t="pulse:testing" test
+
+When that finishes building, you can run a RabbitMQ instance in a Docker
+container with
+
+    docker run -d -p 5672:5672 -p 15672:15672 --name pulse pulse:testing
+
+This will run RabbitMQ in a container in the background.  It will also forward
+the AMQP and management API ports, 5672 and 15672, respectively, from the
+container to your local host.
+
+To stop the container, run
+
+    docker stop pulse
+
+You can remove the container with
+
+    docker rm pulse
+
+And you can remove the images with
+
+    docker rmi pulse:testing
+    docker rmi ubuntu:14.04
 
 You can also use either a local RabbitMQ server or a VM.  See the
 mozillapulse [HACKING.md][] file for instructions on setting up both of these.
 
-TODO: Add a script and docs to start up a Docker instance.
+Finally, you need your environment set up correctly.  If you are running
+RabbitMQ in the Docker configuration described above, the defaults should
+be mostly fine.  You will need to set `FLASK_SECRET_KEY` and probably
+`DATABASE_URL`.  To use a random secret key and a local sqlite database named
+`pulseguardian.db`, run the following from within the root PulseGuardian
+source directory:
+
+    export FLASK_SECRET_KEY=`python gen_secret_key.py`
+    export DATABASE_URL=sqlite:///`pwd`/db
+
+See the complete listing of options in `pulseguardian/config.py`.
+
+TODO: Each of these options should be documented in the source.
 
 ## Usage
 
