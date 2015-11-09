@@ -19,18 +19,19 @@ Using a virtualenv is highly recommended. One possible installation would be
 * Clone the repository and cd into it.
 * Create and activate a virtualenv:
 
-  ```
-    virtualenv venv
-    source venv/bin/activate
-  ```
+        virtualenv venv
+        source venv/bin/activate
 
 Within the chosen environment, install and configure PulseGuardian:
 
 * Install the requirements:
 
-  ```
-    pip install -r requirements.txt
-  ```
+        pip install -r requirements.txt
+
+* Install the package.  This will ensure you have access to the `pulseguardian`
+  package from anywhere in your virtualenv.
+
+        python setup.py develop
 
 Because Persona requires an https connection, if you are running the
 development server without the `--fake-account` option (see below), you
