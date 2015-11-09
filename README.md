@@ -130,7 +130,7 @@ environment variables before running the tests via
 
 where `<machine>` is your docker-machine name, quite possibly `default`.
 
-The docker container forwards ports 5673 and 15673. Please be sure that
+The docker container forwards ports 5672 and 15672. Please be sure that
 they are available.
 
 Since PulseGuardian is configured via environment variables, you must ensure

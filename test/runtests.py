@@ -408,8 +408,8 @@ def setup_host():
             # Env variable doesn't exist, use default
             pass
         finally:
-            pulse_cfg['port'] = 5673
-            pulse_cfg['management_port'] = 15673
+            pulse_cfg['port'] = 5672
+            pulse_cfg['management_port'] = 15672
 
 
 def main(pulse_opts):
