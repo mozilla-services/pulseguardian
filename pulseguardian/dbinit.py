@@ -50,34 +50,37 @@ def init_and_clear_db():
 
 def dummy_data():
     # Dummy test users
-    for i in xrange(4):
-        User.new_user(
-            email='dummy{0}@dummy.com'.format(i), username='dummy{0}'.format(i),
-            password='dummy', management_api=pulse_management)
-
+    User.new_user(email='dummy0@dummy.com')
     users = User.query.all()
 
+    for i in xrange(4):
+        PulseUser.new_user(
+            username='dummy{0}'.format(i),
+            password='dummy',
+            owner=users[0],
+            management_api=pulse_management)
+
+    pulse_users = PulseUser.query.all()
+
     # And some dummy queues
-    dummy_queue = Queue(name='dummy-empty-queue', size=0, owner=users[0])
+    dummy_queue = Queue(name='dummy-empty-queue', size=0, owner=pulse_users[0])
     db_session.add(dummy_queue)
     db_session.commit()
 
-    dummy_queue = Queue(name='dummy-non-empty-queue', size=config.warn_queue_size/5, owner=users[0])
+    dummy_queue = Queue(name='dummy-non-empty-queue', size=config.warn_queue_size/5, owner=pulse_users[0])
     db_session.add(dummy_queue)
     db_session.commit()
 
-    dummy_queue = Queue(name='dummy-warning-queue', size=config.warn_queue_size + 1, owner=users[1])
+    dummy_queue = Queue(name='dummy-warning-queue', size=config.warn_queue_size + 1, owner=pulse_users[1])
     db_session.add(dummy_queue)
     db_session.commit()
 
-    dummy_queue = Queue(name='dummy-deletion-queue', size=int(config.del_queue_size * 1.2), owner=users[2])
+    dummy_queue = Queue(name='dummy-deletion-queue', size=int(config.del_queue_size * 1.2), owner=pulse_users[2])
     db_session.add(dummy_queue)
     db_session.commit()
 
     # Test admin user
-    User.new_user(
-        email='admin@admin.com', username='dummy-admin', password='dummy-admin',
-        management_api=pulse_management, admin=True)
+    User.new_user(email='admin@admin.com', admin=True)
 
     logger.info('Finished generating dummy data.')
 
