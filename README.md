@@ -160,6 +160,18 @@ that you can run: `python test/runtests.py --use-local`.
 (wiping out existing queues, possibly deleting users) so make sure you don't
 run the tests on a production instance.
 
+## Database migration
+
+It uses [Alembic]: https://alembic.readthedocs.org . SQLite doesn't fully
+support SQL, please use PostgreSQL instead, even in your development
+environment.
+
+Don't need edit sqlalchemy.url in alembic.ini for database, it uses
+pulseguardian DATABASE_URL environment variable.
+
+* Install alembic package(If you haven't installed yet) - `pip install -r requirements.txt`
+* Run `alembic upgrade head`
+
 [the wiki]: https://wiki.mozilla.org/Auto-tools/Projects/Pulse/PulseGuardian
 [HACKING.md]: https://hg.mozilla.org/automation/mozillapulse/file/tip/HACKING.md
 [Travis CI]: https://travis-ci.org/mozilla/pulseguardian

@@ -16,6 +16,8 @@ class Queue(Base):
 
     warned = Column(Boolean)
 
+    durable = Column(Boolean, nullable=False, default=False)
+
     def __repr__(self):
         return "<Queue(name='{0}', owner='{1}')>".format(self.name, self.owner)
 

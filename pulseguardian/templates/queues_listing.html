@@ -16,6 +16,9 @@
           <span class="label label-danger">Warning</span>
         {% endif %}
         {{queue.name}} <small>{{queue.size}} messages</small>
+        {% if queue.durable %}
+          <small><span class="label label-primary">Durable</span></small>
+        {% endif %}
       </h4>
 
       <div class="progress">

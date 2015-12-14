@@ -68,8 +68,9 @@ class PulseGuardian(object):
             # See bug 1066338.
             return None
 
-        q_size, q_name = (queue_data['messages'],
-                          queue_data['name'])
+        q_size, q_name, q_durable = (queue_data['messages'],
+                                     queue_data['name'],
+                                     queue_data['durable'])
         queue = Queue.query.filter(Queue.name == q_name).first()
 
         # If the queue doesn't exist in the db, create it.
@@ -101,6 +102,7 @@ class PulseGuardian(object):
 
         # Update the saved queue size.
         queue.size = q_size
+        queue.durable = q_durable
         db_session.add(queue)
         db_session.commit()
         return queue
