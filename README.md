@@ -162,14 +162,20 @@ run the tests on a production instance.
 
 ## Database migration
 
-It uses [Alembic]: https://alembic.readthedocs.org . SQLite doesn't fully
-support SQL, please use PostgreSQL instead, even in your development
-environment.
+PulseGuardian uses [Alembic][] for database migrations.  SQLite doesn't support
+all the SQL commands required for migrations, so you may want to use PostgreSQL
+even in your development environment, at least if you are testing migrations.
 
-Don't need edit sqlalchemy.url in alembic.ini for database, it uses
-pulseguardian DATABASE_URL environment variable.
+Because PulseGuardian is designed to run on Heroku, which doesn't support
+locally modified files, the Alembic configuration file, `alembic.ini`, must be
+used for all installations, including for local development.  The database URL,
+`sqlalchemy.url`, is not used; instead, `migration/env.py` is set to use the
+`DATABASE_URL` environment variable, as the rest of PulseGuardian does.
 
-* Install alembic package(If you haven't installed yet) - `pip install -r requirements.txt`
+To migrate the database,
+
+* Install the alembic package (if you haven't yet): `pip install -r
+  requirements.txt`
 * Run `alembic upgrade head`
 
 [the wiki]: https://wiki.mozilla.org/Auto-tools/Projects/Pulse/PulseGuardian
@@ -177,3 +183,4 @@ pulseguardian DATABASE_URL environment variable.
 [Travis CI]: https://travis-ci.org/mozilla/pulseguardian
 [gunicorn]: https://www.digitalocean.com/community/articles/how-to-deploy-python-wsgi-apps-using-gunicorn-http-server-behind-nginx
 [docker installation docs]: https://docs.docker.com/installation/#installation
+[Alembic]: https://alembic.readthedocs.org

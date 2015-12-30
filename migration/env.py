@@ -1,7 +1,6 @@
-"""Notice
-
-It doesn't use sqlalchemy.url and other sqlalchemy prefix configs from
-alembic.ini, instead pulseguardian configs.
+"""This doesn't use sqlalchemy.url and other SQLAlchemy configs from
+alembic.ini; instead, it uses the PulseGuardian config variables, which are
+taken from the environment.
 """
 
 from __future__ import with_statement
