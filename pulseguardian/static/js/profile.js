@@ -9,7 +9,7 @@
 
 $(document).ready(function() {
     // Auto-reload
-    var autoReload = true;
+    var autoReload = false;
     var reloadInterval = 8000;
 
     function deleteableObjectHandler(objectType) {
@@ -84,4 +84,56 @@ $(document).ready(function() {
 
     deleteableObject('queue');
     deleteableObject('pulse-user');
+
+    $('.notifications form button[type="submit"]').click(function(event) {
+        event.preventDefault();
+        $('.notifications .message').text('');
+
+        var email = $('.notifications input[name="email"]').val();
+        var queue = $('.notifications input[name="queue"]').val();
+
+        var validate = function() {
+            if (email == '') {
+                $('.notifications .message').text('Email is empty');
+                return false;
+            }
+
+            return true;
+        };
+
+        if (!validate()) return;
+
+        var postData = {'email':email,'queue':queue};
+
+        $.post('/notification/create', postData, 'json')
+            .fail(function(xhr) {
+                $('.notifications .message').text(xhr.statusText+' - '+xhr.status);
+            })
+            .done(function(data, textStatus, xhr) {
+                if (data.ok) {
+                    var removeBtn = '<button type="button" class="btn-primary close" aria-label="Close"><span aria-hidden="true">&times;</span></button>';
+                    $('.notifications .emails').append('<li class="pull-left"><span>'+email+'</span>'+removeBtn+'</li>');
+                    $('.notifications input[name="email"]').val('');
+                } else {
+                    $('.notifications .message').text(data.message);
+                }
+            });
+    });
+
+    $('.notifications .emails').delegate('li button', 'click', function() {
+        var that = this;
+        var postData = {
+            'notification': $(this).siblings('span').text(),
+            'queue': $('.notifications input[name="queue"]').val()
+        };
+        $.post('/notification/delete', postData, 'json')
+            .fail(function(xhr) {
+                $('.notifications .message').text(xhr.statusText+' - '+xhr.status);
+            })
+            .done(function(data, textStatus, xhr) {
+                if (data.ok) {
+                    $(that).parent().remove();
+                }
+            });
+    });
 });

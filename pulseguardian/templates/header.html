@@ -23,7 +23,7 @@
     {% if cur_user %}
       <a href="/profile">
         <span class="username right-link nav-box">
-          <span class="glyphicon glyphicon-user"></span> {{cur_user.email}}
+          <span class="glyphicon glyphicon-user"></span> {{cur_user.email.address}}
         </span>
       </a>
     {% endif %}

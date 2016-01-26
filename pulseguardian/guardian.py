@@ -10,8 +10,7 @@ from pulseguardian import config
 from pulseguardian.logs import setup_logging
 from pulseguardian.management import PulseManagementAPI
 from pulseguardian.model.base import init_db, db_session
-from pulseguardian.model.user import PulseUser
-from pulseguardian.model.queue import Queue
+from pulseguardian.model.models import PulseUser, Queue
 from pulseguardian.sendemail import sendemail
 
 logging.getLogger("requests").setLevel(logging.WARNING)
@@ -180,7 +179,7 @@ durable queues.
 
         if self.emails and user.email is not None:
             sendemail(subject=subject, from_addr=config.email_from,
-                      to_addrs=[user.email], username=config.email_account,
+                      to_addrs=[user.email.address], username=config.email_account,
                       password=config.email_password, text_data=body,
                       server=config.email_smtp_server,
                       port=config.email_smtp_port,
@@ -202,7 +201,7 @@ durable queues.
 
         if self.emails and user.email is not None:
             sendemail(subject=subject, from_addr=config.email_from,
-                      to_addrs=[user.email], username=config.email_account,
+                      to_addrs=[user.email.address], username=config.email_account,
                       password=config.email_password, text_data=body,
                       server=config.email_smtp_server,
                       port=config.email_smtp_port,
@@ -220,7 +219,7 @@ now back to normal ({2} ready messages, {3} total messages).
 
         if self.emails and user.email is not None:
             sendemail(subject=subject, from_addr=config.email_from,
-                      to_addrs=[user.email], username=config.email_account,
+                      to_addrs=[user.email.address], username=config.email_account,
                       password=config.email_password, text_data=body,
                       server=config.email_smtp_server,
                       port=config.email_smtp_port,
