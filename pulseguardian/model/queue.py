@@ -3,8 +3,10 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship
 
 from pulseguardian.model.base import Base
+from pulseguardian.model.queue_notification import queue_notification
 
 
 class Queue(Base):
@@ -13,10 +15,12 @@ class Queue(Base):
     name = Column(String(255), primary_key=True)
     owner_id = Column(Integer, ForeignKey('pulse_users.id'), nullable=True)
     size = Column(Integer)
-
     warned = Column(Boolean)
-
     durable = Column(Boolean, nullable=False, default=False)
+
+    notifications = relationship('Email',
+                                 secondary=queue_notification,
+                                 back_populates='queue')
 
     def __repr__(self):
         return "<Queue(name='{0}', owner='{1}')>".format(self.name, self.owner)
