@@ -28,7 +28,6 @@ setup(name='PulseGuardian',
       author_email='auto-tools@mozilla.com',
       license='MPL 2.0',
       packages=['pulseguardian', 'pulseguardian.model'],
-      install_requires=['Flask', 'MozillaPulse', 'SQLAlchemy', 'requests',
-                        'MySQL-python'],
+      install_requires=['Flask', 'MozillaPulse', 'SQLAlchemy', 'requests'],
       cmdclass={'test': TestCommand}
 )
