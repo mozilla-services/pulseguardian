@@ -6,10 +6,11 @@ import logging
 import sys
 
 from pulseguardian import config
-from pulseguardian.model.base import db_session, init_db
+from pulseguardian.model.base import db_session, init_db, drop_db
 from pulseguardian.model.user import User
 from pulseguardian.model.pulse_user import PulseUser
 from pulseguardian.model.queue import Queue
+from pulseguardian.model.email import Email
 from pulseguardian.management import (PulseManagementAPI,
                                       PulseManagementException)
 
@@ -38,10 +39,10 @@ def init_and_clear_db():
     # Clear the database of old data.
     for queue in Queue.query.all():
         db_session.delete(queue)
-    for pulse_user in PulseUser.query.all():
-        db_session.delete(pulse_user)
-    for user in User.query.all():
-        db_session.delete(user)
+        for pulse_user in PulseUser.query.all():
+            db_session.delete(pulse_user)
+        for user in User.query.all():
+            db_session.delete(user)
 
     db_session.commit()
 
@@ -50,14 +51,13 @@ def init_and_clear_db():
 
 def dummy_data():
     # Dummy test users
-    User.new_user(email='dummy0@dummy.com')
-    users = User.query.all()
+    User.new_user('dummy0@dummy.com')
 
     for i in xrange(4):
         PulseUser.new_user(
             username='dummy{0}'.format(i),
             password='dummy',
-            owner=users[0],
+            owner=User.query.first(),
             management_api=pulse_management)
 
     pulse_users = PulseUser.query.all()
@@ -80,11 +80,15 @@ def dummy_data():
     db_session.commit()
 
     # Test admin user
-    User.new_user(email='admin@admin.com', admin=True)
+    User.new_user('admin@admin.com', admin=True)
 
     logger.info('Finished generating dummy data.')
 
 if __name__ == '__main__':
-    init_and_clear_db()
-    if '--dummy' in sys.argv:
-        dummy_data()
+    if '--drop-db' in sys.argv:
+        drop_db()
+        logger.info('All tables were dropped.')
+    else:
+        init_and_clear_db()
+        if '--dummy' in sys.argv:
+            dummy_data()
