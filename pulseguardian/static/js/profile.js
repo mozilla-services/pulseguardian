@@ -9,7 +9,7 @@
 
 $(document).ready(function() {
     // Auto-reload
-    var autoReload = true;
+    var autoReload = false;
     var reloadInterval = 8000;
 
     function deleteableObjectHandler(objectType) {
@@ -84,4 +84,62 @@ $(document).ready(function() {
 
     deleteableObject('queue');
     deleteableObject('pulse-user');
+
+    // notification create
+    $('.notifications form button[type="submit"]').click(function(event) {
+        event.preventDefault();
+
+        var that = this;
+        var current = $(that).parents('.notifications');
+        current.find('.message').text('');
+
+        var email = current.find('input[name="email"]').val();
+        var queue = current.find('input[name="queue"]').val();
+
+        var validate = function() {
+            if (email == '') {
+                current.find('.message').text('Email is empty');
+                return false;
+            }
+
+            return true;
+        };
+
+        if (!validate()) return;
+
+        var postData = {'email':email,'queue':queue};
+        $.post('/notification/create', postData, 'json')
+            .fail(function(xhr) {
+                current.find('.message').text(xhr.statusText+' - '+xhr.status);
+            })
+            .done(function(data, textStatus, xhr) {
+                if (data.ok) {
+                    var removeBtn = '<button type="button" class="btn-primary close" aria-label="Close"><span aria-hidden="true">&times;</span></button>';
+                    var emailItem = '<li class="pull-left"><span>'+email+'</span>'+removeBtn+'</li>';
+                    current.find('.emails').append(emailItem);
+                    current.find('input[name="email"]').val('');
+                } else {
+                    current.find('.message').text(data.message);
+                }
+            });
+    });
+
+    // notification delete
+    $('.notifications .emails').delegate('li button', 'click', function() {
+        var that = this;
+        var current = $(that).parents('.notifications');
+        var postData = {
+            'notification': $(this).siblings('span').text(),
+            'queue': current.find('input[name="queue"]').val()
+        };
+        $.post('/notification/delete', postData, 'json')
+            .fail(function(xhr) {
+                current.find('.message').text(xhr.statusText+' - '+xhr.status);
+            })
+            .done(function(data, textStatus, xhr) {
+                if (data.ok) {
+                    $(that).parent().remove();
+                }
+            });
+    });
 });

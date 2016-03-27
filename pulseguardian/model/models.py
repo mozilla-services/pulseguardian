@@ -1,7 +1,10 @@
+import re
+
 from sqlalchemy import (Boolean, Column, ForeignKey,
                         Integer, String, Table)
 from sqlalchemy.orm import relationship
 
+from pulseguardian import config
 from pulseguardian.model.base import Base, db_session
 
 
@@ -133,9 +136,9 @@ class Queue(Base):
     warned = Column(Boolean)
     durable = Column(Boolean, nullable=False, default=False)
 
-    # notifications = relationship('Email',
-    #                             secondary=queue_notification,
-    #                             back_popluates='queues')
+    notifications = relationship('Email',
+                                 secondary=queue_notification,
+                                 back_populates='queues')
 
     @staticmethod
     def notification_exists(queue, email):
@@ -176,7 +179,7 @@ class Email(Base):
     address = Column(String(255), unique=True, nullable=False)
 
     queues = relationship('Queue', secondary=queue_notification,
-                        backref='notifications')
+                        back_populates='notifications')
 
     @staticmethod
     def get_email(address):
