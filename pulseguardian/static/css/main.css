@@ -112,6 +112,8 @@ a:hover, a:active, a:focus {
     color: #30a53c;
     float: right;
     margin-top: 20px;
+    position: relative;
+    z-index: 99
 }
 .autoreload:focus {
     color: #3cba2e;
@@ -138,4 +140,34 @@ a:hover, a:active, a:focus {
 .menu .menuitem:hover {
   color: #B6C9FD;
   text-decoration: none;
+}
+
+/* Notifications */
+.notifications h3 {
+    margin: 0 10px 5px 0;
+    font-size: 18px;
+}
+.notifications ul {
+    margin: 0 0 0 120px;
+    padding: 0;
+}
+.notifications ul li {
+    margin: 0 10px 3px 0;
+    list-style: none;
+    padding: 1px 5px;
+}
+.notifications form {
+    margin-top: 10px;
+}
+.notifications .close {
+    background-color: #428bca;
+    border-color: #357ebd;
+    border-radius: 3px;
+    margin: 1px 0 0 5px;
+    line-height: 90%;
+    padding: 2px 2px 0px 3px;
+    opacity: 1;
+    color: #fff;
+    font-size: 13px;
+    font-weight: normal;
 }

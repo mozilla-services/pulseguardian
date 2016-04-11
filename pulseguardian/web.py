@@ -26,9 +26,7 @@ from pulseguardian.logs import setup_logging
 from pulseguardian.management import (PulseManagementAPI,
                                       PulseManagementException)
 from pulseguardian.model.base import db_session, init_db
-from pulseguardian.model.pulse_user import PulseUser
-from pulseguardian.model.user import User
-from pulseguardian.model.queue import Queue
+from pulseguardian.model.models import User, PulseUser, Queue, Email
 
 # Development cert/key base filename.
 DEV_CERT_BASE = 'dev'
@@ -121,9 +119,9 @@ def load_fake_account(fake_account):
     session['logged_in'] = True
 
     # Check if user already exists in the database, creating it if not.
-    g.user = User.query.filter(User.email == fake_account).first()
-    if g.user is None:
-        g.user = User.new_user(email=fake_account)
+    # g.user = User.query.join(Email).filter(Email.address == fake_account).one()
+    # if g.user is None:
+    #     g.user = User.new_user(fake_account)
 
 
 def requires_login(f):
@@ -139,7 +137,7 @@ def requires_login(f):
 @app.context_processor
 def inject_user():
     """Injects a user and configuration in templates' context."""
-    cur_user = User.query.filter(User.email == session.get('email')).first()
+    cur_user = User.get_by_email(session.get('email'))
     if cur_user and cur_user.pulse_users:
         pulse_user = cur_user.pulse_users[0]
     else:
@@ -155,16 +153,14 @@ def load_user():
     # Check if fake account is set and load user.
     if fake_account:
         load_fake_account(fake_account)
-        return
 
     email = session.get('email')
     if not email:
         g.user = None
-        return
-
-    g.user = User.query.filter(User.email == session.get('email')).first()
-    if not g.user:
-        g.user = User.new_user(email=email)
+    else:
+        g.user = User.get_by_email(session.get('email'))
+        if not g.user:
+            g.user = User.new_user(email)
 
 
 @app.teardown_appcontext
@@ -195,7 +191,8 @@ def profile(error=None, messages=None):
     users = no_owner_queues = []
     if g.user.admin:
         users = User.query.all()
-        no_owner_queues = list(Queue.query.filter(Queue.owner == None))
+        no_owner_queues = Queue.query.filter(
+            Queue.owner.has(PulseUser.owner==None)).all()
     return render_template('profile.html', users=users,
                            no_owner_queues=no_owner_queues,
                            error=error, messages=messages)
@@ -205,8 +202,10 @@ def profile(error=None, messages=None):
 def all_pulse_users():
     users = db_session.query(
         PulseUser.username,
-        case([(User.email == None, "None")], else_=User.email)).outerjoin(
-            User, User.id == PulseUser.owner_id).all()
+        case([(Email.address == None, "None")],
+             else_=Email.address)).outerjoin(
+                 User, User.id == PulseUser.owner_id).join(
+                     Email, User.email_id == Email.id).all()
     return render_template('all_pulse_users.html', users=users)
 
 @app.route('/queues')
@@ -215,7 +214,8 @@ def queues():
     users = no_owner_queues = []
     if g.user.admin:
         users = User.query.all()
-        no_owner_queues = list(Queue.query.filter(Queue.owner == None))
+        no_owner_queues = Queue.query.filter(
+            Queue.owner.has(PulseUser.owner==None)).all()
     return render_template('queues.html', users=users,
                            no_owner_queues=no_owner_queues)
 
@@ -226,7 +226,8 @@ def queues_listing():
     users = no_owner_queues = []
     if g.user.admin:
         users = User.query.all()
-        no_owner_queues = list(Queue.query.filter(Queue.owner == None))
+        no_owner_queues = Queue.query.filter(
+            Queue.owner.has(PulseUser.owner==None)).all()
     return render_template('queues_listing.html', users=users,
                            no_owner_queues=no_owner_queues)
 
@@ -259,6 +260,7 @@ def delete_pulse_user(pulse_username):
     logging.info('Request to delete Pulse user "{0}".'.format(pulse_username))
     pulse_user = PulseUser.query.filter(PulseUser.username == pulse_username).first()
 
+
     if pulse_user and (g.user.admin or pulse_user.owner == g.user):
         try:
             pulse_management.delete_user(pulse_user.username)
@@ -272,6 +274,55 @@ def delete_pulse_user(pulse_username):
         return jsonify(ok=True)
 
     return jsonify(ok=False)
+
+@app.route('/notification/create', methods=['POST'])
+@requires_login
+def notification_create():
+    error = []
+    if ('email' not in request.values or
+        not request.values['email']):
+       error.append('Email is required')
+    if ('queue' not in request.values or
+        not request.values['queue']):
+       error.append('Queue is required')
+
+    if not error:
+        email = request.values['email']
+        queue = request.values['queue']
+        queue_query = Queue.query.filter(Queue.id==queue)
+        if not queue_query.count():
+            error.append('Queue is not exist')
+        elif Queue.notification_exists(queue, email):
+            error.append('This is email address is exist')
+        else:
+            Queue.create_notification(queue, email)
+
+    if error: 
+        return jsonify(ok=False, message=', '.join(error))
+    else:
+        return jsonify(ok=True)
+
+
+@app.route('/notification/delete', methods=['POST'])
+@requires_login
+def notification_delete():
+    error = []
+    if ('notification' not in request.values or
+        not request.values['notification']):
+       error.append('Notification is required')
+    if ('queue' not in request.values or
+        not request.values['queue']):
+       error.append('Queue is required')
+
+    if not error:
+        queue = request.values['queue'];
+        notification = request.values['notification'];
+        Queue.delete_notification(queue, notification)
+
+    if error: 
+        return jsonify(ok=False, message=', '.join(error))
+    else:
+        return jsonify(ok=True)
 
 
 # Authentication related
@@ -296,9 +347,9 @@ def auth_handler():
             session['email'] = email
             session['logged_in'] = True
 
-            user = User.query.filter(User.email == email).first()
+            user = User.get_by_email(email)
             if user is None:
-                user = User.new_user(email=email)
+                user = User.new_user(email)
 
             if user.pulse_users:
                 return jsonify(ok=True, redirect='/')

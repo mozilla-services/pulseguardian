@@ -30,13 +30,33 @@
         </div>
       </div>
 
+      <div class="notifications clearfix">
+          <div class="clearfix">
+              <h3 class="text-primary pull-left">Notifications:</h3>
+              <ul class="emails">
+                  {% for notification in queue.notifications %}
+                  <li class="pull-left">
+                      <span>{{ notification.address }}</span>
+                      <button type="button" class="btn-primary close" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                  </li>
+                  {% endfor %}
+              </ul>
+          </div>
+          <form>
+              <input name="email" type="text" />
+              <input name="queue" type="hidden" value="{{queue.id}}">
+              <button class="btn btn-primary btn-sm" type="submit">Add</button>
+          </form>
+          <div class="message text-warning"></div>
+      </div>
+
     </li>
   {% endfor %}
 </ul>
 {% endmacro %}
 
 {% macro user_information(user) %}
-<div class="user" data-email="{{user.email}}">
+<div class="user" data-email="{{user.email.address}}">
   {% if user.pulse_users %}
     {% for pulse_user in user.pulse_users %}
       <h4>{{pulse_user.username}}</h4>
@@ -56,12 +76,13 @@
 </div>
 {% endmacro %}
 
+
 {% if cur_user.admin %}
   <h2>Users</h2>
 
   {% for user in users %}
-    <h3 class="text-primary" data-email="{{user.email}}">
-      {{user.email}}
+    <h3 class="text-primary" data-email="{{user.email.address}}">
+      {{user.email.address}}
     </h3>
     {{ user_information(user) }}
   {% endfor %}
