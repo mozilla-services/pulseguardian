@@ -191,7 +191,8 @@ def profile(error=None, messages=None):
     users = no_owner_queues = []
     if g.user.admin:
         users = User.query.all()
-        no_owner_queues = list(Queue.query.filter(Queue.owner == None))
+        no_owner_queues = Queue.query.filter(
+            Queue.owner.has(PulseUser.owner==None)).all()
     return render_template('profile.html', users=users,
                            no_owner_queues=no_owner_queues,
                            error=error, messages=messages)
@@ -213,7 +214,8 @@ def queues():
     users = no_owner_queues = []
     if g.user.admin:
         users = User.query.all()
-        no_owner_queues = list(Queue.query.filter(Queue.owner == None))
+        no_owner_queues = Queue.query.filter(
+            Queue.owner.has(PulseUser.owner==None)).all()
     return render_template('queues.html', users=users,
                            no_owner_queues=no_owner_queues)
 
@@ -224,7 +226,8 @@ def queues_listing():
     users = no_owner_queues = []
     if g.user.admin:
         users = User.query.all()
-        no_owner_queues = list(Queue.query.filter(Queue.owner == None))
+        no_owner_queues = Queue.query.filter(
+            Queue.owner.has(PulseUser.owner==None)).all()
     return render_template('queues_listing.html', users=users,
                            no_owner_queues=no_owner_queues)
 
@@ -278,24 +281,21 @@ def notification_create():
     error = []
     if ('email' not in request.values or
         not request.values['email']):
-       error.append('Email is empty')
+       error.append('Email is required')
     if ('queue' not in request.values or
         not request.values['queue']):
-       error.append('Queue is empty')
+       error.append('Queue is required')
 
     if not error:
         email = request.values['email']
         queue = request.values['queue']
-        queue_query = Queue.query.filter(Queue.name==queue)
+        queue_query = Queue.query.filter(Queue.id==queue)
         if not queue_query.count():
             error.append('Queue is not exist')
         elif Queue.notification_exists(queue, email):
             error.append('This is email address is exist')
         else:
-            queue_obj = queue_query.first()
-            queue_obj.notifications.append(Email.get_email(email))
-            db_session.add(queue_obj)
-            db_session.commit()
+            Queue.create_notification(queue, email)
 
     if error: 
         return jsonify(ok=False, message=', '.join(error))
@@ -309,15 +309,15 @@ def notification_delete():
     error = []
     if ('notification' not in request.values or
         not request.values['notification']):
-       error.append('Notification is empty')
+       error.append('Notification is required')
     if ('queue' not in request.values or
         not request.values['queue']):
-       error.append('Queue is empty')
+       error.append('Queue is required')
 
     if not error:
         queue = request.values['queue'];
         notification = request.values['notification'];
-        Queue.notification_delete(queue, notification)
+        Queue.delete_notification(queue, notification)
 
     if error: 
         return jsonify(ok=False, message=', '.join(error))
