@@ -148,7 +148,7 @@ class Queue(Base):
                    .filter(Queue.id==queue).count()
 
     @staticmethod
-    def delete_notification(queue, email):
+    def notification_delete(queue, email):
         queue_obj = Queue.query.filter(Queue.id==queue).first()
         queue_obj.notifications.remove(Email.get_email(email))
         db_session.commit()
@@ -172,7 +172,6 @@ class Queue(Base):
     def get_notifications(queue):
         return Email.query.filter(
             Email.queues.any(Queue.name==queue)).all()
-
 
     def __repr__(self):
         return "<Queue(name='{0}', owner='{1}')>".format(self.name, self.owner)

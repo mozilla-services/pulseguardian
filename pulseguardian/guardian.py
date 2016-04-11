@@ -196,8 +196,12 @@ durable queues.
            self.del_queue_size)
 
         if self.emails and user.email is not None:
-            self._sendemail(subject=subject, body=body,
-                           user=user, queue_data=queue_data)
+            sendemail(subject=subject, from_addr=config.email_from,
+                      to_addrs=[user.email.address], username=config.email_account,
+                      password=config.email_password, text_data=body,
+                      server=config.email_smtp_server,
+                      port=config.email_smtp_port,
+                      use_ssl=config.email_ssl)
 
     def back_to_normal_email(self, user, queue_data):
         exchange = self._exchange_from_queue(queue_data)
