@@ -7,10 +7,7 @@ import sys
 
 from pulseguardian import config
 from pulseguardian.model.base import db_session, init_db, drop_db
-from pulseguardian.model.user import User
-from pulseguardian.model.pulse_user import PulseUser
-from pulseguardian.model.queue import Queue
-from pulseguardian.model.email import Email
+from pulseguardian.model.models import User, PulseUser, Queue, Email
 from pulseguardian.management import (PulseManagementAPI,
                                       PulseManagementException)
 
