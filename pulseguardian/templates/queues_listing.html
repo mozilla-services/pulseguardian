@@ -44,7 +44,7 @@
           </div>
           <form>
               <input name="email" type="text" />
-              <input name="queue" type="hidden" value="{{queue.name}}">
+              <input name="queue" type="hidden" value="{{queue.id}}">
               <button class="btn btn-primary btn-sm" type="submit">Add</button>
           </form>
           <div class="message text-warning"></div>
@@ -56,7 +56,7 @@
 {% endmacro %}
 
 {% macro user_information(user) %}
-<div class="user" data-email="{{user.email}}">
+<div class="user" data-email="{{user.email.address}}">
   {% if user.pulse_users %}
     {% for pulse_user in user.pulse_users %}
       <h4>{{pulse_user.username}}</h4>
@@ -75,6 +75,7 @@
   {% endif %}
 </div>
 {% endmacro %}
+
 
 {% if cur_user.admin %}
   <h2>Users</h2>

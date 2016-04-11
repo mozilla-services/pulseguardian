@@ -8,21 +8,32 @@ Create Date: 2016-01-15 15:36:50.939484
 
 # revision identifiers, used by Alembic.
 revision = '2d19bced283e'
-down_revision = '641f40e01a9'
+down_revision = ''
 branch_labels = None
 depends_on = None
 
 from alembic import op
 from sqlalchemy import Boolean, Column, Integer, String, ForeignKey
 from sqlalchemy.sql import select, insert, update, text
+from sqlalchemy.schema import Sequence, CreateSequence
 
 from pulseguardian.model.base import engine
 from pulseguardian.model.models import User, Email, queue_notification
 
 
 def upgrade():
+    op.drop_constraint('queues_pkey', 'queues')
+    op.execute(CreateSequence(Sequence('queues_id_seq')))
+    op.add_column('queues', Column('id', Integer,
+                                   server_default=text("nextval('queues_id_seq'::regclass)")))
+    op.create_primary_key('queues_pkey', 'queues', ['id'])
+
     Email.__table__.create(bind=engine)
-    queue_notification.create(bind=engine)
+    op.create_table(
+        'queue_notifications',
+        Column('queue_id', Integer, ForeignKey('queues.id')),
+        Column('email_id', Integer, ForeignKey('emails.id'))
+    )
     op.add_column('users', Column('email_id', Integer,
                                   ForeignKey('emails.id')))
 

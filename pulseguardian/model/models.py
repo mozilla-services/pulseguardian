@@ -122,15 +122,15 @@ class PulseUser(Base):
 
 
 queue_notification = Table('queue_notifications', Base.metadata,
-                           Column('id', Integer, primary_key=True),
-                           Column('queue_name', String(255), ForeignKey('queues.name')),
+                           Column('queue_id', Integer, ForeignKey('queues.id')),
                            Column('email_id', Integer, ForeignKey('emails.id')))
 
 
 class Queue(Base):
     __tablename__ = 'queues'
 
-    name = Column(String(255), primary_key=True)
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255))
     owner_id = Column(Integer, ForeignKey('pulse_users.id'), nullable=True)
     size = Column(Integer)
     warned = Column(Boolean)
@@ -145,11 +145,11 @@ class Queue(Base):
         return Queue.query.filter(
             Queue.notifications.any(
                 Email.address==email)) \
-                   .filter(Queue.name==queue).count()
+                   .filter(Queue.id==queue).count()
 
     @staticmethod
-    def notification_delete(queue, email):
-        queue_obj = Queue.query.filter(Queue.name==queue).first()
+    def delete_notification(queue, email):
+        queue_obj = Queue.query.filter(Queue.id==queue).first()
         queue_obj.notifications.remove(Email.get_email(email))
         db_session.commit()
 
@@ -160,6 +160,18 @@ class Queue(Base):
             db_session.delete(Email.get_email(email))
 
         db_session.commit()
+
+    @staticmethod
+    def create_notification(queue, email):
+        queue_obj = Queue.query.filter(Queue.id==queue).first()
+        queue_obj.notifications.append(Email.get_email(email))
+        db_session.add(queue_obj)
+        db_session.commit()
+
+    @staticmethod
+    def get_notifications(queue):
+        return Email.query.filter(
+            Email.queues.any(Queue.name==queue)).all()
 
 
     def __repr__(self):
