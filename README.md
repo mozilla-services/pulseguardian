@@ -98,13 +98,13 @@ it is highly recommended that you get a Travis CI account and
 activate it on a GitHub fork of the pulseguardian repo. That way the
 reviewer can quickly verify that all tests still pass with your changes.
 
-* Initialize the db with: `python dbinit.py`. *WARNING*: This removes any
+* Initialize the db with: `python pulseguardian/dbinit.py`. *WARNING*: This removes any
   existing data the app might have previously stored in the database.
 * Set the environment variable `FAKE_ACCOUNT` to a valid email address.
 * Optional: Generate some dummy data (dummy user account, admin account):
-  `python dbinit.py --dummy`
-* Run the Pulse Guardian daemon with: `python guardian.py`
-* Run the web app (for development) with: `python web.py`
+  `python pulseguardian/dbinit.py --dummy`
+* Run the Pulse Guardian daemon with: `python pulseguardian/guardian.py`
+* Run the web app (for development) with: `python pulseguardian/web.py`
 * For production, the web app can be run with [gunicorn][] and such.
 
 The `FAKE_ACCOUNT` variable will make development easier. This feature will
