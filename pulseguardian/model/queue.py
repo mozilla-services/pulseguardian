@@ -3,8 +3,10 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship
 
 from pulseguardian.model.base import Base
+from pulseguardian.model.binding import Binding
 
 
 class Queue(Base):
@@ -17,6 +19,8 @@ class Queue(Base):
     warned = Column(Boolean)
 
     durable = Column(Boolean, nullable=False, default=False)
+    bindings = relationship(Binding, cascade='save-update, merge, delete')
+
 
     def __repr__(self):
         return "<Queue(name='{0}', owner='{1}')>".format(self.name, self.owner)

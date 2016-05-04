@@ -53,6 +53,13 @@ def queue(vhost, queue):
     return _api_request('queues/{0}/{1}'.format(vhost, queue))
 
 
+def queue_bindings(vhost, queue):
+    vhost = quote(vhost, '')
+    queue = quote(queue, '')
+    bindings = _api_request('queues/{0}/{1}/bindings'.format(vhost, queue))
+    return [b for b in bindings if b["source"]]
+
+
 def delete_queue(vhost, queue):
     vhost = quote(vhost, '')
     queue = quote(queue, '')

@@ -14,25 +14,27 @@ import unittest
 import uuid
 from urlparse import urlparse
 
+from kombu import Exchange
 from mozillapulse import consumers, publishers
 from mozillapulse.messages.test import TestMessage
 
-os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24))
-
-from pulseguardian import config
-# Changing the DB for the tests before the model is initialized
-config.database_url = 'sqlite:///pulseguardian_test.db'
-
-from pulseguardian import dbinit, management as pulse_management
+from docker_setup import (check_rabbitmq, create_image, setup_container,
+                          teardown_container)
+from pulseguardian import management as pulse_management
+from pulseguardian import config, dbinit
 from pulseguardian.guardian import PulseGuardian
 from pulseguardian.model.base import db_session
+from pulseguardian.model.binding import Binding
 from pulseguardian.model.pulse_user import PulseUser
 from pulseguardian.model.queue import Queue
 from pulseguardian.model.user import User
 
-from docker_setup import (
-    create_image, setup_container, teardown_container, check_rabbitmq
-)
+os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24))
+
+# Changing the DB for the tests before the model is initialized
+config.database_url = 'sqlite:///pulseguardian_test.db'
+
+
 
 # Default RabbitMQ host settings
 DEFAULT_RABBIT_HOST = 'localhost'
@@ -57,13 +59,26 @@ DEFAULT_LOGLEVEL = 'INFO'
 pulse_cfg = dict(ssl=False)
 
 
-class AbnormalQueueConsumer(consumers.PulseTestConsumer):
+class PulseGuardianTestConsumer(consumers.PulseTestConsumer):
 
-    QUEUE_NAME = 'abnormal.queue'
+    QUEUE_NAME = None
 
     @property
     def queue_name(self):
         return self.QUEUE_NAME
+
+
+class AbnormalQueueConsumer(PulseGuardianTestConsumer):
+
+    QUEUE_NAME = 'abnormal.queue'
+
+
+class SecondaryQueueConsumer(PulseGuardianTestConsumer):
+
+    def __init__(self, **kwargs):
+        super(SecondaryQueueConsumer, self).__init__(**kwargs)
+        self.QUEUE_NAME = 'queue/{}/secondary'.format(
+            CONSUMER_USER)
 
 
 class ConsumerSubprocess(multiprocessing.Process):
@@ -134,6 +149,14 @@ class GuardianTest(unittest.TestCase):
 
         db_session.add(self.pulse_user)
         db_session.commit()
+
+    def setup_queue(self):
+        """Setup a publisher, consumer and Queue, then terminate consumer"""
+        self._create_publisher()
+        self._create_consumer_proc(durable=True)
+        self._wait_for_queue()
+        self._wait_for_queue_record()
+        self._terminate_consumer_proc()
 
     def tearDown(self):
         self._terminate_consumer_proc()  # Just in case.
@@ -211,6 +234,36 @@ class GuardianTest(unittest.TestCase):
             if Queue.query.filter(Queue.name == consumer.queue_name).first():
                 break
 
+    def _wait_for_binding_record(self, queue_name, exchange_name, routing_key):
+        """Wait until a biding has been added to the database"""
+        consumer = self._create_passive_consumer()
+        attempts = 0
+        while attempts < self.QUEUE_RECORD_CHECK_ATTEMPTS:
+            attempts += 1
+            if attempts > 1:
+                time.sleep(self.QUEUE_RECORD_CHECK_PERIOD)
+            self.guardian.monitor_queues(pulse_management.queues())
+            if Binding.query.filter(
+                Binding.queue_name == queue_name,
+                Binding.exchange == exchange_name,
+                Binding.routing_key == routing_key).first():
+                break
+
+    def _wait_for_binding_delete(self, queue_name, exchange_name, routing_key):
+        """Wait until a biding has been removed from the database"""
+        consumer = self._create_passive_consumer()
+        attempts = 0
+        while attempts < self.QUEUE_RECORD_CHECK_ATTEMPTS:
+            attempts += 1
+            if attempts > 1:
+                time.sleep(self.QUEUE_RECORD_CHECK_PERIOD)
+            self.guardian.clear_deleted_queues(pulse_management.queues())
+            if not Binding.query.filter(
+                Binding.queue_name == queue_name,
+                Binding.exchange == exchange_name,
+                Binding.routing_key == routing_key).first():
+                break
+
     def test_abnormal_queue_name(self):
         self.consumer_class = AbnormalQueueConsumer
         # Use account with full permissions.
@@ -237,11 +290,7 @@ class GuardianTest(unittest.TestCase):
         self.assertEqual(owner, None)
 
     def test_warning(self):
-        self._create_publisher()
-        self._create_consumer_proc(durable=True)
-        self._wait_for_queue()
-        self._wait_for_queue_record()
-        self._terminate_consumer_proc()
+        self.setup_queue()
 
         # Queue should still exist.
         self._wait_for_queue()
@@ -290,11 +339,7 @@ class GuardianTest(unittest.TestCase):
         self.assertEqual(queues_to_warn_bis, queues_to_warn)
 
     def test_delete(self):
-        self._create_publisher()
-        self._create_consumer_proc(durable=True)
-        self._wait_for_queue()
-        self._wait_for_queue_record()
-        self._terminate_consumer_proc()
+        self.setup_queue()
 
         # Queue should still exist.
         self._wait_for_queue()
@@ -345,6 +390,78 @@ class GuardianTest(unittest.TestCase):
                             if q_data['messages_ready'] >
                                self.guardian.del_queue_size]
         self.assertTrue(len(queues_to_delete) == 0)
+
+    def test_binding(self):
+        """Test that you can get the bindings for a queue"""
+        self.setup_queue()
+
+        # Get the queue's object
+        db_session.refresh(self.pulse_user)
+
+        self.assertEqual(len(self.pulse_user.queues), 1)
+
+        # check queue bindings in the DB
+        queues = Queue.query.all()
+        assert len(queues) == 1
+        queue = queues[0]
+        bindings = queue.bindings
+        self.assertEqual(len(bindings), 1)
+        self.assertEqual(bindings[0].routing_key, "#")
+        self.assertEqual(bindings[0].exchange, "exchange/pulse/test")
+
+    def test_create_binding_different_queue_same_exchange_routing_key(self):
+        """
+        Test create bindings for two queues with same exchange and routing key
+        """
+        self.consumer_class = consumers.PulseTestConsumer
+        self.setup_queue()
+
+        # create a second queue with the same binding
+        self.consumer_class = SecondaryQueueConsumer
+        self.setup_queue()
+
+        # check queue bindings in the DB
+        queues = Queue.query.all()
+        assert len(queues) == 2
+        for queue in queues:
+            bindings = queue.bindings
+            self.assertEqual(len(bindings), 1)
+            self.assertEqual(bindings[0].routing_key, "#")
+            self.assertEqual(bindings[0].exchange, "exchange/pulse/test")
+
+    def test_add_delete_binding(self):
+        """Test adding and removing a binding from a queue"""
+        self.setup_queue()
+
+        consumer = self._create_passive_consumer()
+        exchange = Exchange(consumer.exchange, type='topic')
+        queue = consumer._create_queue(exchange)
+        bound = queue.bind(consumer.connection.channel())
+        routing_key = "foo"
+        bound.bind_to(exchange=consumer.exchange, routing_key=routing_key)
+
+        self._wait_for_binding_record(queue.name, exchange.name, routing_key)
+
+        def test_bindings(exp_routing_keys):
+            queues = Queue.query.all()
+            self.assertEqual(len(queues), 1)
+            self.assertEqual(len(queues[0].bindings), len(exp_routing_keys))
+            db_queue = queues[0]
+
+            mgmt_bindings = pulse_management.queue_bindings('/', db_queue.name)
+            mgmt_routing_keys = {x["routing_key"] for x in mgmt_bindings}
+            self.assertEqual(mgmt_routing_keys, exp_routing_keys)
+
+            db_routing_keys = {x.routing_key for x in db_queue.bindings}
+            self.assertEqual(db_routing_keys, exp_routing_keys)
+
+        test_bindings({"#", "foo"})
+
+        # test deleting one of the bindings
+        bound.unbind_from(exchange=exchange, routing_key=routing_key)
+        self._wait_for_binding_delete(queue.name, exchange.name, routing_key)
+
+        test_bindings({"#"})
 
 
 class ModelTest(unittest.TestCase):
