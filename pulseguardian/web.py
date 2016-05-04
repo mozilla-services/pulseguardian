@@ -265,6 +265,17 @@ def delete_pulse_user(pulse_username):
     return jsonify(ok=False)
 
 
+# Read-Only API
+
+@app.route('/queue/<path:queue_name>/bindings', methods=["GET"])
+def bindings_listing(queue_name):
+    queue = Queue.query.get(queue_name)
+    bindings = []
+    if queue:
+        bindings = pulse_management.queue_bindings(vhost='/', queue=queue.name)
+    return jsonify({"queue_name": queue_name, "bindings": bindings})
+
+
 # Authentication related
 
 @app.route('/auth/login', methods=['POST'])

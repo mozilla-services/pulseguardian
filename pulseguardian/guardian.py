@@ -9,6 +9,7 @@ import time
 from pulseguardian import config, management as pulse_management
 from pulseguardian.logs import setup_logging
 from pulseguardian.model.base import init_db, db_session
+from pulseguardian.model.binding import Binding
 from pulseguardian.model.user import PulseUser
 from pulseguardian.model.queue import Queue
 from pulseguardian.sendemail import sendemail
@@ -56,7 +57,32 @@ class PulseGuardian(object):
         for queue in deleted_queues:
             logging.info("Queue '{0}' has been deleted.".format(queue))
             db_session.delete(queue)
+
+        # Clean up bindings on queues that are not deleted.
+        for queue_name in alive_queues_names:
+            self.clear_deleted_bindings(queue_name)
+
         db_session.commit()
+
+    def clear_deleted_bindings(self, queue_name):
+
+        rabbit_bindings = pulse_management.queue_bindings(config.rabbit_vhost,
+                                                          queue_name)
+
+        db_bindings = Binding.query.filter(Binding.queue_name == queue_name)
+
+        # Filter bindings that are in the database but no longer on RabbitMQ.
+        alive_bindings_names = {Binding.as_string(b['source'], b['routing_key'])
+                                for b in rabbit_bindings}
+
+        deleted_bindings = set(b for b in db_bindings if b.name
+                               not in alive_bindings_names)
+
+        # Delete those bindings.
+        for binding in deleted_bindings:
+            logging.info("Binding '{}' for queue '{}' has been deleted.".format(
+                binding, queue_name))
+            db_session.delete(binding)
 
     def update_queue_information(self, queue_data):
         if not 'messages' in queue_data:
@@ -96,6 +122,21 @@ class PulseGuardian(object):
                     q_name))
                 owner = None
             queue = Queue(name=q_name, owner=owner)
+
+        # add the queue bindings to the db.
+        bindings = pulse_management.queue_bindings(config.rabbit_vhost,
+                                                   queue.name)
+        for binding in bindings:
+            db_binding = Binding.query.filter(
+                Binding.exchange == binding["source"],
+                Binding.routing_key == binding["routing_key"]).first()
+
+            if not db_binding:
+                # need to create the binding in the DB
+                binding = Binding(exchange=binding["source"],
+                                  routing_key=binding["routing_key"],
+                                  queue_name=queue.name)
+                db_session.add(binding)
 
         # Update the saved queue size.
         queue.size = q_size

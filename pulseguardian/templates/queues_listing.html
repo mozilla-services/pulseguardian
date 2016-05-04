@@ -30,6 +30,16 @@
         </div>
       </div>
 
+      <div>
+        <h5>Bindings:</h5>
+        <ul>
+          {%  for binding in queue.bindings %}
+             <li>
+                <code>{{ binding.exchange }}</code> with <code>{{ binding.routing_key }}</code>
+             </li>
+          {% endfor %}
+        </ul>
+      </div>
     </li>
   {% endfor %}
 </ul>
