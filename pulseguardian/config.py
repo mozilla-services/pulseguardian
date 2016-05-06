@@ -32,10 +32,15 @@ database_url = os.getenv('DATABASE_URL',
 pool_recycle_interval = int(os.getenv('POOL_RECYCLE_INTERVAL', 60))
 
 # RabbitMQ
+
+# Management API URL.
 rabbit_management_url = os.getenv('RABBIT_MANAGEMENT_URL',
-                                  'http://localhost:15672/api')
+                                  'http://localhost:15672/api/')
 rabbit_vhost = os.getenv('RABBIT_VHOST', '/')
+
+# RabbitMQ user with administrator privilege.
 rabbit_user = os.getenv('RABBIT_USER', 'guest')
+# Password of the RabbitMQ user.
 rabbit_password = os.getenv('RABBIT_PASSWORD', 'guest')
 
 # PulseGuardian

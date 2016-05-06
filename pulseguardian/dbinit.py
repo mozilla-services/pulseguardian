@@ -10,18 +10,11 @@ from pulseguardian.model.base import db_session, init_db
 from pulseguardian.model.user import User
 from pulseguardian.model.pulse_user import PulseUser
 from pulseguardian.model.queue import Queue
-from pulseguardian.management import (PulseManagementAPI,
-                                      PulseManagementException)
+from pulseguardian import management as pulse_management
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-pulse_management = PulseManagementAPI(
-    management_url=config.rabbit_management_url,
-    user=config.rabbit_user,
-    password=config.rabbit_password
-)
 
 
 def init_and_clear_db():
@@ -32,7 +25,7 @@ def init_and_clear_db():
     for pulse_user in PulseUser.query.all():
         try:
             pulse_management.delete_user(pulse_user.username)
-        except PulseManagementException:
+        except pulse_management.PulseManagementException:
             pass
 
     # Clear the database of old data.
@@ -57,8 +50,7 @@ def dummy_data():
         PulseUser.new_user(
             username='dummy{0}'.format(i),
             password='dummy',
-            owner=users[0],
-            management_api=pulse_management)
+            owner=users[0])
 
     pulse_users = PulseUser.query.all()
 
