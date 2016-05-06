@@ -23,9 +23,8 @@ from pulseguardian import config
 # Changing the DB for the tests before the model is initialized
 config.database_url = 'sqlite:///pulseguardian_test.db'
 
-from pulseguardian import dbinit
+from pulseguardian import dbinit, management as pulse_management
 from pulseguardian.guardian import PulseGuardian
-from pulseguardian.management import PulseManagementAPI
 from pulseguardian.model.base import db_session
 from pulseguardian.model.pulse_user import PulseUser
 from pulseguardian.model.queue import Queue
@@ -111,19 +110,10 @@ class GuardianTest(unittest.TestCase):
 
         self.proc = None
         self.publisher = None
-        self.management_api = PulseManagementAPI(
-            management_url='http://{}:{}/api'.format(
-                pulse_cfg['host'], pulse_cfg['management_port']),
-            user=pulse_cfg['user'],
-            password=pulse_cfg['password']
-        )
-        self.guardian = PulseGuardian(self.management_api,
-                                      warn_queue_size=TEST_WARN_SIZE,
+        self.guardian = PulseGuardian(warn_queue_size=TEST_WARN_SIZE,
                                       del_queue_size=TEST_DELETE_SIZE,
                                       emails=False)
 
-        # Hack in a test config.
-        dbinit.pulse_management = self.management_api
         dbinit.init_and_clear_db()
 
         self.consumer_cfg = pulse_cfg.copy()
@@ -140,8 +130,7 @@ class GuardianTest(unittest.TestCase):
         self.pulse_user = PulseUser.new_user(
             username=CONSUMER_USER,
             password=CONSUMER_PASSWORD,
-            owner=self.user,
-            management_api=self.management_api)
+            owner=self.user)
 
         db_session.add(self.pulse_user)
         db_session.commit()
@@ -149,8 +138,8 @@ class GuardianTest(unittest.TestCase):
     def tearDown(self):
         self._terminate_consumer_proc()  # Just in case.
         for queue in Queue.query.all():
-            self.management_api.delete_queue(vhost=DEFAULT_RABBIT_VHOST,
-                                             queue=queue.name)
+            pulse_management.delete_queue(vhost=DEFAULT_RABBIT_VHOST,
+                                          queue=queue.name)
 
     def _build_message(self, msg_id):
         msg = TestMessage()
@@ -218,7 +207,7 @@ class GuardianTest(unittest.TestCase):
             attempts += 1
             if attempts > 1:
                 time.sleep(self.QUEUE_RECORD_CHECK_PERIOD)
-            self.guardian.monitor_queues(self.management_api.queues())
+            self.guardian.monitor_queues(pulse_management.queues())
             if Queue.query.filter(Queue.name == consumer.queue_name).first():
                 break
 
@@ -270,7 +259,7 @@ class GuardianTest(unittest.TestCase):
         for i in xrange(10):
             time.sleep(0.3)
             queues_to_warn = set(q_data['name'] for q_data
-                                 in self.management_api.queues()
+                                 in pulse_management.queues()
                                  if self.guardian.warn_queue_size
                                  < q_data['messages_ready']
                                  <= self.guardian.del_queue_size)
@@ -283,7 +272,7 @@ class GuardianTest(unittest.TestCase):
         self.assertTrue(len(queues_to_warn) > 0)
 
         # Monitor the queues; this should detect queues that should be warned.
-        self.guardian.monitor_queues(self.management_api.queues())
+        self.guardian.monitor_queues(pulse_management.queues())
 
         # Refresh the user's queues state.
         db_session.refresh(self.pulse_user)
@@ -294,7 +283,7 @@ class GuardianTest(unittest.TestCase):
 
         # The queues that needed to be warned haven't been deleted.
         queues_to_warn_bis = set(q_data['name'] for q_data
-                                 in self.management_api.queues()
+                                 in pulse_management.queues()
                                  if self.guardian.warn_queue_size
                                     < q_data['messages_ready']
                                     <= self.guardian.del_queue_size)
@@ -324,7 +313,7 @@ class GuardianTest(unittest.TestCase):
         for i in xrange(10):
             time.sleep(0.3)
             queues_to_delete = [q_data['name'] for q_data
-                                in self.management_api.queues()
+                                in pulse_management.queues()
                                 if q_data['messages_ready']
                                    > self.guardian.del_queue_size]
             if queues_to_delete:
@@ -342,17 +331,17 @@ class GuardianTest(unittest.TestCase):
         # Monitor the queues; this should create the queue object and assign
         # it to the user.
         for i in xrange(20):
-            self.guardian.monitor_queues(self.management_api.queues())
+            self.guardian.monitor_queues(pulse_management.queues())
             time.sleep(0.2)
 
         # Test that the queues that had to be deleted were deleted...
         self.assertTrue(not any(q in queues_to_delete for q
-                                in self.management_api.queues()))
+                                in pulse_management.queues()))
         # And that they were deleted by guardian...
         self.assertEqual(sorted(queues_to_delete), sorted(deleted_queues))
         # And that no queue has overgrown.
         queues_to_delete = [q_data['name'] for q_data
-                            in self.management_api.queues()
+                            in pulse_management.queues()
                             if q_data['messages_ready'] >
                                self.guardian.del_queue_size]
         self.assertTrue(len(queues_to_delete) == 0)
@@ -373,7 +362,7 @@ class ModelTest(unittest.TestCase):
         pulse_user = PulseUser.new_user(username='dummy',
                                         password='DummyPassword',
                                         owner=user,
-                                        management_api=None)
+                                        create_rabbitmq_user=False)
         db_session.add(pulse_user)
         db_session.commit()
 
@@ -393,10 +382,7 @@ class ModelTest(unittest.TestCase):
 def setup_host():
     global pulse_cfg
 
-    if pulse_cfg['host'] != DEFAULT_RABBIT_HOST:
-        # Not equal to default: use the supplied host
-        return
-    else:
+    if pulse_cfg['host'] == DEFAULT_RABBIT_HOST:
         try:
             # IF DOCKER_HOST env variable exists, use as the host value
             host = os.environ['DOCKER_HOST']
@@ -410,6 +396,13 @@ def setup_host():
         finally:
             pulse_cfg['port'] = 5672
             pulse_cfg['management_port'] = 15672
+    # else, use the supplied host
+
+    # set the rabbit values of the ``config`` based on the pulse_cfg
+    config.rabbit_management_url = 'http://{}:{}/api/'.format(
+        pulse_cfg['host'], pulse_cfg['management_port'])
+    config.rabbit_user = pulse_cfg['user']
+    config.rabbit_password = pulse_cfg['password']
 
 
 def main(pulse_opts):

@@ -21,10 +21,8 @@ from flask import (Flask,
 from flask_sslify import SSLify
 from sqlalchemy.sql.expression import case
 
-from pulseguardian import config
+from pulseguardian import config, management as pulse_management
 from pulseguardian.logs import setup_logging
-from pulseguardian.management import (PulseManagementAPI,
-                                      PulseManagementException)
 from pulseguardian.model.base import db_session, init_db
 from pulseguardian.model.pulse_user import PulseUser
 from pulseguardian.model.user import User
@@ -96,13 +94,6 @@ if config.fake_account:
     app.config['SESSION_COOKIE_SECURE'] = False
 else:
     app.config['SESSION_COOKIE_SECURE'] = True
-
-
-# Initializing the rabbitmq management API
-pulse_management = PulseManagementAPI(
-    management_url=config.rabbit_management_url,
-    user=config.rabbit_user,
-    password=config.rabbit_password)
 
 
 # Initialize the database.
@@ -242,7 +233,7 @@ def delete_queue(queue_name):
                   (queue.owner and queue.owner.owner == g.user)):
         try:
             pulse_management.delete_queue(vhost='/', queue=queue.name)
-        except PulseManagementException as e:
+        except pulse_management.PulseManagementException as e:
             logging.warning("Couldn't delete the queue '{0}' on "
                                "rabbitmq: {1}".format(queue_name, e))
             return jsonify(ok=False)
@@ -262,7 +253,7 @@ def delete_pulse_user(pulse_username):
     if pulse_user and (g.user.admin or pulse_user.owner == g.user):
         try:
             pulse_management.delete_user(pulse_user.username)
-        except PulseManagementException as e:
+        except pulse_management.PulseManagementException as e:
             logging.warning("Couldn't delete user '{0}' on "
                                "rabbitmq: {1}".format(pulse_username, e))
             return jsonify(ok=False)
@@ -340,7 +331,7 @@ def update_info():
                        "letters and numerical characters and be at "
                        "least 6 characters long.")
 
-    pulse_user.change_password(new_password, pulse_management)
+    pulse_user.change_password(new_password)
     return profile(messages=["Password updated for user {0}.".format(
                 pulse_username)])
 
@@ -368,7 +359,7 @@ def register_handler():
     try:
         user_response = pulse_management.user(username=username)
         in_rabbitmq = True
-    except PulseManagementException:
+    except pulse_management.PulseManagementException:
         in_rabbitmq = False
     else:
         if 'error' in user_response:
@@ -382,7 +373,7 @@ def register_handler():
         return render_template('register.html', email=email,
                                signup_errors=errors)
 
-    PulseUser.new_user(username, password, g.user, pulse_management)
+    PulseUser.new_user(username, password, g.user)
 
     return redirect('/profile')
 

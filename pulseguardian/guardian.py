@@ -6,9 +6,8 @@ import logging
 import re
 import time
 
-from pulseguardian import config
+from pulseguardian import config, management as pulse_management
 from pulseguardian.logs import setup_logging
-from pulseguardian.management import PulseManagementAPI
 from pulseguardian.model.base import init_db, db_session
 from pulseguardian.model.user import PulseUser
 from pulseguardian.model.queue import Queue
@@ -31,14 +30,12 @@ class PulseGuardian(object):
     :param on_warn: Callback called with a queue's name when it's warned.
     :param on_delete: Callback called with a queue's name when it's deleted.
     """
-    def __init__(self, api, emails=True, warn_queue_size=config.warn_queue_size,
+    def __init__(self, emails=True, warn_queue_size=config.warn_queue_size,
                  del_queue_size=config.del_queue_size, on_warn=None,
                  on_delete=None):
         if del_queue_size < warn_queue_size:
             raise ValueError("Deletion threshold can't be smaller than the "
                              "warning threshold.")
-
-        self.api = api
 
         self.emails = emails
         self.warn_queue_size = warn_queue_size
@@ -124,8 +121,8 @@ class PulseGuardian(object):
                     self.deletion_email(queue.owner.owner, queue_data)
                 if self.on_delete:
                     self.on_delete(queue.name)
-                self.api.delete_queue(vhost=queue_data['vhost'],
-                                      queue=queue.name)
+                pulse_management.delete_queue(vhost=queue_data['vhost'],
+                                              queue=queue.name)
                 db_session.delete(queue)
                 db_session.commit()
                 continue
@@ -157,8 +154,8 @@ class PulseGuardian(object):
 
     def _exchange_from_queue(self, queue_data):
         exchange = 'could not be determined'
-        detailed_data = self.api.queue(vhost=queue_data['vhost'],
-                                       queue=queue_data['name'])
+        detailed_data = pulse_management.queue(vhost=queue_data['vhost'],
+                                               queue=queue_data['name'])
         if detailed_data['incoming']:
             exchange = detailed_data['incoming'][0]['exchange']['name']
         return exchange
@@ -229,7 +226,7 @@ now back to normal ({2} ready messages, {3} total messages).
     def guard(self):
         logging.info("PulseGuardian started")
         while True:
-            queues = self.api.queues()
+            queues = pulse_management.queues()
             if queues:
                 self.monitor_queues(queues)
             self.clear_deleted_queues(queues)
@@ -243,8 +240,5 @@ if __name__ == '__main__':
     # Initialize the database if necessary.
     init_db()
 
-    api = PulseManagementAPI(management_url=config.rabbit_management_url,
-                             user=config.rabbit_user,
-                             password=config.rabbit_password)
-    pulse_guardian = PulseGuardian(api)
+    pulse_guardian = PulseGuardian()
     pulse_guardian.guard()
