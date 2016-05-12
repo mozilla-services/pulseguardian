@@ -21,9 +21,8 @@ from flask import (Flask,
 from flask_sslify import SSLify
 from sqlalchemy.sql.expression import case
 
-from pulseguardian import config
+from pulseguardian import config, management as pulse_management
 from pulseguardian.logs import setup_logging
-from pulseguardian import management as pulse_management
 from pulseguardian.model.base import db_session, init_db
 from pulseguardian.model.pulse_user import PulseUser
 from pulseguardian.model.user import User

@@ -23,10 +23,8 @@ from pulseguardian import config
 # Changing the DB for the tests before the model is initialized
 config.database_url = 'sqlite:///pulseguardian_test.db'
 
-
-from pulseguardian import dbinit
+from pulseguardian import dbinit, management as pulse_management
 from pulseguardian.guardian import PulseGuardian
-from pulseguardian import management as pulse_management
 from pulseguardian.model.base import db_session
 from pulseguardian.model.pulse_user import PulseUser
 from pulseguardian.model.queue import Queue
@@ -112,11 +110,6 @@ class GuardianTest(unittest.TestCase):
 
         self.proc = None
         self.publisher = None
-        config.rabbit_management_url = 'http://{}:{}/api/'.format(
-            pulse_cfg['host'], pulse_cfg['management_port'])
-        config.rabbit_user = pulse_cfg['user']
-        config.rabbit_password=pulse_cfg['password']
-
         self.guardian = PulseGuardian(warn_queue_size=TEST_WARN_SIZE,
                                       del_queue_size=TEST_DELETE_SIZE,
                                       emails=False)
@@ -369,7 +362,7 @@ class ModelTest(unittest.TestCase):
         pulse_user = PulseUser.new_user(username='dummy',
                                         password='DummyPassword',
                                         owner=user,
-                                        skip_management=True)
+                                        create_rabbitmq_user=False)
         db_session.add(pulse_user)
         db_session.commit()
 
@@ -389,10 +382,7 @@ class ModelTest(unittest.TestCase):
 def setup_host():
     global pulse_cfg
 
-    if pulse_cfg['host'] != DEFAULT_RABBIT_HOST:
-        # Not equal to default: use the supplied host
-        return
-    else:
+    if pulse_cfg['host'] == DEFAULT_RABBIT_HOST:
         try:
             # IF DOCKER_HOST env variable exists, use as the host value
             host = os.environ['DOCKER_HOST']
@@ -406,6 +396,13 @@ def setup_host():
         finally:
             pulse_cfg['port'] = 5672
             pulse_cfg['management_port'] = 15672
+    # else, use the supplied host
+
+    # set the rabbit values of the ``config`` based on the pulse_cfg
+    config.rabbit_management_url = 'http://{}:{}/api/'.format(
+        pulse_cfg['host'], pulse_cfg['management_port'])
+    config.rabbit_user = pulse_cfg['user']
+    config.rabbit_password = pulse_cfg['password']
 
 
 def main(pulse_opts):

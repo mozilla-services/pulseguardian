@@ -2,6 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""Wrapper functions around the RabbitMQ management plugin's REST API."""
+
 import json
 import logging
 import socket
@@ -10,21 +12,17 @@ from urllib import quote
 import requests
 
 from pulseguardian import config
+
 MAX_RETRY = 5
 
 
 class PulseManagementException(Exception):
     pass
 
-"""
-Wrapper around the RabbitMQ management plugin's REST API.
-"""
-
 
 def _api_request(path, method='GET', data=None):
     session = requests.Session()
-    management_url = config.rabbit_management_url
-    url = '{0}{1}'.format(management_url, path)
+    url = '{0}{1}'.format(config.rabbit_management_url, path)
     request = requests.Request(method, url,
                                auth=(config.rabbit_user,
                                      config.rabbit_password),

@@ -6,9 +6,8 @@ import logging
 import re
 import time
 
-from pulseguardian import config
+from pulseguardian import config, management as pulse_management
 from pulseguardian.logs import setup_logging
-from pulseguardian import management as pulse_management
 from pulseguardian.model.base import init_db, db_session
 from pulseguardian.model.user import PulseUser
 from pulseguardian.model.queue import Queue

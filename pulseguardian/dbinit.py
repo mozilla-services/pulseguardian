@@ -5,12 +5,11 @@
 import logging
 import sys
 
-from pulseguardian import config
+from pulseguardian import config, management as pulse_management
 from pulseguardian.model.base import db_session, init_db
 from pulseguardian.model.user import User
 from pulseguardian.model.pulse_user import PulseUser
 from pulseguardian.model.queue import Queue
-from pulseguardian import management as pulse_management
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)

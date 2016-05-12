@@ -27,17 +27,17 @@ class PulseUser(Base):
         Queue, backref='owner', cascade='save-update, merge, delete')
 
     @staticmethod
-    def new_user(username, password='', owner=None, skip_management=False):
+    def new_user(username, password='', owner=None, create_rabbitmq_user=True):
         """Initializes a new user, generating a salt and encrypting
         his password. Then creates a RabbitMQ user if needed and sets
         permissions.
 
-        :param skip_management: Skip adding this user to the rabbitmq server
-        via the management plugin.  For tests only.
+        :param create_rabbitmq_user: Whether to add this user to the rabbitmq
+        server via the management plugin.  Used by tests.
         """
         pulse_user = PulseUser(owner=owner, username=username)
 
-        if not skip_management:
+        if create_rabbitmq_user:
             pulse_user._create_user(password)
             pulse_user._set_permissions()
 
