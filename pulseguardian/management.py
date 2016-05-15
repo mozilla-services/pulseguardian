@@ -4,13 +4,9 @@
 
 import json
 import logging
-import socket
 from urllib import quote
 
 import requests
-
-MAX_RETRY = 5
-
 
 class PulseManagementException(Exception):
     pass
@@ -39,14 +35,7 @@ class PulseManagementAPI(object):
                                          self.management_password),
                                    data=json.dumps(data)).prepare()
         request.headers['Content-type'] = 'application/json'
-        response = None
-
-        for i in xrange(MAX_RETRY):
-            try:
-                response = session.send(request)
-                break
-            except (requests.ConnectionError, socket.error):
-                logging.exception('Failed to connect to the RabbitMQ server.')
+        response = session.send(request)
 
         if response is None or not response.content:
             return None
