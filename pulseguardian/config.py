@@ -47,6 +47,7 @@ rabbit_password = os.getenv('RABBIT_PASSWORD', 'guest')
 warn_queue_size = int(os.getenv('WARN_QUEUE_SIZE', 2000))
 del_queue_size = int(os.getenv('DEL_QUEUE_SIZE', 8000))
 polling_interval = int(os.getenv('POLLING_INTERVAL', 5))
+polling_max_interval = int(os.getenv('POLLING_MAX_INTERVAL', 300))
 fake_account = os.getenv('FAKE_ACCOUNT', None)
 
 # Logging

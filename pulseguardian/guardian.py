@@ -4,12 +4,15 @@
 
 import logging
 import re
+import requests
+import socket
 import time
+import traceback
 
 from pulseguardian import config, management as pulse_management
 from pulseguardian.logs import setup_logging
 from pulseguardian.model.base import init_db, db_session
-from pulseguardian.model.user import PulseUser
+from pulseguardian.model.user import PulseUser, User
 from pulseguardian.model.queue import Queue
 from pulseguardian.sendemail import sendemail
 
@@ -40,9 +43,31 @@ class PulseGuardian(object):
         self.emails = emails
         self.warn_queue_size = warn_queue_size
         self.del_queue_size = del_queue_size
-
         self.on_warn = on_warn
         self.on_delete = on_delete
+        self._polling_interval = config.polling_interval
+        self._connection_error_notified = False
+        self._unknown_error_notified = False
+
+    def _increase_interval(self):
+        if self._polling_interval < config.polling_max_interval:
+            self._polling_interval += config.polling_interval
+
+    def _reset_notification_error_params(self):
+        self._polling_interval = config.polling_interval
+        self._connection_error_notified = False
+        self._unknown_error_notified = False
+
+    def _sendemail(self, to_addrs, subject, text_data):
+        sendemail(subject=subject,
+                  from_addr=config.email_from,
+                  to_addrs=to_addrs,
+                  username=config.email_account,
+                  password=config.email_password,
+                  text_data=text_data,
+                  server=config.email_smtp_server,
+                  port=config.email_smtp_port,
+                  use_ssl=config.email_ssl)
 
     def clear_deleted_queues(self, queues):
         db_queues = Queue.query.all()
@@ -176,12 +201,8 @@ durable queues.
            queue_data['messages'], self.del_queue_size)
 
         if self.emails and user.email is not None:
-            sendemail(subject=subject, from_addr=config.email_from,
-                      to_addrs=[user.email], username=config.email_account,
-                      password=config.email_password, text_data=body,
-                      server=config.email_smtp_server,
-                      port=config.email_smtp_port,
-                      use_ssl=config.email_ssl)
+            self._sendemail(
+                subject=subject, to_addrs=[user.email], text_data=body)
 
     def deletion_email(self, user, queue_data):
         exchange = self._exchange_from_queue(queue_data)
@@ -198,12 +219,8 @@ durable queues.
            self.del_queue_size)
 
         if self.emails and user.email is not None:
-            sendemail(subject=subject, from_addr=config.email_from,
-                      to_addrs=[user.email], username=config.email_account,
-                      password=config.email_password, text_data=body,
-                      server=config.email_smtp_server,
-                      port=config.email_smtp_port,
-                      use_ssl=config.email_ssl)
+            self._sendemail(
+                subject=subject, to_addrs=[user.email], text_data=body)
 
     def back_to_normal_email(self, user, queue_data):
         exchange = self._exchange_from_queue(queue_data)
@@ -216,22 +233,84 @@ now back to normal ({2} ready messages, {3} total messages).
            queue_data['messages'], self.del_queue_size)
 
         if self.emails and user.email is not None:
-            sendemail(subject=subject, from_addr=config.email_from,
-                      to_addrs=[user.email], username=config.email_account,
-                      password=config.email_password, text_data=body,
-                      server=config.email_smtp_server,
-                      port=config.email_smtp_port,
-                      use_ssl=config.email_ssl)
+            self._sendemail(
+                subject=subject, to_addrs=[user.email], text_data=body)
+
+    def notify_connection_error(self):
+        """Log and email to admin(s) that a connection error occurred.
+
+        Note that this function expects to be called from within an
+        exception handler.
+        """
+        ex_details = traceback.format_exc()
+        errmsg = '''Could not connect to Pulse.
+
+Rabbit URL: {0}
+Rabbit user: {1}
+Error:
+{2}
+'''.format(config.rabbit_management_url, config.rabbit_user, ex_details)
+
+        logging.error(errmsg)
+
+        if self.emails and not self._connection_error_notified:
+            admin_emails = [user.email for user
+                            in User.query.filter_by(admin=True)]
+            subject = "PulseGuardian error: Can't connect to Pulse"
+
+            self._sendemail(
+                subject=subject, to_addrs=admin_emails, text_data=errmsg)
+            self._connection_error_notified = True
+
+    def notify_unknown_error(self):
+        """Log and email to admin(s) that an unexpected error occurred.
+
+        Note that this function expects to be called from within an
+        exception handler.
+        """
+        ex_details = traceback.format_exc()
+        errmsg = '''Unknown error occured.
+
+Rabbit URL: {0}
+Rabbit user: {1}
+Error:
+{2}
+'''.format(config.rabbit_management_url, config.rabbit_user, ex_details)
+
+        logging.error(errmsg)
+
+        if self.emails and not self._unknown_error_notified:
+            admin_emails = [user.email for user
+                            in User.query.filter_by(admin=True)]
+            subject = "PulseGuardian error: Unknown error"
+
+            self._sendemail(
+                subject=subject, to_addrs=admin_emails, text_data=body)
+            self._unknown_error_notified = True
 
     def guard(self):
         logging.info("PulseGuardian started")
-        while True:
-            queues = pulse_management.queues()
-            if queues:
-                self.monitor_queues(queues)
-            self.clear_deleted_queues(queues)
-            time.sleep(config.polling_interval)
 
+        while True:
+            try:
+                queues = pulse_management.queues()
+                if queues:
+                    self.monitor_queues(queues)
+                self.clear_deleted_queues(queues)
+
+                if (self._connection_error_notified or
+                        self._unknown_error_notified):
+                    self._reset_notification_error_params()
+            except (requests.ConnectionError, socket.error):
+                self.notify_connection_error()
+                self._increase_interval()
+            except KeyboardInterrupt:
+                break
+            except Exception:
+                self.notify_unknown_error()
+                self._increase_interval()
+
+            time.sleep(self._polling_interval)
 
 if __name__ == '__main__':
     # Add StreamHandler for development purposes
