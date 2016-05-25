@@ -7,6 +7,7 @@ import sys
 
 from pulseguardian import config, management as pulse_management
 from pulseguardian.model.base import db_session, init_db
+from pulseguardian.model.binding import Binding
 from pulseguardian.model.user import User
 from pulseguardian.model.pulse_user import PulseUser
 from pulseguardian.model.queue import Queue
@@ -30,6 +31,8 @@ def init_and_clear_db():
     # Clear the database of old data.
     for queue in Queue.query.all():
         db_session.delete(queue)
+    for binding in Binding.query.all():
+        db_session.delete(binding)
     for pulse_user in PulseUser.query.all():
         db_session.delete(pulse_user)
     for user in User.query.all():
