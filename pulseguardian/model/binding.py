@@ -15,7 +15,6 @@ class Binding(Base):
     routing_key = Column(String(255))
     queue_name = Column(String(255), ForeignKey('queues.name'))
 
-
     @property
     def name(self):
         return Binding.as_string(self.exchange, self.routing_key)

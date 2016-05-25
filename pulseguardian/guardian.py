@@ -65,7 +65,6 @@ class PulseGuardian(object):
         db_session.commit()
 
     def clear_deleted_bindings(self, queue_name):
-
         rabbit_bindings = pulse_management.queue_bindings(config.rabbit_vhost,
                                                           queue_name)
 
@@ -129,7 +128,9 @@ class PulseGuardian(object):
         for binding in bindings:
             db_binding = Binding.query.filter(
                 Binding.exchange == binding["source"],
-                Binding.routing_key == binding["routing_key"]).first()
+                Binding.routing_key == binding["routing_key"],
+                Binding.queue_name == queue.name
+                ).first()
 
             if not db_binding:
                 # need to create the binding in the DB
