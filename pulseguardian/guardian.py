@@ -49,9 +49,9 @@ class PulseGuardian(object):
         db_queues = Queue.query.all()
 
         # Filter queues that are in the database but no longer on RabbitMQ.
-        alive_queues_names = set(q['name'] for q in queues)
-        deleted_queues = set(q for q in db_queues if q.name
-                             not in alive_queues_names)
+        alive_queues_names = {q['name'] for q in queues}
+        deleted_queues = {q for q in db_queues
+                          if q.name not in alive_queues_names}
 
         # Delete those queues.
         for queue in deleted_queues:
@@ -73,9 +73,8 @@ class PulseGuardian(object):
         # Filter bindings that are in the database but no longer on RabbitMQ.
         alive_bindings_names = {Binding.as_string(b['source'], b['routing_key'])
                                 for b in rabbit_bindings}
-
-        deleted_bindings = set(b for b in db_bindings if b.name
-                               not in alive_bindings_names)
+        deleted_bindings = {b for b in db_bindings
+                            if b.name not in alive_bindings_names}
 
         # Delete those bindings.
         for binding in deleted_bindings:
