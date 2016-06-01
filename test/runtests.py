@@ -150,19 +150,19 @@ class GuardianTest(unittest.TestCase):
         db_session.add(self.pulse_user)
         db_session.commit()
 
-    def setup_queue(self):
+    def tearDown(self):
+        self._terminate_consumer_proc()  # Just in case.
+        for queue in Queue.query.all():
+            pulse_management.delete_queue(vhost=DEFAULT_RABBIT_VHOST,
+                                          queue=queue.name)
+
+    def _setup_queue(self):
         """Setup a publisher, consumer and Queue, then terminate consumer"""
         self._create_publisher()
         self._create_consumer_proc(durable=True)
         self._wait_for_queue()
         self._wait_for_queue_record()
         self._terminate_consumer_proc()
-
-    def tearDown(self):
-        self._terminate_consumer_proc()  # Just in case.
-        for queue in Queue.query.all():
-            pulse_management.delete_queue(vhost=DEFAULT_RABBIT_VHOST,
-                                          queue=queue.name)
 
     def _build_message(self, msg_id):
         msg = TestMessage()
@@ -235,7 +235,7 @@ class GuardianTest(unittest.TestCase):
                 break
 
     def _wait_for_binding_record(self, queue_name, exchange_name, routing_key):
-        """Wait until a biding has been added to the database"""
+        """Wait until a binding has been added to the database"""
         consumer = self._create_passive_consumer()
         attempts = 0
         while attempts < self.QUEUE_RECORD_CHECK_ATTEMPTS:
@@ -250,7 +250,7 @@ class GuardianTest(unittest.TestCase):
                 break
 
     def _wait_for_binding_delete(self, queue_name, exchange_name, routing_key):
-        """Wait until a biding has been removed from the database"""
+        """Wait until a binding has been removed from the database"""
         consumer = self._create_passive_consumer()
         attempts = 0
         while attempts < self.QUEUE_RECORD_CHECK_ATTEMPTS:
@@ -290,7 +290,7 @@ class GuardianTest(unittest.TestCase):
         self.assertEqual(owner, None)
 
     def test_warning(self):
-        self.setup_queue()
+        self._setup_queue()
 
         # Queue should still exist.
         self._wait_for_queue()
@@ -339,7 +339,7 @@ class GuardianTest(unittest.TestCase):
         self.assertEqual(queues_to_warn_bis, queues_to_warn)
 
     def test_delete(self):
-        self.setup_queue()
+        self._setup_queue()
 
         # Queue should still exist.
         self._wait_for_queue()
@@ -393,7 +393,7 @@ class GuardianTest(unittest.TestCase):
 
     def test_binding(self):
         """Test that you can get the bindings for a queue"""
-        self.setup_queue()
+        self._setup_queue()
 
         # Get the queue's object
         db_session.refresh(self.pulse_user)
@@ -414,11 +414,11 @@ class GuardianTest(unittest.TestCase):
         Test create bindings for two queues with same exchange and routing key
         """
         self.consumer_class = consumers.PulseTestConsumer
-        self.setup_queue()
+        self._setup_queue()
 
         # create a second queue with the same binding
         self.consumer_class = SecondaryQueueConsumer
-        self.setup_queue()
+        self._setup_queue()
 
         # check queue bindings in the DB
         queues = Queue.query.all()
@@ -431,7 +431,7 @@ class GuardianTest(unittest.TestCase):
 
     def test_add_delete_binding(self):
         """Test adding and removing a binding from a queue"""
-        self.setup_queue()
+        self._setup_queue()
 
         consumer = self._create_passive_consumer()
         exchange = Exchange(consumer.exchange, type='topic')
