@@ -18,22 +18,21 @@ from kombu import Exchange
 from mozillapulse import consumers, publishers
 from mozillapulse.messages.test import TestMessage
 
-from docker_setup import (check_rabbitmq, create_image, setup_container,
-                          teardown_container)
-from pulseguardian import management as pulse_management
-from pulseguardian import config, dbinit
+os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24))
+
+# Change the DB for the tests before the model is initialized.
+from pulseguardian import config
+config.database_url = 'sqlite:///pulseguardian_test.db'
+
+from docker_setup import (check_rabbitmq, create_image,
+                          setup_container, teardown_container)
+from pulseguardian import dbinit, management as pulse_management
 from pulseguardian.guardian import PulseGuardian
 from pulseguardian.model.base import db_session
 from pulseguardian.model.binding import Binding
 from pulseguardian.model.pulse_user import PulseUser
 from pulseguardian.model.queue import Queue
 from pulseguardian.model.user import User
-
-os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24))
-
-# Changing the DB for the tests before the model is initialized
-config.database_url = 'sqlite:///pulseguardian_test.db'
-
 
 
 # Default RabbitMQ host settings
