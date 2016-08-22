@@ -80,7 +80,7 @@ class PulseGuardian(object):
 
         # Delete those queues.
         for queue in deleted_queues:
-            logging.info("Queue '{0}' has been deleted.".format(queue))
+            logging.debug("Queue '{0}' has been deleted.".format(queue))
             db_session.delete(queue)
 
         # Clean up bindings on queues that are not deleted.
@@ -103,7 +103,7 @@ class PulseGuardian(object):
 
         # Delete those bindings.
         for binding in deleted_bindings:
-            logging.info("Binding '{}' for queue '{}' has been deleted.".format(
+            logging.debug("Binding '{}' for queue '{}' has been deleted.".format(
                 binding, queue_name))
             db_session.delete(binding)
 
@@ -122,8 +122,8 @@ class PulseGuardian(object):
         # If the queue doesn't exist in the db, create it.
         if queue is None:
             m = re.match('queue/([^/]+)/', q_name)
-            logging.info("New queue '{0}' encountered. "
-                         "Adding to the database.".format(q_name))
+            logging.debug("New queue '{0}' encountered. "
+                          "Adding to the database.".format(q_name))
             if m:
                 owner_name = m.group(1)
                 owner = PulseUser.query.filter(
@@ -138,8 +138,8 @@ class PulseGuardian(object):
                     owner = PulseUser.new_user(owner_name)
 
                 # Assign the user to the queue.
-                logging.info("Assigning queue '{0}' to user "
-                             "{1}.".format(q_name, owner))
+                logging.debug("Assigning queue '{0}' to user "
+                              "{1}.".format(q_name, owner))
             else:
                 logging.warn("'{0}' is not a standard queue name.".format(
                     q_name))
