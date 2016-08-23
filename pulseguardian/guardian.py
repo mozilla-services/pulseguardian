@@ -72,6 +72,8 @@ class PulseGuardian(object):
 
     def clear_deleted_queues(self, queues):
         db_queues = Queue.query.all()
+        # all current bindings for all queues
+        all_bindings = pulse_management.bindings()
 
         # Filter queues that are in the database but no longer on RabbitMQ.
         alive_queues_names = {q['name'] for q in queues}
@@ -85,14 +87,14 @@ class PulseGuardian(object):
 
         # Clean up bindings on queues that are not deleted.
         for queue_name in alive_queues_names:
-            self.clear_deleted_bindings(queue_name)
+            bindings = [x for x in all_bindings if
+                        x["destination_type"] == "queue" and
+                        x["destination"] == queue_name]
+            self.clear_deleted_bindings(queue_name, bindings)
 
         db_session.commit()
 
-    def clear_deleted_bindings(self, queue_name):
-        rabbit_bindings = pulse_management.queue_bindings(config.rabbit_vhost,
-                                                          queue_name)
-
+    def clear_deleted_bindings(self, queue_name, rabbit_bindings):
         db_bindings = Binding.query.filter(Binding.queue_name == queue_name)
 
         # Filter bindings that are in the database but no longer on RabbitMQ.
