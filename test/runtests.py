@@ -229,7 +229,8 @@ class GuardianTest(unittest.TestCase):
             attempts += 1
             if attempts > 1:
                 time.sleep(self.QUEUE_RECORD_CHECK_PERIOD)
-            self.guardian.monitor_queues(pulse_management.queues())
+            self.guardian.monitor_queues(pulse_management.queues(),
+                                         pulse_management.bindings())
             if Queue.query.filter(Queue.name == consumer.queue_name).first():
                 break
 
@@ -241,7 +242,8 @@ class GuardianTest(unittest.TestCase):
             attempts += 1
             if attempts > 1:
                 time.sleep(self.QUEUE_RECORD_CHECK_PERIOD)
-            self.guardian.monitor_queues(pulse_management.queues())
+            self.guardian.monitor_queues(pulse_management.queues(),
+                                         pulse_management.bindings())
             if Binding.query.filter(
                 Binding.queue_name == queue_name,
                 Binding.exchange == exchange_name,
@@ -256,7 +258,8 @@ class GuardianTest(unittest.TestCase):
             attempts += 1
             if attempts > 1:
                 time.sleep(self.QUEUE_RECORD_CHECK_PERIOD)
-            self.guardian.clear_deleted_queues(pulse_management.queues())
+            self.guardian.clear_deleted_queues(pulse_management.queues(),
+                                               pulse_management.bindings())
             if not Binding.query.filter(
                 Binding.queue_name == queue_name,
                 Binding.exchange == exchange_name,
@@ -320,7 +323,8 @@ class GuardianTest(unittest.TestCase):
         self.assertTrue(len(queues_to_warn) > 0)
 
         # Monitor the queues; this should detect queues that should be warned.
-        self.guardian.monitor_queues(pulse_management.queues())
+        self.guardian.monitor_queues(pulse_management.queues(),
+                                     pulse_management.bindings())
 
         # Refresh the user's queues state.
         db_session.refresh(self.pulse_user)
@@ -375,7 +379,8 @@ class GuardianTest(unittest.TestCase):
         # Monitor the queues; this should create the queue object and assign
         # it to the user.
         for i in xrange(20):
-            self.guardian.monitor_queues(pulse_management.queues())
+            self.guardian.monitor_queues(pulse_management.queues(),
+                                         pulse_management.bindings())
             time.sleep(0.2)
 
         # Test that the queues that had to be deleted were deleted...

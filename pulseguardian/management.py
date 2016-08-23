@@ -72,6 +72,12 @@ def delete_all_queues():
         delete_queue(queue_data['vhost'], queue_data['name'])
 
 
+def bindings():
+    """All bindings for all queues"""
+    bindings = _api_request('bindings')
+    return [b for b in bindings if b["source"]]
+
+
 # Users
 
 def user(username):
