@@ -336,8 +336,13 @@ Error:
             logging.info('Guard loop.')
             try:
                 queues = pulse_management.queues()
+                logging.info('Got queues')
+
                 if queues:
+                    logging.info('Monitor queues')
                     self.monitor_queues(queues)
+
+                logging.info('Clear deleted queues')
                 self.clear_deleted_queues(queues)
 
                 if (self._connection_error_notified or
@@ -352,6 +357,7 @@ Error:
                 self.notify_unknown_error()
                 self._increase_interval()
 
+            logging.info('Sleeping for %d seconds' % self._polling_interval)
             time.sleep(self._polling_interval)
 
 if __name__ == '__main__':
