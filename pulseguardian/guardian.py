@@ -333,6 +333,7 @@ Error:
         logging.info("PulseGuardian started")
 
         while True:
+            logging.info('Guard loop.')
             try:
                 queues = pulse_management.queues()
                 if queues:
