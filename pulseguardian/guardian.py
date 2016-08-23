@@ -173,10 +173,10 @@ class PulseGuardian(object):
         db_session.commit()
         return queue
 
-    def monitor_queues(self, queues, bindings):
+    def monitor_queues(self, queues, all_bindings):
         for queue_data in queues:
             # Updating the queue's information in the database (owner, size).
-            queue = self.update_queue_information(queue_data)
+            queue = self.update_queue_information(queue_data, all_bindings)
             if not queue:
                 continue
 
@@ -348,7 +348,7 @@ Error:
                     self.monitor_queues(queues, bindings)
 
                 logging.info('Clear deleted queues')
-                self.clear_deleted_queues(queues)
+                self.clear_deleted_queues(queues, bindings)
 
                 if (self._connection_error_notified or
                         self._unknown_error_notified):
