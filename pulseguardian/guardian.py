@@ -70,7 +70,13 @@ class PulseGuardian(object):
                   port=config.email_smtp_port,
                   use_ssl=config.email_ssl)
 
-    def clear_deleted_queues(self, queues):
+    def get_queue_bindings(self, all_bindings, queue_name):
+        """Extract the bindigns for just the named queue"""
+        return [x for x in all_bindings if
+                x["destination_type"] == "queue" and
+                x["destination"] == queue_name]
+
+    def clear_deleted_queues(self, queues, all_bindings):
         db_queues = Queue.query.all()
 
         # Filter queues that are in the database but no longer on RabbitMQ.
@@ -85,19 +91,17 @@ class PulseGuardian(object):
 
         # Clean up bindings on queues that are not deleted.
         for queue_name in alive_queues_names:
-            self.clear_deleted_bindings(queue_name)
+            bindings = self.get_queue_bindings(all_bindings, queue_name)
+            self.clear_deleted_bindings(queue_name, bindings)
 
         db_session.commit()
 
-    def clear_deleted_bindings(self, queue_name):
-        rabbit_bindings = pulse_management.queue_bindings(config.rabbit_vhost,
-                                                          queue_name)
-
+    def clear_deleted_bindings(self, queue_name, all_bindings):
         db_bindings = Binding.query.filter(Binding.queue_name == queue_name)
 
         # Filter bindings that are in the database but no longer on RabbitMQ.
         alive_bindings_names = {Binding.as_string(b['source'], b['routing_key'])
-                                for b in rabbit_bindings}
+                                for b in all_bindings}
         deleted_bindings = {b for b in db_bindings
                             if b.name not in alive_bindings_names}
 
@@ -107,7 +111,7 @@ class PulseGuardian(object):
                 binding, queue_name))
             db_session.delete(binding)
 
-    def update_queue_information(self, queue_data):
+    def update_queue_information(self, queue_data, all_bindings):
         if not 'messages' in queue_data:
             # FIXME: We should do something here, probably delete the queue,
             # as it's in a weird state.  More investigation is required.
@@ -147,8 +151,7 @@ class PulseGuardian(object):
             queue = Queue(name=q_name, owner=owner)
 
         # add the queue bindings to the db.
-        bindings = pulse_management.queue_bindings(config.rabbit_vhost,
-                                                   queue.name)
+        bindings = self.get_queue_bindings(all_bindings, queue.name)
         for binding in bindings:
             db_binding = Binding.query.filter(
                 Binding.exchange == binding["source"],
@@ -170,10 +173,10 @@ class PulseGuardian(object):
         db_session.commit()
         return queue
 
-    def monitor_queues(self, queues):
+    def monitor_queues(self, queues, all_bindings):
         for queue_data in queues:
             # Updating the queue's information in the database (owner, size).
-            queue = self.update_queue_information(queue_data)
+            queue = self.update_queue_information(queue_data, all_bindings)
             if not queue:
                 continue
 
@@ -336,14 +339,16 @@ Error:
             logging.info('Guard loop.')
             try:
                 queues = pulse_management.queues()
+                bindings = pulse_management.bindings()
+
                 logging.info('Got queues')
 
                 if queues:
                     logging.info('Monitor queues')
-                    self.monitor_queues(queues)
+                    self.monitor_queues(queues, bindings)
 
                 logging.info('Clear deleted queues')
-                self.clear_deleted_queues(queues)
+                self.clear_deleted_queues(queues, bindings)
 
                 if (self._connection_error_notified or
                         self._unknown_error_notified):
