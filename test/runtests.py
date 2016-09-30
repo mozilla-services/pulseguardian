@@ -499,6 +499,18 @@ class ModelTest(unittest.TestCase):
             PulseUser.query.filter(PulseUser.username == 'DUMMY').first(),
             None)
 
+    def test_user_set_admin(self):
+        user = User.new_user(email='adminusr@email.com', admin=False)
+        db_session.add(user)
+        db_session.commit()
+
+        user = User.query.filter(User.email == 'adminusr@email.com').first()
+        user.set_admin(True)
+
+        userDb = User.query.filter(User.email == 'adminusr@email.com').first()
+
+        self.assertTrue(userDb.admin)
+
 
 def setup_host():
     global pulse_cfg
