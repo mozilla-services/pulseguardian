@@ -43,8 +43,8 @@ You will also need a RabbitMQ instance running somewhere.  Docker provides a
 lightweight and isolated solution.  See the [docker installation docs][] for
 your system.
 
-To create a Pulse Docker image, run this from within the `test` directory
-(which contains the necessary `Dockerfile`):
+To create a Pulse Docker image, run this from within the root PulseGuardian
+source directory:
 
     docker build -t="pulse:testing" test
 

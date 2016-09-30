@@ -5,6 +5,10 @@
         <h4><a class="menuitem" href="/profile">My Pulse Users</a></h4>
         <h4><a class="menuitem" href="/all_pulse_users">All Pulse Users</a></h4>
         <h4><a class="menuitem" href="/queues">Queues</a></h4>
+
+        {% if g.user.admin %}
+        <h4><a class="menuitem" href="/all_users">All Users</a></h4>
+        {% endif %}
     {% endif %}
   </div>
 </div>
