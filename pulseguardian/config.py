@@ -12,11 +12,11 @@ except TypeError:
 
 flask_debug_mode = bool(int(os.getenv('FLASK_DEBUG_MODE', 1)))
 
-# Persona
-persona_verifier = os.getenv('PERSONA_VERIFIER',
-                             'https://verifier.login.persona.org/verify')
-persona_audience = os.getenv('PERSONA_AUDIENCE',
-                             'https://{0}:{1}'.format(flask_host, flask_port))
+# Auth0
+auth0_client_secret = os.getenv('AUTH0_CLIENT_SECRET', None)
+auth0_client_id = os.getenv('AUTH0_CLIENT_ID', None)
+auth0_domain = os.getenv('AUTH0_DOMAIN', 'pulseguardian.auth0.com')
+auth0_callback_url = os.getenv('AUTH0_CALLBACK_URL', 'https://localhost:5000/auth/callback')
 
 # Mail
 email_account = os.getenv('EMAIL_ACCOUNT', 'automation@mozilla.com')

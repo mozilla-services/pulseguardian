@@ -10,13 +10,12 @@
 
     {% if session.get('email') %}
       <span class="right-link">
-        <a id="signout-link" href="#"
-           class="persona-button"><span>Logout</span></a>
+           <span id="signout-link" class="btn btn-info">Logout</span>
       </span>
     {% else %}
-      <span class="login right-link">
-        <a id="signin-link" href="#"
-           class="persona-button"><span>Sign in</span></a>
+      <span class="right-link">
+        <span id="signin-link" class="btn btn-info">
+            <span class="glyphicon glyphicon-user login-icon"></span>Sign in</span>
       </span>
     {% endif %}
 

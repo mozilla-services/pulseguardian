@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import json
 import logging
 import os.path
 import re
@@ -11,13 +12,14 @@ from functools import wraps
 import requests
 import sqlalchemy.orm.exc
 import werkzeug.serving
-from flask import (Flask,
-                   render_template,
-                   session,
+from flask import (flash,
+                   Flask,
                    g,
+                   jsonify,
                    redirect,
+                   render_template,
                    request,
-                   jsonify)
+                   session)
 from flask_sslify import SSLify
 from sqlalchemy.sql.expression import case
 
@@ -86,7 +88,7 @@ app.logger.addHandler(setup_logging(config.webapp_log_path))
 
 
 # Log in with a fake account if set up.  This is an easy way to test
-# without requiring Persona (and thus https).
+# without requiring Auth0 (and thus https).
 fake_account = None
 
 if config.fake_account:
@@ -171,7 +173,10 @@ def index():
         if g.user.pulse_users:
             return redirect('/profile')
         return redirect('/register')
-    return render_template('index.html')
+    return render_template('index.html',
+                           auth0_client_id=config.auth0_client_id,
+                           auth0_domain=config.auth0_domain,
+                           auth0_callback_url=config.auth0_callback_url)
 
 
 @app.route('/register')
@@ -277,40 +282,67 @@ def bindings_listing(queue_name):
 
 # Authentication related
 
-@app.route('/auth/login', methods=['POST'])
-def auth_handler():
-    # The request has to have an assertion for us to verify
-    if 'assertion' not in request.form:
-        return jsonify(ok=False, message="Assertion parameter missing")
+@app.route('/auth/callback')
+def callback_handling():
+    """
+    Callback from Auth0
 
-    # Send the assertion to Mozilla's verifier service.
-    data = dict(assertion=request.form['assertion'],
-                audience=config.persona_audience)
-    resp = requests.post(config.persona_verifier, data=data, verify=True)
+    Auth0 will call back to this endpoint once it has acquired a user in some
+    capacity (from Google, or their email).  Here we verify that what we got
+    back is consistent with Auth0, then match that against our internal DB and
+    either find the user, or create it.
+    """
 
-    # Did the verifier respond?
+    # Validate what we got in the request against the Auth0 backend.
+    code = request.args.get('code')
+    json_header = {'content-type': 'application/json'}
+    token_url = "https://{domain}/oauth/token".format(domain=config.auth0_domain)
+    token_payload = {
+      'client_id': config.auth0_client_id,
+      'client_secret': config.auth0_client_secret,
+      'redirect_uri': config.auth0_callback_url,
+      'code': code,
+      'grant_type': 'authorization_code'
+    }
+    token_info = requests.post(token_url,
+                               data=json.dumps(token_payload),
+                               headers=json_header).json()
+    user_url = "https://{domain}/userinfo?access_token={access_token}".format(
+        domain=config.auth0_domain, access_token=token_info['access_token'])
+    resp = requests.get(user_url)
+
+    # Failure to authenticate is handled in the Auth0 lock, so if the user
+    # say, gives the wrong code for their email, the Auth0 lock will notify
+    # them.  We don't get a response in the callback here until the user has
+    # satisfied Auth0.  The only error we will see is if we can't reach Auth0
+    # for verification.
     if resp.ok:
         # Parse the response
-        verification_data = resp.json()
-        if verification_data['status'] == 'okay':
-            email = verification_data['email']
-            session['email'] = email
-            session['logged_in'] = True
+        user_info = resp.json()
 
-            user = User.query.filter(User.email == email).first()
-            if user is None:
-                user = User.new_user(email=email)
+        # find the user in our DB, or create it.
+        email = user_info['email']
+        session['email'] = email
+        session['logged_in'] = True
 
-            if user.pulse_users:
-                return jsonify(ok=True, redirect='/')
+        user = User.query.filter(User.email == email).first()
+        if user is None:
+            user = User.new_user(email=email)
 
-            return jsonify(ok=True, redirect='/register')
+        if user.pulse_users:
+            return redirect('/')
+
+        return redirect('/register')
 
     # Oops, something failed. Abort.
-    error_msg = "Couldn't connect to the Persona verifier ({0})".format(
-        config.persona_verifier)
+    error_msg = "Error verifying with Auth0 ({})".format(config.auth0_domain)
+
     logging.error(error_msg)
-    return jsonify(ok=False, message=error_msg)
+    logging.error(resp.text)
+    # Add this message to the "flash message" list so that the '/' template
+    # can display it.
+    flash(error_msg)
+    return redirect('/')
 
 
 @app.route("/update_info", methods=['POST'])
@@ -392,7 +424,7 @@ def register_handler():
 def logout_handler():
     session['email'] = None
     session['logged_in'] = False
-    return jsonify(ok=True, redirect='/')
+    return redirect('/')
 
 
 @app.route('/whats_pulse')
