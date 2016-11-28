@@ -49,9 +49,9 @@
         {% if not session.get('fake_account') %}
             <script src="https://cdn.auth0.com/js/lock-passwordless-2.2.3.min.js"></script>
             <script>
-                var AUTH0_CLIENT_ID = '{{auth0_client_id}}';
-                var AUTH0_DOMAIN = '{{auth0_domain}}';
-                var AUTH0_CALLBACK_URL = '{{auth0_callback_url}}';
+                var AUTH0_CLIENT_ID = '{{auth0_client_id or None}}';
+                var AUTH0_DOMAIN = '{{auth0_domain or None}}';
+                var AUTH0_CALLBACK_URL = '{{auth0_callback_url or None}}';
             </script>
             <script src="/static/js/auth0.js"></script>
         {% endif %}
