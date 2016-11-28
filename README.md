@@ -33,7 +33,7 @@ Within the chosen environment, install and configure PulseGuardian:
 
         python setup.py develop
 
-Because Persona requires an https connection, if you are running the
+Because Auth0 requires an https connection, if you are running the
 development server without the `FAKE_ACCOUNT` option (see below), you
 will also need the pyOpenSSL package:
 
@@ -108,7 +108,7 @@ reviewer can quickly verify that all tests still pass with your changes.
 * For production, the web app can be run with [gunicorn][] and such.
 
 The `FAKE_ACCOUNT` variable will make development easier. This feature will
-disable HTTPS and bypass Persona for testing. It will also create the
+disable HTTPS and bypass Auth0 for testing. It will also create the
 given user, if necessary, and log in automatically.
 
 ## Testing

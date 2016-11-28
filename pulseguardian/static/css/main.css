@@ -59,7 +59,11 @@ a:hover, a:active, a:focus {
 .right-link {
   display: inline-block;
   float: right;
-  margin: 3px 3px;
+  margin: -2px 3px;
+}
+
+.login-icon {
+  margin-right: 5px;
 }
 
 .nav-box {
