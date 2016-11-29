@@ -424,7 +424,7 @@ def register_handler():
 def logout_handler():
     session['email'] = None
     session['logged_in'] = False
-    return redirect('/')
+    return jsonify(ok=True, redirect='/')
 
 
 @app.route('/whats_pulse')
