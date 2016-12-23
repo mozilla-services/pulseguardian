@@ -320,7 +320,7 @@ class GuardianTest(unittest.TestCase):
         # Test that no queue has been warned at the beginning of the process.
         self.assertTrue(not any(q.warned for q in self.pulse_user.queues))
         # ... but some queues should be now.
-        self.assertTrue(len(queues_to_warn) > 0)
+        self.assertGreater(len(queues_to_warn), 0)
 
         # Monitor the queues; this should detect queues that should be warned.
         self.guardian.monitor_queues(pulse_management.queues(),
@@ -350,7 +350,7 @@ class GuardianTest(unittest.TestCase):
         # Get the queue's object
         db_session.refresh(self.pulse_user)
 
-        self.assertTrue(len(self.pulse_user.queues) > 0)
+        self.assertGreater(len(self.pulse_user.queues), 0)
 
         # Queue multiple messages while no consumer exists.
         for i in xrange(self.guardian.del_queue_size + 1):
@@ -368,7 +368,7 @@ class GuardianTest(unittest.TestCase):
                 break
 
         # Test that there are some queues that should be deleted.
-        self.assertTrue(len(queues_to_delete) > 0)
+        self.assertGreater(len(queues_to_delete), 0)
 
         # Setting up a callback to capture deleted queues
         deleted_queues = []
@@ -376,12 +376,9 @@ class GuardianTest(unittest.TestCase):
             deleted_queues.append(queue)
         self.guardian.on_delete = on_delete
 
-        # Monitor the queues; this should create the queue object and assign
-        # it to the user.
-        for i in xrange(20):
-            self.guardian.monitor_queues(pulse_management.queues(),
-                                         pulse_management.bindings())
-            time.sleep(0.2)
+        # Monitor the queues; this should delete overgrown queues
+        self.guardian.monitor_queues(pulse_management.queues(),
+                                     pulse_management.bindings())
 
         # Test that the queues that had to be deleted were deleted...
         self.assertTrue(not any(q in queues_to_delete for q
@@ -393,7 +390,61 @@ class GuardianTest(unittest.TestCase):
                             in pulse_management.queues()
                             if q_data['messages_ready'] >
                                self.guardian.del_queue_size]
-        self.assertTrue(len(queues_to_delete) == 0)
+        self.assertEqual(len(queues_to_delete), 0)
+
+    def test_delete_skip_unbounded(self):
+        self._setup_queue()
+
+        # Queue should still exist.
+        self._wait_for_queue()
+
+        # Get the queue's object
+        db_session.refresh(self.pulse_user)
+
+        self.assertGreater(len(self.pulse_user.queues), 0)
+
+        # set queues as unbound so they won't be deleted
+        for queue in self.pulse_user.queues:
+            queue.unbound = 1
+
+        # Queue multiple messages while no consumer exists.
+        for i in xrange(self.guardian.del_queue_size + 1):
+            msg = self._build_message(i)
+            self.publisher.publish(msg)
+
+        # Wait some time for published messages to be taken into account.
+        for i in xrange(10):
+            time.sleep(0.3)
+            queues_to_delete = [q_data['name'] for q_data
+                                in pulse_management.queues()
+                                if q_data['messages_ready']
+                                   > self.guardian.del_queue_size]
+            if queues_to_delete:
+                break
+
+        # Test that there are some queues that should be deleted.
+        self.assertGreater(len(queues_to_delete), 0)
+
+        # Setting up a callback to capture deleted queues
+        deleted_queues = []
+
+        def on_delete(queue):
+            deleted_queues.append(queue)
+        self.guardian.on_delete = on_delete
+
+        # Run through the code that decides whether to delete a queue
+        # that has grown too large.
+        # In this case, it should run the check and decide to not delete
+        # any queues.
+        self.guardian.monitor_queues(pulse_management.queues(),
+                                     pulse_management.bindings())
+
+        # Test that none of the queues were deleted...
+        self.assertTrue(all(q in queues_to_delete for q
+                            in pulse_management.queues()))
+
+        # And that they were not deleted by guardian...
+        self.assertGreater(len(queues_to_delete), 0)
 
     def test_binding(self):
         """Test that you can get the bindings for a queue"""
@@ -406,7 +457,7 @@ class GuardianTest(unittest.TestCase):
 
         # check queue bindings in the DB
         queues = Queue.query.all()
-        assert len(queues) == 1
+        self.assertEqual(len(queues), 1)
         queue = queues[0]
         bindings = queue.bindings
         self.assertEqual(len(bindings), 1)
@@ -426,7 +477,7 @@ class GuardianTest(unittest.TestCase):
 
         # check queue bindings in the DB
         queues = Queue.query.all()
-        assert len(queues) == 2
+        self.assertEqual(len(queues), 2)
         for queue in queues:
             bindings = queue.bindings
             self.assertEqual(len(bindings), 1)

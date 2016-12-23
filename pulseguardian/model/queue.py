@@ -15,6 +15,8 @@ class Queue(Base):
     name = Column(String(255), primary_key=True)
     owner_id = Column(Integer, ForeignKey('pulse_users.id'), nullable=True)
     size = Column(Integer)
+    # whether the queue can grow beyond the deletion size without being deleted
+    unbounded = Column(Boolean, default=False)
 
     warned = Column(Boolean)
 

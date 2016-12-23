@@ -19,6 +19,11 @@
         {% if queue.durable %}
           <small><span class="label label-primary">Durable</span></small>
         {% endif %}
+        {% if queue.unbounded %}
+          <small><span class="label label-primary"
+                       title="This queue will not be auto-deleted when it grows past the deletion size">Unbounded</span></small>
+        {% endif %}
+
       </h4>
 
       <div class="progress">

@@ -180,9 +180,11 @@ class PulseGuardian(object):
             if not queue:
                 continue
 
-            # If a queue is over the deletion size, regardless of it having an
-            # owner or not, delete it.
-            if queue.size > self.del_queue_size:
+            # If a queue is over the deletion size and ``unbounded`` is
+            # False (the default), then delete it regardless of it having
+            # an owner or not
+            # If ``unbounded`` is True, then let it grow indefinitely.
+            if queue.size > self.del_queue_size and not queue.unbounded:
                 logging.warning("Queue '{0}' deleted. Queue size = {1}; "
                                "del_queue_size = {2}".format(
                     queue.name, queue.size, self.del_queue_size))
