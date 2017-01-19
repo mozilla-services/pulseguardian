@@ -35,6 +35,10 @@ class User(Base):
 
         return user
 
+    def set_admin(self, is_admin):
+        self.admin = is_admin
+        db_session.commit()
+
     def __repr__(self):
         return "<User(email='{0}', admin='{1}')>".format(self.email,
                                                          self.admin)

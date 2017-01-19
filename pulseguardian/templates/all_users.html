@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<div class="col-md-12">
+  <h3>All Users</h3>
+
+  <ul class="list-group users">
+    <table id="users" width="100%">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Admin</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for user in users %}
+        <tr>
+          <td>{{user.email}}</td>
+          <td style="text-align: center;">
+            <input data-uid="{{user.id}}" class="admin-check" type="checkbox" {{'checked' if user.admin else ''}} />
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </ul>
+</div>
+
+<div id="userAlert" class="alert alert-danger col-md-6 hide" role="alert">An error occurred while trying change the user role.</div>
+
+{% endblock %}
+
+{% block javascript %}
+  <script type="text/javascript" src="/static/js/jquery.dataTables.min.js"></script>
+  <script type="text/javascript" src="/static/js/users_listing.js"></script>
+{% endblock %}
