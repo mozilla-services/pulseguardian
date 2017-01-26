@@ -32,11 +32,6 @@ class User(Base):
                                cascade='save-update, merge, delete',
                                secondary=pulse_user_owners)
 
-    # TODO: Remove this in a follow-up commit.  Needed for migration.
-    old_pulse_users = relationship(PulseUser, backref='owner',
-                                   cascade='save-update, merge, delete')
-
-
     @staticmethod
     def new_user(email, admin=False):
         """Initializes a new user, generating a salt and encrypting
