@@ -2,11 +2,21 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-from sqlalchemy import Boolean, Column, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table
+from sqlalchemy.orm import backref, relationship
 
 from pulseguardian.model.base import Base, db_session
 from pulseguardian.model.pulse_user import PulseUser
+
+
+pulse_user_owners = Table('pulse_user_owners',
+                          Base.metadata,
+                          Column('users_id',
+                                 Integer,
+                                 ForeignKey('users.id')),
+                          Column('pulse_users_id',
+                                 Integer,
+                                 ForeignKey('pulse_users.id')))
 
 
 class User(Base):
@@ -18,8 +28,14 @@ class User(Base):
     email = Column(String(255), unique=True)
     admin = Column(Boolean)
 
-    pulse_users = relationship(PulseUser, backref='owner',
-                               cascade='save-update, merge, delete')
+    pulse_users = relationship(PulseUser, backref=backref('owners'),
+                               cascade='save-update, merge, delete',
+                               secondary=pulse_user_owners)
+
+    # TODO: Remove this in a follow-up commit.  Needed for migration.
+    old_pulse_users = relationship(PulseUser, backref='owner',
+                                   cascade='save-update, merge, delete')
+
 
     @staticmethod
     def new_user(email, admin=False):
