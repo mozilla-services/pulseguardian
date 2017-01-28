@@ -143,3 +143,24 @@ a:hover, a:active, a:focus {
   color: #B6C9FD;
   text-decoration: none;
 }
+
+.owners {
+  display: table;
+}
+
+.owners-label-cell {
+  display: table-cell;
+}
+
+.owners-label {
+  border-radius: 4px;
+  border: 2px solid #dbdbdb;
+  background: #e4e4e4;
+  margin-left: 10px;
+  margin-right: 5px;
+}
+
+.owners-list-cell {
+  display: table-cell;
+  height: 100%;
+}
