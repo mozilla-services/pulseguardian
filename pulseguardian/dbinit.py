@@ -52,7 +52,7 @@ def dummy_data():
         PulseUser.new_user(
             username='dummy{0}'.format(i),
             password='dummy',
-            owner=users[0])
+            owners=users[0])
 
     pulse_users = PulseUser.query.all()
 

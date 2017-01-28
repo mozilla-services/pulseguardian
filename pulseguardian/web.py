@@ -181,8 +181,9 @@ def index():
 
 @app.route('/register')
 @requires_login
-def register():
-    return render_template('register.html', email=session.get('email'))
+def register(error=None):
+    return render_template('register.html', email=session.get('email'),
+                           error=error)
 
 
 @app.route('/profile')
@@ -233,7 +234,7 @@ def delete_queue(queue_name):
     queue = Queue.query.get(queue_name)
 
     if queue and (g.user.admin or
-                  (queue.owner and queue.owner.owner == g.user)):
+                  (queue.owner and g.user in queue.owner.owners)):
         try:
             pulse_management.delete_queue(vhost='/', queue=queue.name)
         except pulse_management.PulseManagementException as e:
@@ -253,7 +254,7 @@ def delete_pulse_user(pulse_username):
     logging.info('Request to delete Pulse user "{0}".'.format(pulse_username))
     pulse_user = PulseUser.query.filter(PulseUser.username == pulse_username).first()
 
-    if pulse_user and (g.user.admin or pulse_user.owner == g.user):
+    if pulse_user and (g.user.admin or g.user in pulse_user.owners):
         try:
             pulse_management.delete_user(pulse_user.username)
         except pulse_management.PulseManagementException as e:
@@ -350,31 +351,69 @@ def update_info():
     pulse_username = request.form['pulse-user']
     new_password = request.form['new-password']
     password_verification = request.form['new-password-verification']
+    new_owners = _clean_owners_str(request.form['owners-list'])
 
     try:
         pulse_user = PulseUser.query.filter(
             PulseUser.username == pulse_username).one()
     except sqlalchemy.orm.exc.NoResultFound:
-        return profile(messages=["Invalid user."])
+        return profile(
+            messages=["Pulse user {} not found.".format(pulse_username)])
 
-    if pulse_user.owner != g.user:
-        return profile(messages=["Invalid user."])
+    if g.user not in pulse_user.owners:
+        return profile(
+            messages=["Invalid user: {} is not an owner.".format(g.user.email)])
 
-    if not new_password:
-        return profile(messages=["You didn't enter a new password."])
+    messages = []
+    error = None
+    if new_password:
+        if new_password != password_verification:
+            return profile(error="Password verification doesn't match the "
+                           "password.")
 
-    if new_password != password_verification:
-        return profile(error="Password verification doesn't match the "
-                       "password.")
+        if not PulseUser.strong_password(new_password):
+            return profile(error="Your password must contain a mix of "
+                           "letters and numerical characters and be at "
+                           "least 6 characters long.")
 
-    if not PulseUser.strong_password(new_password):
-        return profile(error="Your password must contain a mix of "
-                       "letters and numerical characters and be at "
-                       "least 6 characters long.")
+        pulse_user.change_password(new_password)
+        messages.append("Password updated for user {0}.".format(
+                        pulse_username))
 
-    pulse_user.change_password(new_password)
-    return profile(messages=["Password updated for user {0}.".format(
-                pulse_username)])
+    # Update the owners list, if needed.
+    old_owners = {user.email for user in pulse_user.owners}
+    if new_owners and new_owners != old_owners:
+        # The list was changed.  Do an update.
+        new_owner_users = list(User.query.filter(User.email.in_(new_owners)))
+        if new_owner_users:
+            # At least some of the new owners are real users in the db.
+            pulse_user.owners = new_owner_users
+            db_session.commit()
+
+            updated_owners = {user.email for user in new_owner_users}
+            invalid_owners = sorted(new_owners - updated_owners)
+            if invalid_owners:
+                error = "Some user emails not found: {}".format(
+                    ', '.join(invalid_owners))
+            else:
+                messages = ["Email list updated."]
+        else:
+            error = ("Invalid owners: "
+                     "Must be a comma-delimited list of existing user emails.")
+
+    if not error and not messages:
+        messages = ["No info updated."]
+
+    return profile(messages=messages, error=error)
+
+
+def _clean_owners_str(owners_str):
+    """Turn a comma-delimited string of owner emails into a list.
+
+    Though a one-liner, this ensures we're consistent with handling this
+    email string.
+    """
+    return {owner.strip() for owner in owners_str.split(",") if owner}
 
 
 @app.route('/register', methods=['POST'])
@@ -382,6 +421,7 @@ def register_handler():
     username = request.form['username']
     password = request.form['password']
     password_verification = request.form['password-verification']
+    owners = _clean_owners_str(request.form['owners-list'])
     email = session['email']
     errors = []
 
@@ -414,7 +454,14 @@ def register_handler():
         return render_template('register.html', email=email,
                                signup_errors=errors)
 
-    PulseUser.new_user(username, password, g.user)
+    owner_users = list(User.query.filter(User.email.in_(owners)))
+    # Reject with error message if the owner list is unparse-able or contains
+    # no users that actualy exist.
+    if not owner_users:
+        return register(error="Invalid owners list: {}".format(
+            request.form['owners-list'] or "None"))
+
+    PulseUser.new_user(username, password, owner_users)
 
     return redirect('/profile')
 
