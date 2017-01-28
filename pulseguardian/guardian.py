@@ -192,7 +192,7 @@ class PulseGuardian(object):
             # If ``unbounded`` is True, then let it grow indefinitely.
             if queue.size > self.del_queue_size and not queue.unbounded:
                 logging.warning("Queue '{0}' deleted. Queue size = {1}; "
-                               "del_queue_size = {2}".format(
+                                "del_queue_size = {2}".format(
                     queue.name, queue.size, self.del_queue_size))
                 if queue.owner and queue.owner.owners:
                     self.deletion_email(queue.owner.owners, queue_data)
