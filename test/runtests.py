@@ -144,7 +144,7 @@ class GuardianTest(unittest.TestCase):
         self.pulse_user = PulseUser.new_user(
             username=CONSUMER_USER,
             password=CONSUMER_PASSWORD,
-            owner=self.user)
+            owners=self.user)
 
         db_session.add(self.pulse_user)
         db_session.commit()
@@ -533,7 +533,7 @@ class ModelTest(unittest.TestCase):
 
         pulse_user = PulseUser.new_user(username='dummy',
                                         password='DummyPassword',
-                                        owner=user,
+                                        owners=user,
                                         create_rabbitmq_user=False)
         db_session.add(pulse_user)
         db_session.commit()

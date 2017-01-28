@@ -27,7 +27,7 @@ class PulseUser(Base):
         Queue, backref='owner', cascade='save-update, merge, delete')
 
     @staticmethod
-    def new_user(username, password='', owner=None, create_rabbitmq_user=True):
+    def new_user(username, password='', owners=None, create_rabbitmq_user=True):
         """Initializes a new user, generating a salt and encrypting
         his password. Then creates a RabbitMQ user if needed and sets
         permissions.
@@ -35,7 +35,10 @@ class PulseUser(Base):
         :param create_rabbitmq_user: Whether to add this user to the rabbitmq
         server via the management plugin.  Used by tests.
         """
-        pulse_user = PulseUser(owner=owner, username=username)
+        # Ensure that ``owners`` is a list.
+        if owners and not isinstance(owners, list):
+            owners = [owners]
+        pulse_user = PulseUser(owners=owners, username=username)
 
         if create_rabbitmq_user:
             pulse_user._create_user(password)
@@ -82,7 +85,8 @@ class PulseUser(Base):
                                         write=write_conf_perms)
 
     def __repr__(self):
-        return "<PulseUser(username='{0}', owner='{1}')>".format(self.username,
-                                                                 self.owner)
+        return "<PulseUser(username='{0}', owners='{1}')>".format(
+            self.username,
+            ', '.join([owner.email for owner in self.owners]))
 
     __str__ = __repr__

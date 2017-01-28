@@ -141,7 +141,11 @@ class PulseGuardian(object):
                     logging.info(
                         "Queue '{0}' owner, {1}, isn't in the db. Creating "
                         "the user.".format(q_name, owner_name))
-                    owner = PulseUser.new_user(owner_name)
+                    # PulseUser needs at least one owner as well, but since
+                    # we have no way of knowing who really owns it, find the
+                    # first admin, and set it to that.
+                    user = User.query.filter(User.admin == True).first()
+                    owner = PulseUser.new_user(owner_name, owners=user)
 
                 # Assign the user to the queue.
                 logging.debug("Assigning queue '{0}' to user "
@@ -200,7 +204,7 @@ class PulseGuardian(object):
                 db_session.commit()
                 continue
 
-            if queue.owner is None or queue.owner.owner is None:
+            if queue.owner is None or not queue.owner.owners:
                 continue
 
             if queue.size > self.warn_queue_size and not queue.warned:

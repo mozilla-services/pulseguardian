@@ -2,6 +2,10 @@
 
 {% block body %}
 <div id="message_info" class="col-md-12">
+  {% if error %}
+    <div class="alert alert-danger">{{error}}</div>
+  {% endif %}
+
   <h2>Register a Pulse user</h2>
 
   {% if signup_errors %}
@@ -31,6 +35,11 @@
     <div class="form-group">
       <strong>Password verification:</strong>
       <input name="password-verification" type="password" placeholder="Password"
+             class="form-control"/>
+    </div>
+    <div class="form-group">
+      <strong>Owners:</strong>(comma separated)
+      <input name="owners-list" type="text" value="{{ cur_user.email }}"
              class="form-control"/>
     </div>
 
