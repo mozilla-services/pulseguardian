@@ -9,14 +9,14 @@
       <thead>
         <tr>
           <th>Pulse User</th>
-          <th>Owner</th>
+          <th>Owners</th>
         </tr>
       </thead>
       <tbody>
-      {% for pulse_user, user in users %}
+      {% for pulse_user in pulse_users %}
         <tr>
-          <td>{{pulse_user}}</td>
-          <td>{{user}}</td>
+          <td>{{ pulse_user.username }}</td>
+          <td>{{ pulse_user.owners|sort(attribute='email')|join(', ', attribute='email') }}</td>
         </tr>
       {% endfor %}
       </tbody>

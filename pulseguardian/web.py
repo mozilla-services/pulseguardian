@@ -21,14 +21,14 @@ from flask import (flash,
                    request,
                    session)
 from flask_sslify import SSLify
-from sqlalchemy.sql.expression import case
+from sqlalchemy.orm import joinedload
 
 from pulseguardian import config, management as pulse_management
 from pulseguardian.logs import setup_logging
 from pulseguardian.model.base import db_session, init_db
 from pulseguardian.model.pulse_user import PulseUser
-from pulseguardian.model.user import User
 from pulseguardian.model.queue import Queue
+from pulseguardian.model.user import User
 
 # Development cert/key base filename.
 DEV_CERT_BASE = 'dev'
@@ -196,14 +196,13 @@ def profile(error=None, messages=None):
                            no_owner_queues=no_owner_queues,
                            error=error, messages=messages)
 
+
 @app.route('/all_pulse_users')
 @requires_login
 def all_pulse_users():
-    users = db_session.query(
-        PulseUser.username,
-        case([(User.email == None, "None")], else_=User.email)).outerjoin(
-            User, User.id == PulseUser.owner_id).all()
-    return render_template('all_pulse_users.html', users=users)
+    pulse_users = PulseUser.query.options(joinedload('owners'))
+    return render_template('all_pulse_users.html', pulse_users=pulse_users)
+
 
 @app.route('/queues')
 @requires_login

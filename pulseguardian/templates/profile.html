@@ -29,6 +29,10 @@
             <span class="glyphicon glyphicon-pencil edit"></span>
             <span class="glyphicon glyphicon-remove delete"></span>
           </span>
+          <div class="owners"><small>
+            <span class="owners-label-cell"><span class="owners-label">Owners:</span></span>
+            <span class="owners-list-cell">{{ pulse_user.owners|sort(attribute='email')|join(', ', attribute='email') }}</span>
+          </small></div>
         </h4>
 
         <div class="pulse-user-details hidden">
