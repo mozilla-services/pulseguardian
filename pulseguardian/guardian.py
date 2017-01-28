@@ -194,8 +194,8 @@ class PulseGuardian(object):
                 logging.warning("Queue '{0}' deleted. Queue size = {1}; "
                                "del_queue_size = {2}".format(
                     queue.name, queue.size, self.del_queue_size))
-                if queue.owner and queue.owner.owner:
-                    self.deletion_email(queue.owner.owner, queue_data)
+                if queue.owner and queue.owner.owners:
+                    self.deletion_email(queue.owner.owners, queue_data)
                 if self.on_delete:
                     self.on_delete(queue.name)
                 pulse_management.delete_queue(vhost=queue_data['vhost'],
@@ -215,7 +215,7 @@ class PulseGuardian(object):
                 queue.warned = True
                 if self.on_warn:
                     self.on_warn(queue.name)
-                self.warning_email(queue.owner.owner, queue_data)
+                self.warning_email(queue.owner.owners, queue_data)
             elif queue.size <= self.warn_queue_size and queue.warned:
                 # A previously warned queue got out of the warning threshold;
                 # its owner should not be warned again.
@@ -223,7 +223,7 @@ class PulseGuardian(object):
                                "now".format(queue.name, queue.size,
                                             self.del_queue_size))
                 queue.warned = False
-                self.back_to_normal_email(queue.owner.owner, queue_data)
+                self.back_to_normal_email(queue.owner.owners, queue_data)
 
             # Commit any changes to the queue.
             db_session.add(queue)
@@ -237,7 +237,7 @@ class PulseGuardian(object):
             exchange = detailed_data['incoming'][0]['exchange']['name']
         return exchange
 
-    def warning_email(self, user, queue_data):
+    def warning_email(self, users, queue_data):
         exchange = self._exchange_from_queue(queue_data)
 
         subject = 'Pulse warning: queue "{0}" is overgrowing'.format(
@@ -252,11 +252,11 @@ durable queues.
 '''.format(queue_data['name'], exchange, queue_data['messages_ready'],
            queue_data['messages'], self.del_queue_size)
 
-        if self.emails and user:
+        if self.emails and users:
             self._sendemail(
-                subject=subject, to_users=[user], text_data=body)
+                subject=subject, to_users=users, text_data=body)
 
-    def deletion_email(self, user, queue_data):
+    def deletion_email(self, users, queue_data):
         exchange = self._exchange_from_queue(queue_data)
 
         subject = 'Pulse warning: queue "{0}" has been deleted'.format(
@@ -270,11 +270,11 @@ durable queues.
 '''.format(queue_data['name'], exchange, queue_data['messages'],
            self.del_queue_size)
 
-        if self.emails and user:
+        if self.emails and users:
             self._sendemail(
-                subject=subject, to_users=[user], text_data=body)
+                subject=subject, to_users=users, text_data=body)
 
-    def back_to_normal_email(self, user, queue_data):
+    def back_to_normal_email(self, users, queue_data):
         exchange = self._exchange_from_queue(queue_data)
 
         subject = 'Pulse warning: queue "{0}" is back to normal'.format(
@@ -284,9 +284,9 @@ now back to normal ({2} ready messages, {3} total messages).
 '''.format(queue_data['name'], exchange, queue_data['messages_ready'],
            queue_data['messages'], self.del_queue_size)
 
-        if self.emails and user:
+        if self.emails and users:
             self._sendemail(
-                subject=subject, to_users=[user], text_data=body)
+                subject=subject, to_users=users, text_data=body)
 
     def notify_connection_error(self):
         """Log and email to admin(s) that a connection error occurred.
