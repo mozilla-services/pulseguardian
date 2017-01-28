@@ -26,7 +26,7 @@ config.database_url = 'sqlite:///pulseguardian_test.db'
 
 from docker_setup import (check_rabbitmq, create_image,
                           setup_container, teardown_container)
-from pulseguardian import dbinit, management as pulse_management
+from pulseguardian import dbinit, management as pulse_management, web
 from pulseguardian.guardian import PulseGuardian
 from pulseguardian.model.base import db_session
 from pulseguardian.model.binding import Binding
@@ -49,6 +49,7 @@ DEFAULT_RABBITMQ_TIMEOUT = 20  # in seconds
 CONSUMER_USER = 'guardtest'
 CONSUMER_PASSWORD = 'guardtest'
 CONSUMER_EMAIL = 'guardtest@guardtest.com'
+ADMIN_EMAIL = 'admin@guardtest.com'
 
 TEST_WARN_SIZE = 20
 TEST_DELETE_SIZE = 30
@@ -137,6 +138,9 @@ class GuardianTest(unittest.TestCase):
         self.consumer_cfg['password'] = CONSUMER_PASSWORD
 
         self.user = User.new_user(email=CONSUMER_EMAIL, admin=False)
+        # As a default owner for pulse_user in some tests where an owner is not
+        # provided.
+        self.admin = User.new_user(email=ADMIN_EMAIL, admin=True)
 
         db_session.add(self.user)
         db_session.commit()
@@ -549,6 +553,71 @@ class ModelTest(unittest.TestCase):
         self.assertEqual(
             PulseUser.query.filter(PulseUser.username == 'DUMMY').first(),
             None)
+
+
+class WebTest(unittest.TestCase):
+
+    def setUp(self):
+        dbinit.init_and_clear_db()
+
+    def setup_3_users(self):
+        mif = "mif@maf.baz"
+        maf = "foo@bar.baz"
+        self.curr_email = CONSUMER_EMAIL
+        self.all_emails = [mif, maf, self.curr_email]
+
+        mif_u = User.new_user(email=mif, admin=False)
+        maf_u = User.new_user(email=maf, admin=False)
+        self.curr_user = User.new_user(email=self.curr_email, admin=False)
+        self.all_users = [mif_u, maf_u, self.curr_user]
+
+    def set_pulse_user_email_list(self, username, email_str):
+        with web.app.test_client() as c:
+            templates = "{}/pulseguardian/templates".format(os.getcwd())
+            c.application.template_folder = templates
+            with c.session_transaction() as sess:
+                sess['email'] = CONSUMER_EMAIL
+                sess['fake_account'] = True
+                sess['logged_in'] = True
+
+            c.post('/update_info',
+                   data={"owners-list": email_str,
+                         "pulse-user": username,
+                         "new-password": "",
+                         "new-password-verification": ""})
+
+        pu_after = PulseUser.query.first()
+        pu_after_emails = {owner.email for owner in pu_after.owners}
+        return pu_after_emails
+
+    def test_pulse_user_single_to_multiple_ownership(self):
+        self.setup_3_users()
+        PulseUser.new_user(username="mick",
+                           owners=self.curr_user,
+                           password="mitochondria5")
+
+        new_emails = self.set_pulse_user_email_list(
+            "mick", ','.join(self.all_emails))
+        self.assertEquals(new_emails, set(self.all_emails))
+
+    def test_pulse_user_multiple_to_single_ownership(self):
+        self.setup_3_users()
+        PulseUser.new_user(username="mick",
+                           owners=self.all_users,
+                           password="mitochondria5")
+
+        new_emails = self.set_pulse_user_email_list("mick", self.curr_email)
+        self.assertEquals(new_emails, {self.curr_email})
+
+    def test_pulse_odd_whitespace_ownership_list(self):
+        self.setup_3_users()
+        PulseUser.new_user(username="mick",
+                           owners=self.all_users,
+                           password="mitochondria5")
+
+        new_emails = self.set_pulse_user_email_list(
+            "mick", ",  {},   {},{},".format(*self.all_emails))
+        self.assertEquals(new_emails, set(self.all_emails))
 
 
 def setup_host():
