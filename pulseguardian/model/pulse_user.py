@@ -20,7 +20,6 @@ class PulseUser(Base):
     __tablename__ = 'pulse_users'
 
     id = Column(Integer, primary_key=True)
-    owner_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     username = Column(String(255), unique=True)
 
     queues = relationship(
