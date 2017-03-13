@@ -12,7 +12,8 @@ from functools import wraps
 import requests
 import sqlalchemy.orm.exc
 import werkzeug.serving
-from flask import (flash,
+from flask import (abort,
+                   flash,
                    Flask,
                    g,
                    jsonify,
@@ -33,6 +34,8 @@ from pulseguardian.model.user import User
 # Development cert/key base filename.
 DEV_CERT_BASE = 'dev'
 
+# Role for admin user
+ADMIN_ROLE = 'admin'
 
 # Monkey-patch werkzeug.
 
@@ -129,6 +132,17 @@ def requires_login(f):
     return decorated_function
 
 
+def requires_admin(f):
+    """Decorator for views that are allowed for admin users only"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not g.user.admin:
+            """404: Non admin user does not have access to this route."""
+            abort(404)
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 @app.context_processor
 def inject_user():
     """Injects a user and configuration in templates' context."""
@@ -196,6 +210,14 @@ def profile(error=None, messages=None):
     return render_template('profile.html', users=users,
                            no_owner_queues=no_owner_queues,
                            error=error, messages=messages)
+
+
+@app.route('/all_users')
+@requires_login
+@requires_admin
+def all_users():
+    users = User.query.all()
+    return render_template('all_users.html', users=users)
 
 
 @app.route('/all_pulse_users')
@@ -268,6 +290,27 @@ def delete_pulse_user(pulse_username):
         return jsonify(ok=True)
 
     return jsonify(ok=False)
+
+
+@app.route('/user/<user_id>/set-admin', methods=['PUT'])
+@requires_login
+@requires_admin
+def set_user_admin(user_id):
+    if 'isAdmin' not in request.json:
+        abort(400)
+
+    try:
+        is_admin = request.json['isAdmin']
+        user = User.query.get(user_id)
+        user.set_admin(is_admin)
+        logging.info('{0} admin role was changed to {1} by {2}.'
+                     .format(user.email, is_admin, g.user.email))
+    except Exception as e:
+        logging.warning("Couldn't change admin role for user {0}."
+                        " Exception: {1}".format(user_id, e))
+        return jsonify(ok=False)
+
+    return jsonify(ok=True)
 
 
 # Read-Only API
