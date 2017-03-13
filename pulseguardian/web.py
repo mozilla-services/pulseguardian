@@ -137,7 +137,7 @@ def requires_admin(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not g.user.admin:
-            """404: Non admin user not need know that this route exists."""
+            """404: Non admin user does not have access to this route."""
             abort(404)
         return f(*args, **kwargs)
     return decorated_function
