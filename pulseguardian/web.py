@@ -480,6 +480,10 @@ def register_handler():
                       "alphabetical character and contain only alphanumeric "
                       "characters, periods, underscores, and hyphens.")
 
+    if re.match(config.reserved_users_regex, username):
+        errors.append("The submitted username is reserved. "
+                      + config.reserved_users_message)
+
     # Checking if a user exists in RabbitMQ OR in our db
     try:
         user_response = pulse_management.user(username=username)

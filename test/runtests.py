@@ -631,6 +631,29 @@ class WebTest(unittest.TestCase):
             "mick", ",  {},   {},{},".format(*self.all_emails))
         self.assertEquals(new_emails, set(self.all_emails))
 
+    def test_register_reserved_name(self):
+        try:
+            config.reserved_users_regex = 'rese[r]ved'
+            config.reserved_users_message = 'NO RESERVED NAMES'
+            with web.app.test_client() as c:
+                templates = "{}/pulseguardian/templates".format(os.getcwd())
+                c.application.template_folder = templates
+                with c.session_transaction() as sess:
+                    sess['email'] = CONSUMER_EMAIL
+                    sess['fake_account'] = True
+                    sess['logged_in'] = True
+
+                resp = c.post(
+                    '/register', data={
+                        "username": "reserved-name",
+                        "password": "ohXoof9yoo",
+                        "password-verification": "ohXoof9yoo",
+                        "owners-list": CONSUMER_EMAIL,
+                    })
+                self.assertIn(config.reserved_users_message, resp.data)
+        finally:
+            config.reserved_users_regex = None
+            config.reserved_users_message = None
 
 def setup_host():
     global pulse_cfg

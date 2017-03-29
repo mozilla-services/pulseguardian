@@ -43,6 +43,10 @@ rabbit_user = os.getenv('RABBIT_USER', 'guest')
 # Password of the RabbitMQ user.
 rabbit_password = os.getenv('RABBIT_PASSWORD', 'guest')
 
+# reserved users
+reserved_users_regex = os.getenv('RESERVED_USERS_REGEX', None)
+reserved_users_message = os.getenv('RESERVED_USERS_MESSAGE', None)
+
 # PulseGuardian
 warn_queue_size = int(os.getenv('WARN_QUEUE_SIZE', 2000))
 del_queue_size = int(os.getenv('DEL_QUEUE_SIZE', 8000))
