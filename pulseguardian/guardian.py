@@ -128,15 +128,23 @@ class PulseGuardian(object):
         # If the queue doesn't exist in the db, create it.
         if queue is None:
             m = re.match('queue/([^/]+)/', q_name)
-            logging.debug("New queue '{0}' encountered. "
-                          "Adding to the database.".format(q_name))
-            if m:
+            if not m:
+                logging.warn("New queue '{0}' is not a standard queue name.".format(
+                    q_name))
+                owner = None
+            elif config.reserved_users_regex and re.match(config.reserved_users_regex, m.group(1)):
+                # ignore this queue entirely, quietly as we will see it again on the next iteration
+                return None
+            else:
+                logging.debug("New queue '{0}' encountered. "
+                              "Adding to the database.".format(q_name))
                 owner_name = m.group(1)
                 owner = PulseUser.query.filter(
                     PulseUser.username == owner_name).first()
 
-                # If the queue was created by a user that isn't in the
-                # pulseguardian database, skip the queue.
+                # If the queue belongs to a pulse user that isn't in the
+                # pulseguardian database, add the user to the DB, owned by an
+                # admin.
                 if owner is None:
                     logging.info(
                         "Queue '{0}' owner, {1}, isn't in the db. Creating "
@@ -150,10 +158,6 @@ class PulseGuardian(object):
                 # Assign the user to the queue.
                 logging.debug("Assigning queue '{0}' to user "
                               "{1}.".format(q_name, owner))
-            else:
-                logging.warn("'{0}' is not a standard queue name.".format(
-                    q_name))
-                owner = None
             queue = Queue(name=q_name, owner=owner)
 
         # add the queue bindings to the db.

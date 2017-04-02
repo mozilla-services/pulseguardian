@@ -73,6 +73,11 @@ class AbnormalQueueConsumer(PulseGuardianTestConsumer):
     QUEUE_NAME = 'abnormal.queue'
 
 
+class ReservedQueueConsumer(PulseGuardianTestConsumer):
+
+    QUEUE_NAME = 'queue/reserved-user/abc'
+
+
 class SecondaryQueueConsumer(PulseGuardianTestConsumer):
 
     def __init__(self, **kwargs):
@@ -294,6 +299,32 @@ class GuardianTest(unittest.TestCase):
         db_session.commit()
 
         self.assertEqual(owner, None)
+
+    def test_reserved_queue_name(self):
+        self.consumer_class = ReservedQueueConsumer
+        # Use account with full permissions.
+        self.consumer_cfg['user'] = pulse_cfg['user']
+        self.consumer_cfg['password'] = pulse_cfg['password']
+
+        config.reserved_users_regex = 'reserved-.*'
+        try:
+            self._create_publisher()
+            self._create_consumer_proc()
+            self._wait_for_queue()
+            self._wait_for_queue_record()
+        finally:
+            config.reserved_users_regex = None
+
+        queue = Queue.query.filter(Queue.name ==
+                                   ReservedQueueConsumer.QUEUE_NAME).first()
+
+        # Queue is not durable and will be cleaned up when consumer process
+        # exits; delete it from the queue to avoid assertion failure in
+        # tearDown().
+        self._terminate_consumer_proc()
+        self._wait_for_queue(False)
+
+        self.assertEqual(queue, None)
 
     def test_warning(self):
         self._setup_queue()
