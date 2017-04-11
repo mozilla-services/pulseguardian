@@ -480,7 +480,7 @@ def register_handler():
                       "alphabetical character and contain only alphanumeric "
                       "characters, periods, underscores, and hyphens.")
 
-    if re.match(config.reserved_users_regex, username):
+    if config.reserved_users_regex and re.match(config.reserved_users_regex, username):
         errors.append("The submitted username is reserved. "
                       + config.reserved_users_message)
 
