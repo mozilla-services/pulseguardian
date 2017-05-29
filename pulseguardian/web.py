@@ -32,7 +32,6 @@
 
 import base64
 import json
-import logging
 import os.path
 import re
 import sys
@@ -54,8 +53,7 @@ from flask_sslify import SSLify
 from sqlalchemy.orm import joinedload
 from werkzeug.routing import NotFound
 
-from pulseguardian import config, management as pulse_management
-from pulseguardian.logs import setup_logging
+from pulseguardian import config, management as pulse_management, mozdef
 from pulseguardian.model.base import db_session, init_db
 from pulseguardian.model.pulse_user import PulseUser
 from pulseguardian.model.queue import Queue
@@ -116,8 +114,6 @@ app.secret_key = config.flask_secret_key
 # Redirect to https if running on Heroku dyno.
 if 'DYNO' in os.environ:
     sslify = SSLify(app)
-
-app.logger.addHandler(setup_logging(config.webapp_log_path))
 
 
 # Log in with a fake account if set up.  This is an easy way to test
@@ -324,12 +320,31 @@ def delete_queue(queue_name):
 
     if queue and (g.user.admin or
                   (queue.owner and g.user in queue.owner.owners)):
+        details = {
+            'queuename': queue_name,
+            'username': g.user.email,
+        }
+
         try:
             pulse_management.delete_queue(vhost='/', queue=queue.name)
         except pulse_management.PulseManagementException as e:
-            logging.warning("Couldn't delete the queue '{0}' on "
-                               "rabbitmq: {1}".format(queue_name, e))
+            details['message'] = str(e)
+            mozdef.log(
+                mozdef.ERROR,
+                mozdef.OTHER,
+                'Error deleting queue',
+                details=details,
+                tags=['queue'],
+            )
             return jsonify(ok=False)
+
+        mozdef.log(
+            mozdef.NOTICE,
+            mozdef.OTHER,
+            'Deleting queue',
+            details=details,
+            tags=['queue'],
+        )
         db_session.delete(queue)
         db_session.commit()
         return jsonify(ok=True)
@@ -340,18 +355,32 @@ def delete_queue(queue_name):
 @app.route('/pulse-user/<pulse_username>', methods=['DELETE'])
 @requires_login
 def delete_pulse_user(pulse_username):
-    logging.info('Request to delete Pulse user "{0}".'.format(pulse_username))
     pulse_user = PulseUser.query.filter(
         PulseUser.username == pulse_username).first()
 
     if pulse_user and (g.user.admin or g.user in pulse_user.owners):
+        details = {
+            'username': g.user.email,
+            'pulseusername': pulse_username,
+        }
         try:
             pulse_management.delete_user(pulse_user.username)
         except pulse_management.PulseManagementException as e:
-            logging.warning("Couldn't delete user '{0}' on "
-                            "rabbitmq: {1}".format(pulse_username, e))
+            details['message'] = str(e)
+            mozdef.log(
+                mozdef.ERROR,
+                mozdef.OTHER,
+                'Error deleting Pulse user',
+                details=details,
+            )
             return jsonify(ok=False)
-        logging.info('Pulse user "{0}" deleted.'.format(pulse_username))
+
+        mozdef.log(
+            mozdef.NOTICE,
+            mozdef.OTHER,
+            'Pulse user deleted',
+            details=details,
+        )
         db_session.delete(pulse_user)
         db_session.commit()
         return jsonify(ok=True)
@@ -366,15 +395,34 @@ def set_user_admin(user_id):
     if 'isAdmin' not in request.json:
         abort(400)
 
+    user = User.query.get(user_id)
+    if not user:
+        abort(400)
+
+    is_admin = request.json['isAdmin']
+
+    details = {
+        'username': g.user.email,
+        'newadminvalue': is_admin,
+        'targetusername': user.email,
+    }
+
     try:
-        is_admin = request.json['isAdmin']
-        user = User.query.get(user_id)
         user.set_admin(is_admin)
-        logging.info('{0} admin role was changed to {1} by {2}.'
-                     .format(user.email, is_admin, g.user.email))
+        mozdef.log(
+            mozdef.NOTICE,
+            mozdef.ACCOUNT_UPDATE,
+            'Admin role changed',
+            details=details,
+        )
     except Exception as e:
-        logging.warning("Couldn't change admin role for user {0}."
-                        " Exception: {1}".format(user_id, e))
+        details['message'] = str(e)
+        mozdef.log(
+            mozdef.ERROR,
+            mozdef.ACCOUNT_UPDATE,
+            'Admin role update failed.',
+            details=details
+        )
         return jsonify(ok=False)
 
     return jsonify(ok=True)
@@ -422,6 +470,10 @@ def callback_handling():
         domain=config.auth0_domain, access_token=token_info['access_token'])
     resp = requests.get(user_url)
 
+    details = {
+        'clientid': config.auth0_client_id,
+    }
+
     # Failure to authenticate is handled in the Auth0 lock, so if the user
     # say, gives the wrong code for their email, the Auth0 lock will notify
     # them.  We don't get a response in the callback here until the user has
@@ -433,12 +485,21 @@ def callback_handling():
 
         # find the user in our DB, or create it.
         email = user_info['email']
-        session['email'] = email
+        details['email'] = session['email'] = email
         session['logged_in'] = True
 
         user = User.query.filter(User.email == email).first()
+        details['newuser'] = not user
+
         if user is None:
             user = User.new_user(email=email)
+
+        mozdef.log(
+            mozdef.NOTICE,
+            mozdef.AUTHENTICATION,
+            'User authenticated with Auth0.',
+            details=details
+        )
 
         if user.pulse_users:
             return redirect('/')
@@ -448,8 +509,16 @@ def callback_handling():
     # Oops, something failed. Abort.
     error_msg = "Error verifying with Auth0 ({})".format(config.auth0_domain)
 
-    logging.error(error_msg)
-    logging.error(resp.text)
+    details['message'] = error_msg
+    details['response'] = resp.text
+
+    mozdef.log(
+        mozdef.ERROR,
+        mozdef.AUTHENTICATION,
+        'Authentication with Auth0 failed.',
+        details=details,
+    )
+
     # Add this message to the "flash message" list so that the '/' template
     # can display it.
     flash(error_msg)
@@ -603,9 +672,6 @@ def cli(args):
     """
     global fake_account
 
-    # Add StreamHandler for development purposes
-    logging.getLogger().addHandler(logging.StreamHandler())
-
     # If fake account is provided we need to do some setup.
     if fake_account:
         ssl_context = None
@@ -613,7 +679,6 @@ def cli(args):
         dev_cert = '%s.crt' % DEV_CERT_BASE
         dev_cert_key = '%s.key' % DEV_CERT_BASE
         if not os.path.exists(dev_cert) or not os.path.exists(dev_cert_key):
-            logging.info('Creating dev certificate and key.')
             werkzeug.serving.make_ssl_devcert(DEV_CERT_BASE, host='localhost')
         ssl_context = (dev_cert, dev_cert_key)
 
