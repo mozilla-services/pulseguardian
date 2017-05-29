@@ -54,11 +54,6 @@ polling_interval = int(os.getenv('POLLING_INTERVAL', 5))
 polling_max_interval = int(os.getenv('POLLING_MAX_INTERVAL', 300))
 fake_account = os.getenv('FAKE_ACCOUNT', None)
 
-# Logging
-guardian_log_path = os.getenv('GUARDIAN_LOG_PATH', None)
-webapp_log_path = os.getenv('WEBAPP_LOG_PATH', None)
-debug_logs = bool(int(os.getenv('DEBUG', 0)))
-
 # Only used if at least one log path is specified above.
 max_log_size = int(os.getenv('MAX_LOG_SIZE', 20480))
 backup_count = int(os.getenv('BACKUP_COUNT', 5))
