@@ -2,24 +2,18 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import logging
 import re
 import requests
 import socket
 import time
 import traceback
 
-from pulseguardian import config, management as pulse_management
-from pulseguardian.logs import setup_logging
+from pulseguardian import config, management as pulse_management, mozdef
 from pulseguardian.model.base import init_db, db_session
 from pulseguardian.model.binding import Binding
 from pulseguardian.model.user import PulseUser, User
 from pulseguardian.model.queue import Queue
 from pulseguardian.sendemail import sendemail
-
-logging.getLogger("requests").setLevel(logging.WARNING)
-
-setup_logging(config.guardian_log_path)
 
 
 class PulseGuardian(object):
@@ -88,7 +82,13 @@ class PulseGuardian(object):
 
         # Delete those queues.
         for queue in deleted_queues:
-            logging.debug("Queue '{0}' has been deleted.".format(queue))
+            mozdef.log(
+                mozdef.NOTICE,
+                mozdef.OTHER,
+                'Queue no longer exists.',
+                details={'queuename': queue},
+                tags=['queue'],
+            )
             db_session.delete(queue)
 
         # Clean up bindings on queues that are not deleted.
@@ -109,8 +109,16 @@ class PulseGuardian(object):
 
         # Delete those bindings.
         for binding in deleted_bindings:
-            logging.debug("Binding '{}' for queue '{}' has been deleted.".format(
-                binding, queue_name))
+            mozdef.log(
+                mozdef.NOTICE,
+                mozdef.OTHER,
+                'Binding no longer exists.',
+                details={
+                    'queuename': queue_name,
+                    'binding': binding.name,
+                },
+                tags=['queue'],
+            )
             db_session.delete(binding)
 
     def update_queue_information(self, queue_data, all_bindings):
@@ -127,37 +135,43 @@ class PulseGuardian(object):
 
         # If the queue doesn't exist in the db, create it.
         if queue is None:
+            log_details = {
+                'queuename': q_name,
+                'queuesize': q_size,
+                'queuedurable': q_durable,
+            }
             m = re.match('queue/([^/]+)/', q_name)
             if not m:
-                logging.warn("New queue '{0}' is not a standard queue name.".format(
-                    q_name))
+                log_details['valid'] = False
                 owner = None
             elif config.reserved_users_regex and re.match(config.reserved_users_regex, m.group(1)):
                 # ignore this queue entirely, quietly as we will see it again on the next iteration
                 return None
             else:
-                logging.debug("New queue '{0}' encountered. "
-                              "Adding to the database.".format(q_name))
+                log_details['valid'] = True
                 owner_name = m.group(1)
                 owner = PulseUser.query.filter(
                     PulseUser.username == owner_name).first()
+                log_details['ownername'] = owner_name
+                log_details['newowner'] = not owner
 
                 # If the queue belongs to a pulse user that isn't in the
                 # pulseguardian database, add the user to the DB, owned by an
                 # admin.
                 if owner is None:
-                    logging.info(
-                        "Queue '{0}' owner, {1}, isn't in the db. Creating "
-                        "the user.".format(q_name, owner_name))
                     # PulseUser needs at least one owner as well, but since
                     # we have no way of knowing who really owns it, find the
                     # first admin, and set it to that.
                     user = User.query.filter(User.admin == True).first()
                     owner = PulseUser.new_user(owner_name, owners=user)
 
-                # Assign the user to the queue.
-                logging.debug("Assigning queue '{0}' to user "
-                              "{1}.".format(q_name, owner))
+            mozdef.log(
+                mozdef.NOTICE,
+                mozdef.OTHER,
+                'New queue.',
+                details=log_details,
+                tags=['queue'],
+            )
             queue = Queue(name=q_name, owner=owner)
 
         # add the queue bindings to the db.
@@ -195,9 +209,13 @@ class PulseGuardian(object):
             # an owner or not
             # If ``unbounded`` is True, then let it grow indefinitely.
             if queue.size > self.del_queue_size and not queue.unbounded:
-                logging.warning("Queue '{0}' deleted. Queue size = {1}; "
-                                "del_queue_size = {2}".format(
-                    queue.name, queue.size, self.del_queue_size))
+                mozdef.log(
+                    mozdef.NOTICE,
+                    mozdef.OTHER,
+                    'Deleting queue.',
+                    details=self._queue_details_dict(queue),
+                    tags=['queue'],
+                )
                 if queue.owner and queue.owner.owners:
                     self.deletion_email(queue.owner.owners, queue_data)
                 if self.on_delete:
@@ -212,10 +230,13 @@ class PulseGuardian(object):
                 continue
 
             if queue.size > self.warn_queue_size and not queue.warned:
-                logging.warning("Warning queue '{0}' owner. Queue size = "
-                                "{1}; warn_queue_size = {2}".format(
-                                    queue.name, queue.size,
-                                    self.warn_queue_size))
+                mozdef.log(
+                    mozdef.NOTICE,
+                    mozdef.OTHER,
+                    'Queue-size warning.',
+                    details=self._queue_details_dict(queue),
+                    tags=['queue'],
+                )
                 queue.warned = True
                 if self.on_warn:
                     self.on_warn(queue.name)
@@ -223,9 +244,13 @@ class PulseGuardian(object):
             elif queue.size <= self.warn_queue_size and queue.warned:
                 # A previously warned queue got out of the warning threshold;
                 # its owner should not be warned again.
-                logging.warning("Queue '{0}' was in warning zone but is OK "
-                               "now".format(queue.name, queue.size,
-                                            self.del_queue_size))
+                mozdef.log(
+                    mozdef.NOTICE,
+                    mozdef.OTHER,
+                    'Queue-size recovered.',
+                    details=self._queue_details_dict(queue),
+                    tags=['queue'],
+                )
                 queue.warned = False
                 self.back_to_normal_email(queue.owner.owners, queue_data)
 
@@ -307,7 +332,17 @@ Error:
 {2}
 '''.format(config.rabbit_management_url, config.rabbit_user, ex_details)
 
-        logging.error(errmsg)
+        mozdef.log(
+            mozdef.ERROR,
+            mozdef.OTHER,
+            'Could not connect to Pulse',
+            details={
+                'managementurl': config.rabbit_management_url,
+                'managementuser': config.rabbit_user,
+                'message': ex_details,
+            },
+            tags=['management'],
+        )
 
         if self.emails and not self._connection_error_notified:
             admins = list(User.query.filter_by(admin=True))
@@ -324,7 +359,7 @@ Error:
         exception handler.
         """
         ex_details = traceback.format_exc()
-        errmsg = '''Unknown error occured.
+        errmsg = '''Unknown error occurred.
 
 Rabbit URL: {0}
 Rabbit user: {1}
@@ -332,7 +367,16 @@ Error:
 {2}
 '''.format(config.rabbit_management_url, config.rabbit_user, ex_details)
 
-        logging.error(errmsg)
+        mozdef.log(
+            mozdef.ERROR,
+            mozdef.OTHER,
+            'Unknown error occurred.',
+            details={
+                'managementurl': config.rabbit_management_url,
+                'managementuser': config.rabbit_user,
+                'message': ex_details,
+            },
+        )
 
         if self.emails and not self._unknown_error_notified:
             admins = list(User.query.filter_by(admin=True))
@@ -343,21 +387,42 @@ Error:
             self._unknown_error_notified = True
 
     def guard(self):
-        logging.info("PulseGuardian started")
+        mozdef.log(
+            mozdef.NOTICE,
+            mozdef.STARTUP,
+            'PulseGuardian started.',
+        )
 
         while True:
-            logging.info('Guard loop.')
+            mozdef.log(
+                mozdef.DEBUG,
+                mozdef.OTHER,
+                'Guard loop starting.',
+            )
+
             try:
                 queues = pulse_management.queues()
                 bindings = pulse_management.bindings()
 
-                logging.info('Got queues')
+                mozdef.log(
+                    mozdef.DEBUG,
+                    mozdef.OTHER,
+                    'Fetched queue and binding data.',
+                )
 
                 if queues:
-                    logging.info('Monitor queues')
+                    mozdef.log(
+                        mozdef.DEBUG,
+                        mozdef.OTHER,
+                        'Monitoring queues.',
+                    )
                     self.monitor_queues(queues, bindings)
 
-                logging.info('Clear deleted queues')
+                mozdef.log(
+                    mozdef.DEBUG,
+                    mozdef.OTHER,
+                    'Clearing deleted queues.',
+                )
                 self.clear_deleted_queues(queues, bindings)
 
                 if (self._connection_error_notified or
@@ -372,13 +437,23 @@ Error:
                 self.notify_unknown_error()
                 self._increase_interval()
 
-            logging.info('Sleeping for %d seconds' % self._polling_interval)
+            mozdef.log(
+                mozdef.DEBUG,
+                mozdef.OTHER,
+                'Sleeping for {} seconds'.format(self._polling_interval),
+            )
             time.sleep(self._polling_interval)
 
-if __name__ == '__main__':
-    # Add StreamHandler for development purposes
-    logging.getLogger().addHandler(logging.StreamHandler())
+    def _queue_details_dict(self, queue):
+        return {
+            'queuename': queue.name,
+            'queuesize': queue.size,
+            'warningthreshold': self.warn_queue_size,
+            'deletionthreshold': self.del_queue_size,
+        }
 
+
+if __name__ == '__main__':
     # Initialize the database if necessary.
     init_db()
 
