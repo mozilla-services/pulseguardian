@@ -388,7 +388,9 @@ def callback_handling():
     # Validate what we got in the request against the Auth0 backend.
     code = request.args.get('code')
     json_header = {'content-type': 'application/json'}
-    token_url = "https://{domain}/oauth/token".format(domain=config.auth0_domain)
+    token_url = "https://{domain}/oauth/token".format(
+        domain=config.auth0_domain
+    )
     token_payload = {
       'client_id': config.auth0_client_id,
       'client_secret': config.auth0_client_secret,
@@ -400,7 +402,8 @@ def callback_handling():
                                data=json.dumps(token_payload),
                                headers=json_header).json()
     user_url = "https://{domain}/userinfo?access_token={access_token}".format(
-        domain=config.auth0_domain, access_token=token_info['access_token'])
+        domain=config.auth0_domain, access_token=token_info['access_token']
+    )
     resp = requests.get(user_url)
 
     details = {
@@ -475,7 +478,10 @@ def update_info():
 
     if g.user not in pulse_user.owners:
         return profile(
-            messages=["Invalid user: {} is not an owner.".format(g.user.email)])
+            messages=[
+                "Invalid user: {} is not an owner.".format(g.user.email)
+            ]
+        )
 
     messages = []
     error = None

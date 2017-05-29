@@ -144,8 +144,10 @@ class PulseGuardian(object):
             if not m:
                 log_details['valid'] = False
                 owner = None
-            elif config.reserved_users_regex and re.match(config.reserved_users_regex, m.group(1)):
-                # ignore this queue entirely, quietly as we will see it again on the next iteration
+            elif (config.reserved_users_regex and
+                  re.match(config.reserved_users_regex, m.group(1))):
+                # Ignore this queue entirely as we will see it again on the
+                # next iteration.
                 return None
             else:
                 log_details['valid'] = True
