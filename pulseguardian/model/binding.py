@@ -26,8 +26,9 @@ class Binding(Base):
         return "{}-{}".format(exchange, routing_key)
 
     def __repr__(self):
-        return "<Binding(exchange='{0}', routing_key='{1}')>".format(self.exchange,
-                                                                     self.routing_key)
-
+        return "<Binding(exchange='{0}', routing_key='{1}')>".format(
+            self.exchange,
+            self.routing_key
+        )
 
     __str__ = __repr__
