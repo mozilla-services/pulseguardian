@@ -17,6 +17,7 @@
   {% endif %}
 
   <form role="form" action="/register" method="post">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"/>
     <div class="form-group">
       <label>Username</label>
       <small>No special characters or spaces. Only alphanumeric

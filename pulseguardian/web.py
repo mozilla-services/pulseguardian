@@ -2,6 +2,35 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+# The CSRF protection code was adapted from
+#     https://github.com/sjl/flask-csrf/blob/master/flaskext/csrf.py
+#
+# That code is under the following license:
+# Copyright (c) 2010 Steve Losh
+
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+
+
+import base64
 import json
 import logging
 import os.path
@@ -23,6 +52,7 @@ from flask import (abort,
                    session)
 from flask_sslify import SSLify
 from sqlalchemy.orm import joinedload
+from werkzeug.routing import NotFound
 
 from pulseguardian import config, management as pulse_management
 from pulseguardian.logs import setup_logging
@@ -108,6 +138,22 @@ init_db()
 # Decorators and instructions used to inject info into the context or
 # restrict access to some pages.
 
+csrf_exempt_views = []
+
+
+def csrf_exempt(view):
+    csrf_exempt_views.append(view)
+    return view
+
+
+def generate_csrf_token():
+    if '_csrf_token' not in session:
+        session['_csrf_token'] = base64.b64encode(os.urandom(24))
+    return session['_csrf_token']
+
+app.jinja_env.globals['csrf_token'] = generate_csrf_token
+
+
 def load_fake_account(fake_account):
     """Load fake user and setup session."""
 
@@ -172,6 +218,27 @@ def load_user():
     g.user = User.query.filter(User.email == session.get('email')).first()
     if not g.user:
         g.user = User.new_user(email=email)
+
+
+@app.before_request
+def csrf_check_exemptions():
+    try:
+        dest = app.view_functions.get(request.endpoint)
+        g._csrf_exempt = dest in csrf_exempt_views
+    except NotFound:
+        g._csrf_exempt = False
+
+
+@app.before_request
+def _csrf_protect():
+    # This simplifies unit testing, wherein CSRF seems to break
+    if app.config.get('TESTING'):
+        return
+    if not g._csrf_exempt:
+        if request.method == "POST":
+            csrf_token = session.pop('_csrf_token', None)
+            if not csrf_token or csrf_token != request.form.get('_csrf_token'):
+                abort(400)
 
 
 @app.teardown_appcontext
@@ -514,6 +581,7 @@ def register_handler():
     return redirect('/profile')
 
 
+@csrf_exempt
 @app.route('/auth/logout', methods=['POST'])
 def logout_handler():
     session['email'] = None

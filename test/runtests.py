@@ -34,6 +34,7 @@ from pulseguardian.model.pulse_user import PulseUser
 from pulseguardian.model.queue import Queue
 from pulseguardian.model.user import User
 
+web.app.config['TESTING'] = True
 
 # Default RabbitMQ host settings
 DEFAULT_RABBIT_HOST = 'localhost'

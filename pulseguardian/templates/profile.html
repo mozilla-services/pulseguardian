@@ -22,6 +22,7 @@
     <li class="list-group-item pulse-user"
         data-pulse-user-name="{{pulse_user.username}}">
       <form action="/update_info" method="post">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"/>
         <input type="hidden" name="pulse-user" value="{{pulse_user.username}}"/>
         <h4>
           {{pulse_user.username}}
