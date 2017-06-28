@@ -49,6 +49,7 @@ from flask import (abort,
                    render_template,
                    request,
                    session)
+from flask_secure_headers.core import Secure_Headers
 from flask_sslify import SSLify
 from sqlalchemy.orm import joinedload
 from werkzeug.routing import NotFound
@@ -116,6 +117,13 @@ app.secret_key = config.flask_secret_key
 if 'DYNO' in os.environ:
     sslify = SSLify(app)
 
+# Load security headers.
+sh = Secure_Headers()
+sh.rewrite({
+    'CSP': None,
+    'X-Permitted-Cross-Domain-Policies': None,
+    'HPKP': None,
+})
 
 # Log in with a fake account if set up.  This is an easy way to test
 # without requiring Auth0 (and thus https).
@@ -246,6 +254,7 @@ def shutdown_session(exception=None):
 # Views
 
 @app.route('/')
+@sh.wrapper()
 def index():
     if session.get('email'):
         if g.user.pulse_users:
@@ -258,6 +267,7 @@ def index():
 
 
 @app.route('/register')
+@sh.wrapper()
 @requires_login
 def register(error=None):
     return render_template('register.html', email=session.get('email'),
@@ -265,6 +275,7 @@ def register(error=None):
 
 
 @app.route('/profile')
+@sh.wrapper()
 @requires_login
 def profile(error=None, messages=None):
     users = no_owner_queues = []
@@ -277,6 +288,7 @@ def profile(error=None, messages=None):
 
 
 @app.route('/all_users')
+@sh.wrapper()
 @requires_login
 @requires_admin
 def all_users():
@@ -285,6 +297,7 @@ def all_users():
 
 
 @app.route('/all_pulse_users')
+@sh.wrapper()
 @requires_login
 def all_pulse_users():
     pulse_users = PulseUser.query.options(joinedload('owners'))
@@ -292,6 +305,7 @@ def all_pulse_users():
 
 
 @app.route('/queues')
+@sh.wrapper()
 @requires_login
 def queues():
     users = no_owner_queues = []
@@ -303,6 +317,7 @@ def queues():
 
 
 @app.route('/queues_listing')
+@sh.wrapper()
 @requires_login
 def queues_listing():
     users = no_owner_queues = []
@@ -315,6 +330,7 @@ def queues_listing():
 # API
 
 @app.route('/queue/<path:queue_name>', methods=['DELETE'])
+@sh.wrapper()
 @requires_login
 def delete_queue(queue_name):
     queue = Queue.query.get(queue_name)
@@ -354,6 +370,7 @@ def delete_queue(queue_name):
 
 
 @app.route('/pulse-user/<pulse_username>', methods=['DELETE'])
+@sh.wrapper()
 @requires_login
 def delete_pulse_user(pulse_username):
     pulse_user = PulseUser.query.filter(
@@ -390,6 +407,7 @@ def delete_pulse_user(pulse_username):
 
 
 @app.route('/user/<user_id>/set-admin', methods=['PUT'])
+@sh.wrapper()
 @requires_login
 @requires_admin
 def set_user_admin(user_id):
@@ -432,6 +450,7 @@ def set_user_admin(user_id):
 # Read-Only API
 
 @app.route('/queue/<path:queue_name>/bindings', methods=["GET"])
+@sh.wrapper()
 def bindings_listing(queue_name):
     queue = Queue.query.get(queue_name)
     bindings = []
@@ -443,6 +462,7 @@ def bindings_listing(queue_name):
 # Authentication related
 
 @app.route('/auth/callback')
+@sh.wrapper()
 def callback_handling():
     """
     Callback from Auth0
@@ -530,6 +550,7 @@ def callback_handling():
 
 
 @app.route("/update_info", methods=['POST'])
+@sh.wrapper()
 @requires_login
 def update_info():
     pulse_username = request.form['pulse-user']
@@ -604,6 +625,7 @@ def _clean_owners_str(owners_str):
 
 
 @app.route('/register', methods=['POST'])
+@sh.wrapper()
 def register_handler():
     username = request.form['username']
     password = request.form['password']
@@ -661,6 +683,7 @@ def register_handler():
 
 @csrf_exempt
 @app.route('/auth/logout', methods=['POST'])
+@sh.wrapper()
 def logout_handler():
     session['email'] = None
     session['logged_in'] = False
@@ -668,6 +691,7 @@ def logout_handler():
 
 
 @app.route('/whats_pulse')
+@sh.wrapper()
 def why():
     return render_template('index.html')
 
