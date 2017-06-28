@@ -23,7 +23,6 @@ class Queue(Base):
     durable = Column(Boolean, nullable=False, default=False)
     bindings = relationship(Binding, cascade='save-update, merge, delete')
 
-
     def __repr__(self):
         return "<Queue(name='{0}', owner='{1}')>".format(self.name, self.owner)
 

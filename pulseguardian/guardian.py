@@ -21,7 +21,8 @@ class PulseGuardian(object):
     when a queue have a dangerously high number of unread messages, and
     deletes a queue if its unread messages exceed an even higher threshold.
 
-    :param api: An instance of PulseManagementAPI, to communicate with rabbitmq.
+    :param api: An instance of PulseManagementAPI, to communicate with
+                RabbitMQ.
     :param emails: Sends emails to queue owners if True.
     :param warn_queue_size: Warning threshold.
     :param del_queue_size: Deletion threshold.
@@ -102,7 +103,8 @@ class PulseGuardian(object):
         db_bindings = Binding.query.filter(Binding.queue_name == queue_name)
 
         # Filter bindings that are in the database but no longer on RabbitMQ.
-        alive_bindings_names = {Binding.as_string(b['source'], b['routing_key'])
+        alive_bindings_names = {Binding.as_string(b['source'],
+                                                  b['routing_key'])
                                 for b in queue_bindings}
         deleted_bindings = {b for b in db_bindings
                             if b.name not in alive_bindings_names}
@@ -122,7 +124,7 @@ class PulseGuardian(object):
             db_session.delete(binding)
 
     def update_queue_information(self, queue_data, all_bindings):
-        if not 'messages' in queue_data:
+        if 'messages' not in queue_data:
             # FIXME: We should do something here, probably delete the queue,
             # as it's in a weird state.  More investigation is required.
             # See bug 1066338.

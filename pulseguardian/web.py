@@ -65,6 +65,7 @@ DEV_CERT_BASE = 'dev'
 # Role for admin user
 ADMIN_ROLE = 'admin'
 
+
 # Monkey-patch werkzeug.
 
 def generate_adhoc_ssl_pair(cn=None):
@@ -459,11 +460,11 @@ def callback_handling():
         domain=config.auth0_domain
     )
     token_payload = {
-      'client_id': config.auth0_client_id,
-      'client_secret': config.auth0_client_secret,
-      'redirect_uri': config.auth0_callback_url,
-      'code': code,
-      'grant_type': 'authorization_code'
+        'client_id': config.auth0_client_id,
+        'client_secret': config.auth0_client_secret,
+        'redirect_uri': config.auth0_callback_url,
+        'code': code,
+        'grant_type': 'authorization_code',
     }
     token_info = requests.post(token_url,
                                data=json.dumps(token_payload),
@@ -615,14 +616,16 @@ def register_handler():
         errors.append("Password verification doesn't match the password.")
     elif not PulseUser.strong_password(password):
         errors.append("Your password must contain a mix of letters and "
-                      "numerical characters and be at least 6 characters long.")
+                      "numerical characters and be at least 6 characters "
+                      "long.")
 
     if not re.match('^[a-zA-Z][a-zA-Z0-9._-]*$', username):
         errors.append("The submitted username must start with an "
                       "alphabetical character and contain only alphanumeric "
                       "characters, periods, underscores, and hyphens.")
 
-    if config.reserved_users_regex and re.match(config.reserved_users_regex, username):
+    if config.reserved_users_regex and re.match(config.reserved_users_regex,
+                                                username):
         errors.append("The submitted username is reserved. "
                       + config.reserved_users_message)
 
@@ -637,7 +640,7 @@ def register_handler():
             in_rabbitmq = False
 
     if (in_rabbitmq or
-        PulseUser.query.filter(PulseUser.username == username).first()):
+            PulseUser.query.filter(PulseUser.username == username).first()):
         errors.append("A user with the same username already exists.")
 
     if errors:
