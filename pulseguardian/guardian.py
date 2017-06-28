@@ -86,7 +86,7 @@ class PulseGuardian(object):
                 mozdef.NOTICE,
                 mozdef.OTHER,
                 'Queue no longer exists.',
-                details={'queuename': queue},
+                details={'queuename': queue.name},
                 tags=['queue'],
             )
             db_session.delete(queue)
