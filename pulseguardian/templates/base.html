@@ -7,7 +7,15 @@
         <title>Pulse Guardian</title>
         <meta name="description" content="Pulse Guardian">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-
+        <meta name="auth0" content="auth0" id="auth0"
+              {% with messages = get_flashed_messages() %}
+                  {% if messages %}
+                      data-error-msg="{{ ', '.join(messages) }}">
+                  {% endif %}
+              {% endwith %}
+              data-client-id="{{auth0_client_id or None}}"
+              data-domain="{{auth0_domain or None}}"
+              data-callback-url="{{auth0_callback_url or None}}">
 
         <!-- Bootstrap CSS-->
         <link rel="stylesheet" href="/static/css/bootstrap.min.css">
@@ -29,7 +37,6 @@
         {% include 'menu.html' %}
 
         <div class="container">
-
             <div id="error-bar" class="alert alert-danger">
             </div>
 
@@ -41,29 +48,14 @@
         <script src="/static/js/jquery.min.js"></script>
         <script src="/static/js/bootstrap.min.js"></script>
 
-
         {% block javascript %}
         {% endblock %}
 
         <!-- External JS files -->
         {% if not session.get('fake_account') %}
             <script src="https://cdn.auth0.com/js/lock-passwordless-2.2.3.min.js"></script>
-            <script>
-                var AUTH0_CLIENT_ID = '{{auth0_client_id or None}}';
-                var AUTH0_DOMAIN = '{{auth0_domain or None}}';
-                var AUTH0_CALLBACK_URL = '{{auth0_callback_url or None}}';
-            </script>
             <script src="/static/js/auth0.js"></script>
         {% endif %}
-
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <script>
-                    var errorMsg = '{{ ', '.join(messages) }}';
-                </script>
-            {% endif %}
-        {% endwith %}
-
     </body>
 
 </html>
