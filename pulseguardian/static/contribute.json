@@ -1,0 +1,31 @@
+{
+  "name": "PulseGuardian",
+  "description": "Manages Pulse users and queues",
+  "repository": {
+    "url": "https://github.com/mozilla-services/pulseguardian",
+    "license": "MPL2",
+    "tests": "https://travis-ci.org/mozilla-services/pulseguardian"
+  },
+  "keywords": [
+    "RabbitMQ",
+    "Python",
+    "Flask"
+  ],
+  "url": {
+    "prod": "https://pulseguardian.mozilla.org"
+  },
+  "bugs": {
+    "list": "https://bugzilla.mozilla.org/buglist.cgi?short_desc=pulseguardian&resolution=---&query_format=advanced&short_desc_type=allwordssubstr&component=Pulse&product=Webtools",
+    "report": "https://bugzilla.mozilla.org/enter_bug.cgi?product=Webtools&component=Pulse",
+    "mentored": "https://bugzilla.mozilla.org/buglist.cgi?f1=bug_mentor&short_desc=pulseguardian&o1=isnotempty&resolution=---&query_format=advanced&short_desc_type=allwordssubstr&component=Pulse&product=Webtools"
+  },
+  "participate": {
+    "docs": "https://wiki.mozilla.org/Auto-tools/Projects/Pulse",
+    "mailing-list": "https://www.mozilla.org/en-US/about/forums/#tools-pulse",
+    "irc": "irc://irc.mozilla.org/#pulse",
+    "irc-contacts": [
+      "mcote",
+      "camd"
+    ]
+  }
+}

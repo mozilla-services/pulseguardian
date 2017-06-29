@@ -449,6 +449,12 @@ def set_user_admin(user_id):
 
 # Read-Only API
 
+@app.route('/contribute.json', methods=['GET'])
+@sh.wrapper()
+def contribute_json():
+    return app.send_static_file('contribute.json')
+
+
 @app.route('/queue/<path:queue_name>/bindings', methods=["GET"])
 @sh.wrapper()
 def bindings_listing(queue_name):
