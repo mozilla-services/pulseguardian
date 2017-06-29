@@ -120,7 +120,25 @@ if 'DYNO' in os.environ:
 # Load security headers.
 sh = Secure_Headers()
 sh.rewrite({
-    'CSP': None,
+    'CSP': {
+        'connect-src': [
+            'self',
+            'https://auth.mozilla.auth0.com/user/geoloc/country',
+        ],
+        'img-src': [
+            'self',
+            'data: https://cdn.auth0.com',
+        ],
+        'script-src': [
+            'self',
+            'unsafe-inline',
+            'https://cdn.auth0.com/js/lock-passwordless-2.2.3.min.js',
+        ],
+        'style-src': [
+            'self',
+            'unsafe-inline',
+        ],
+    },
     'X-Permitted-Cross-Domain-Policies': None,
     'HPKP': None,
 })
