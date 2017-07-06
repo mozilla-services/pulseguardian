@@ -12,19 +12,21 @@ $(document).ready(function() {
     var autoReload = true;
     var reloadInterval = 8000;
 
-    function deleteableObjectHandler(objectType) {
+    function deleteableObjectHandler(collectionClass, objectType) {
         $('.' + objectType + 's .delete').click(function() {
             var objectInstance = $(this).closest('.' + objectType);
             var objectName = objectInstance.data(objectType + '-name');
             var modal = $('.modal-delete-' + objectType);
             modal.data(objectType + '-object', objectInstance);
+            modal.data('csrf-token',
+                       $('.' + collectionClass).data('csrf-token'));
             modal.find('.' + objectType + '-name').text(objectName);
             modal.modal();
         });
     }
 
-    deleteableObjectHandler('queue');
-    deleteableObjectHandler('pulse-user');
+    deleteableObjectHandler('queues', 'queue');
+    deleteableObjectHandler('pulse-users', 'pulse-user');
 
     $('.pulse-users .edit').click(function() {
         var details = $($(this).closest('.pulse-user'))
@@ -52,10 +54,13 @@ $(document).ready(function() {
     });
 
     function deleteableObject(objectType) {
-        function deleteObject(objectInstance, objectName) {
+        function deleteObject(objectInstance, objectName, csrfToken) {
             $.ajax({
                 url: '/' + objectType + '/' + objectName,
                 type: 'DELETE',
+                headers: {
+                    'X-CSRF-Token': csrfToken,
+                },
                 success: function(result) {
                     if (!result.ok) {
                         errorMessage("Couldn't delete " + objectType + " '" +
@@ -78,7 +83,8 @@ $(document).ready(function() {
         var modalClass = '.modal-delete-' + objectType;
         $(modalClass + ' .delete-' + objectType + '-ok').click(function() {
             deleteObject($(modalClass).data(objectType + '-object'),
-                         $(modalClass + ' .' + objectType + '-name').text());
+                         $(modalClass + ' .' + objectType + '-name').text(),
+                         $(modalClass).data('csrf-token'));
         });
     }
 

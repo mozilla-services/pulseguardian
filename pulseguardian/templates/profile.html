@@ -16,7 +16,7 @@
     </span>
   </h3>
 
-  <ul class="list-group pulse-users">
+  <ul class="list-group pulse-users" data-csrf-token="{{ csrf_token() }}">
 
     {% for pulse_user in cur_user.pulse_users %}
     <li class="list-group-item pulse-user"

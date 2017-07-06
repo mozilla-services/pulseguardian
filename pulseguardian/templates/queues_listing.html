@@ -1,5 +1,5 @@
 {% macro list_queues(queues) %}
-<ul class="list-group queues">
+<ul class="list-group queues" data-csrf-token="{{ csrf_token() }}">
   {% for queue in queues %}
 
     {% set fill_perc = (100 * queue.size / config.del_queue_size) | int %}

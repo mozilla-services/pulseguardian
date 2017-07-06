@@ -257,11 +257,19 @@ def _csrf_protect():
     # This simplifies unit testing, wherein CSRF seems to break
     if app.config.get('TESTING'):
         return
+
     if not g._csrf_exempt:
         if request.method == "POST":
-            csrf_token = session.pop('_csrf_token', None)
-            if not csrf_token or csrf_token != request.form.get('_csrf_token'):
-                abort(400)
+            page_csrf_token = request.form.get('_csrf_token')
+        elif request.method == "DELETE":
+            page_csrf_token = request.headers['X-CSRF-Token']
+        else:
+            return
+
+        session_csrf_token = session.pop('_csrf_token', None)
+
+        if not session_csrf_token or session_csrf_token != page_csrf_token:
+            abort(400)
 
 
 @app.teardown_appcontext
