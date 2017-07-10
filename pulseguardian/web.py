@@ -262,7 +262,7 @@ def _csrf_protect():
         if request.method == "POST":
             page_csrf_token = request.form.get('_csrf_token')
         elif request.method == "DELETE":
-            page_csrf_token = request.headers['X-CSRF-Token']
+            page_csrf_token = request.headers.get('X-CSRF-Token')
         else:
             return
 
