@@ -18,6 +18,16 @@ class TestCommand(Command):
         errno = subprocess.call(['python', 'test/runtests.py', '--log=INFO'])
         raise SystemExit(errno)
 
+install_requires = [
+    'MozillaPulse',
+    'SQLAlchemy',
+    'requests',
+    'Flask-SSLify',
+    'alembic',
+    'flask-secure-headers',
+    'Flask-pyoidc',
+    'Flask',
+]
 
 setup(name='PulseGuardian',
       version='0.1',
@@ -28,6 +38,6 @@ setup(name='PulseGuardian',
       author_email='auto-tools@mozilla.com',
       license='MPL 2.0',
       packages=['pulseguardian', 'pulseguardian.model'],
-      install_requires=['Flask', 'MozillaPulse', 'SQLAlchemy', 'requests'],
+      install_requires=install_requires,
       cmdclass={'test': TestCommand}
 )

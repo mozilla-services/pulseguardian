@@ -8,21 +8,27 @@
       </h1>
     </a>
 
-    {% if session.get('email') %}
-      <span class="right-link">
-           <span id="signout-link" class="btn btn-info">Logout</span>
-      </span>
+    {% if session.get('userinfo') %}
+      {% if not session.get('fake_account') %}
+        <span class="right-link">
+           <a href="/auth/logout"><span id="signout-link" class="btn btn-info">Logout</span></a>
+        </span>
+      {% endif %}
     {% else %}
       <span class="right-link">
         <span id="signin-link" class="btn btn-info">
-            <span class="glyphicon glyphicon-user login-icon"></span>Sign in</span>
+          <a href="/profile"><span class="glyphicon glyphicon-user login-icon"></span>Sign in</span></a>
       </span>
     {% endif %}
 
     {% if cur_user %}
       <a href="/profile">
         <span class="username right-link nav-box">
-          <span class="glyphicon glyphicon-user"></span> {{cur_user.email}}
+          <span class="glyphicon glyphicon-user"></span>
+	  {{cur_user.email}}
+          {% if session.get('fake_account') %}
+            (logged in with fake account)
+          {% endif %}
         </span>
       </a>
     {% endif %}

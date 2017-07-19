@@ -4,6 +4,20 @@ import os
 # Web app
 flask_host = os.getenv('FLASK_HOST', 'localhost')
 flask_port = int(os.getenv('FLASK_PORT', 5000))
+flask_use_ssl = bool(int(os.getenv('FLASK_USE_SSL', 1)))
+flask_server_name = os.getenv('FLASK_SERVER_NAME', None)
+
+if not flask_server_name:
+    if ((flask_use_ssl and flask_port == 443) or
+            (not flask_use_ssl and flask_port == 80)):
+        flask_port_spec = ''
+    else:
+        flask_port_spec = ':{}'.format(flask_port)
+
+    flask_server_name = '{}{}'.format(
+        flask_host,
+        flask_port_spec
+    )
 
 try:
     flask_secret_key = base64.b64decode(os.getenv('FLASK_SECRET_KEY', None))
@@ -11,6 +25,11 @@ except TypeError:
     raise Exception('FLASK_SECRET_KEY must be base64 encoded.')
 
 flask_debug_mode = bool(int(os.getenv('FLASK_DEBUG_MODE', 1)))
+
+# OIDC
+oidc_domain = os.getenv('OIDC_DOMAIN', None)
+oidc_client_id = os.getenv('OIDC_CLIENT_ID', None)
+oidc_client_secret = os.getenv('OIDC_CLIENT_SECRET', None)
 
 # Mail
 email_account = os.getenv('EMAIL_ACCOUNT', 'automation@mozilla.com')
