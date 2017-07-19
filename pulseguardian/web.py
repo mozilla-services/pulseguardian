@@ -51,7 +51,7 @@ from flask_sslify import SSLify
 from sqlalchemy.orm import joinedload
 from werkzeug.routing import NotFound
 
-from pulseguardian import config, management as pulse_management, mozdef
+from pulseguardian import auth, config, management as pulse_management, mozdef
 from pulseguardian.model.base import db_session, init_db
 from pulseguardian.model.pulse_user import PulseUser
 from pulseguardian.model.queue import Queue
@@ -105,9 +105,11 @@ def generate_adhoc_ssl_pair(cn=None):
 # This is used by werkzeug.serving.make_ssl_devcert().
 werkzeug.serving.generate_adhoc_ssl_pair = generate_adhoc_ssl_pair
 
-
 # Initialize the web app.
 app = Flask(__name__)
+app.config['SERVER_NAME'] = config.flask_server_name
+app.config['PREFERRED_URL_SCHEME'] = ('https' if config.flask_use_ssl
+                                      else 'http')
 app.secret_key = config.flask_secret_key
 
 # Redirect to https if running on Heroku dyno.
@@ -145,6 +147,8 @@ if config.fake_account:
 else:
     app.config['SESSION_COOKIE_SECURE'] = True
 
+authentication = auth.OpenIDConnect()
+oidc = authentication.auth(app)
 
 # Initialize the database.
 init_db()
@@ -173,24 +177,13 @@ def load_fake_account(fake_account):
     """Load fake user and setup session."""
 
     # Set session user.
-    session['email'] = fake_account
+    session['userinfo'] = {'email': fake_account}
     session['fake_account'] = True
-    session['logged_in'] = True
 
     # Check if user already exists in the database, creating it if not.
     g.user = User.query.filter(User.email == fake_account).first()
     if g.user is None:
         g.user = User.new_user(email=fake_account)
-
-
-def requires_login(f):
-    """Decorator for views that require the user to be logged-in."""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if session.get('email') is None:
-            return redirect('/')
-        return f(*args, **kwargs)
-    return decorated_function
 
 
 def requires_admin(f):
@@ -207,11 +200,17 @@ def requires_admin(f):
 @app.context_processor
 def inject_user():
     """Injects a user and configuration in templates' context."""
-    cur_user = User.query.filter(User.email == session.get('email')).first()
+    if session.get('userinfo'):
+        cur_user = User.query.filter(User.email ==
+                                     session['userinfo']['email']).first()
+    else:
+        cur_user = None
+
     if cur_user and cur_user.pulse_users:
         pulse_user = cur_user.pulse_users[0]
     else:
         pulse_user = None
+
     return dict(cur_user=cur_user, pulse_user=pulse_user, config=config,
                 session=session)
 
@@ -225,12 +224,14 @@ def load_user():
         load_fake_account(fake_account)
         return
 
-    email = session.get('email')
-    if not email:
+    userinfo = session.get('userinfo')
+    if not userinfo:
         g.user = None
         return
 
-    g.user = User.query.filter(User.email == session.get('email')).first()
+    email = session['userinfo']['email']
+    g.user = User.query.filter(User.email == email).first()
+
     if not g.user:
         g.user = User.new_user(email=email)
 
@@ -274,7 +275,7 @@ def shutdown_session(exception=None):
 @app.route('/')
 @sh.wrapper()
 def index():
-    if session.get('email'):
+    if session.get('id_token'):
         if g.user.pulse_users:
             return redirect('/profile')
         return redirect('/register')
@@ -282,16 +283,16 @@ def index():
 
 
 @app.route('/register')
+@oidc.oidc_auth
 @sh.wrapper()
-@requires_login
 def register(error=None):
-    return render_template('register.html', email=session.get('email'),
+    return render_template('register.html', email=session['userinfo']['email'],
                            error=error)
 
 
 @app.route('/profile')
 @sh.wrapper()
-@requires_login
+@oidc.oidc_auth
 def profile(error=None, messages=None):
     users = no_owner_queues = []
     if g.user.admin:
@@ -304,7 +305,7 @@ def profile(error=None, messages=None):
 
 @app.route('/all_users')
 @sh.wrapper()
-@requires_login
+@oidc.oidc_auth
 @requires_admin
 def all_users():
     users = User.query.all()
@@ -313,7 +314,7 @@ def all_users():
 
 @app.route('/all_pulse_users')
 @sh.wrapper()
-@requires_login
+@oidc.oidc_auth
 def all_pulse_users():
     pulse_users = PulseUser.query.options(joinedload('owners'))
     return render_template('all_pulse_users.html', pulse_users=pulse_users)
@@ -321,7 +322,7 @@ def all_pulse_users():
 
 @app.route('/queues')
 @sh.wrapper()
-@requires_login
+@oidc.oidc_auth
 def queues():
     users = no_owner_queues = []
     if g.user.admin:
@@ -333,7 +334,7 @@ def queues():
 
 @app.route('/queues_listing')
 @sh.wrapper()
-@requires_login
+@oidc.oidc_auth
 def queues_listing():
     users = no_owner_queues = []
     if g.user.admin:
@@ -346,7 +347,7 @@ def queues_listing():
 
 @app.route('/queue/<path:queue_name>', methods=['DELETE'])
 @sh.wrapper()
-@requires_login
+@oidc.oidc_auth
 def delete_queue(queue_name):
     queue = Queue.query.get(queue_name)
 
@@ -386,7 +387,7 @@ def delete_queue(queue_name):
 
 @app.route('/pulse-user/<pulse_username>', methods=['DELETE'])
 @sh.wrapper()
-@requires_login
+@oidc.oidc_auth
 def delete_pulse_user(pulse_username):
     pulse_user = PulseUser.query.filter(
         PulseUser.username == pulse_username).first()
@@ -423,7 +424,7 @@ def delete_pulse_user(pulse_username):
 
 @app.route('/user/<user_id>/set-admin', methods=['PUT'])
 @sh.wrapper()
-@requires_login
+@oidc.oidc_auth
 @requires_admin
 def set_user_admin(user_id):
     if 'isAdmin' not in request.json:
@@ -482,7 +483,7 @@ def bindings_listing(queue_name):
 
 @app.route("/update_info", methods=['POST'])
 @sh.wrapper()
-@requires_login
+@oidc.oidc_auth
 def update_info():
     pulse_username = request.form['pulse-user']
     new_password = request.form['new-password']
@@ -562,7 +563,7 @@ def register_handler():
     password = request.form['password']
     password_verification = request.form['password-verification']
     owners = _clean_owners_str(request.form['owners-list'])
-    email = session['email']
+    email = session['userinfo']['email']
     errors = []
 
     if password != password_verification:
@@ -613,12 +614,12 @@ def register_handler():
 
 
 @csrf_exempt
-@app.route('/auth/logout', methods=['POST'])
+@app.route('/auth/logout')
 @sh.wrapper()
+@oidc.oidc_logout
 def logout_handler():
-    session['email'] = None
-    session['logged_in'] = False
-    return jsonify(ok=True, redirect='/')
+    session['userinfo'] = None
+    return redirect('/')
 
 
 @app.route('/whats_pulse')
@@ -634,12 +635,9 @@ def cli(args):
     environment variables and start up the system with 'foreman start'
     rather than executing web.py directly.
     """
-    global fake_account
+    ssl_context = None
 
-    # If fake account is provided we need to do some setup.
-    if fake_account:
-        ssl_context = None
-    else:
+    if config.flask_use_ssl:
         dev_cert = '%s.crt' % DEV_CERT_BASE
         dev_cert_key = '%s.key' % DEV_CERT_BASE
         if not os.path.exists(dev_cert) or not os.path.exists(dev_cert_key):
