@@ -31,17 +31,14 @@
 
 
 import base64
-import json
 import os.path
 import re
 import sys
 from functools import wraps
 
-import requests
 import sqlalchemy.orm.exc
 import werkzeug.serving
 from flask import (abort,
-                   flash,
                    Flask,
                    g,
                    jsonify,
@@ -123,20 +120,15 @@ sh.rewrite({
     'CSP': {
         'connect-src': [
             'self',
-            'https://auth.mozilla.auth0.com/user/geoloc/country',
         ],
         'img-src': [
             'self',
-            'data: https://cdn.auth0.com',
         ],
         'script-src': [
             'self',
-            'unsafe-inline',
-            'https://cdn.auth0.com/js/lock-passwordless-2.2.3.min.js',
         ],
         'style-src': [
             'self',
-            'unsafe-inline',
         ],
     },
     'X-Permitted-Cross-Domain-Policies': None,
@@ -144,7 +136,7 @@ sh.rewrite({
 })
 
 # Log in with a fake account if set up.  This is an easy way to test
-# without requiring Auth0 (and thus https).
+# without requiring authentication.
 fake_account = None
 
 if config.fake_account:
@@ -286,10 +278,7 @@ def index():
         if g.user.pulse_users:
             return redirect('/profile')
         return redirect('/register')
-    return render_template('index.html',
-                           auth0_client_id=config.auth0_client_id,
-                           auth0_domain=config.auth0_domain,
-                           auth0_callback_url=config.auth0_callback_url)
+    return render_template('index.html')
 
 
 @app.route('/register')
@@ -489,96 +478,6 @@ def bindings_listing(queue_name):
     if queue:
         bindings = pulse_management.queue_bindings(vhost='/', queue=queue.name)
     return jsonify({"queue_name": queue_name, "bindings": bindings})
-
-
-# Authentication related
-
-@app.route('/auth/callback')
-@sh.wrapper()
-def callback_handling():
-    """
-    Callback from Auth0
-
-    Auth0 will call back to this endpoint once it has acquired a user in some
-    capacity (from Google, or their email).  Here we verify that what we got
-    back is consistent with Auth0, then match that against our internal DB and
-    either find the user, or create it.
-    """
-
-    # Validate what we got in the request against the Auth0 backend.
-    code = request.args.get('code')
-    json_header = {'content-type': 'application/json'}
-    token_url = "https://{domain}/oauth/token".format(
-        domain=config.auth0_domain
-    )
-    token_payload = {
-        'client_id': config.auth0_client_id,
-        'client_secret': config.auth0_client_secret,
-        'redirect_uri': config.auth0_callback_url,
-        'code': code,
-        'grant_type': 'authorization_code',
-    }
-    token_info = requests.post(token_url,
-                               data=json.dumps(token_payload),
-                               headers=json_header).json()
-    user_url = "https://{domain}/userinfo?access_token={access_token}".format(
-        domain=config.auth0_domain, access_token=token_info['access_token']
-    )
-    resp = requests.get(user_url)
-
-    details = {
-        'clientid': config.auth0_client_id,
-    }
-
-    # Failure to authenticate is handled in the Auth0 lock, so if the user
-    # say, gives the wrong code for their email, the Auth0 lock will notify
-    # them.  We don't get a response in the callback here until the user has
-    # satisfied Auth0.  The only error we will see is if we can't reach Auth0
-    # for verification.
-    if resp.ok:
-        # Parse the response
-        user_info = resp.json()
-
-        # find the user in our DB, or create it.
-        email = user_info['email']
-        details['email'] = session['email'] = email
-        session['logged_in'] = True
-
-        user = User.query.filter(User.email == email).first()
-        details['newuser'] = not user
-
-        if user is None:
-            user = User.new_user(email=email)
-
-        mozdef.log(
-            mozdef.NOTICE,
-            mozdef.AUTHENTICATION,
-            'User authenticated with Auth0.',
-            details=details
-        )
-
-        if user.pulse_users:
-            return redirect('/')
-
-        return redirect('/register')
-
-    # Oops, something failed. Abort.
-    error_msg = "Error verifying with Auth0 ({})".format(config.auth0_domain)
-
-    details['message'] = error_msg
-    details['response'] = resp.text
-
-    mozdef.log(
-        mozdef.ERROR,
-        mozdef.AUTHENTICATION,
-        'Authentication with Auth0 failed.',
-        details=details,
-    )
-
-    # Add this message to the "flash message" list so that the '/' template
-    # can display it.
-    flash(error_msg)
-    return redirect('/')
 
 
 @app.route("/update_info", methods=['POST'])
