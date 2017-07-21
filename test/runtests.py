@@ -23,6 +23,7 @@ os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24))
 # Change the DB for the tests before the model is initialized.
 from pulseguardian import config
 config.database_url = 'sqlite:///pulseguardian_test.db'
+config.fake_account = 'guardtest@guardtest.com'
 
 from docker_setup import (check_rabbitmq, create_image,
                           setup_container, teardown_container)
