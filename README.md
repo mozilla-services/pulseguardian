@@ -1,7 +1,7 @@
 # PulseGuardian
 
-A system to manage Pulse: creates users and handle overgrowing queues. More
-information on [the wiki][].
+A system to manage Pulse: administers RabbitMQ users and handles overgrowing
+queues. More information on [the wiki][].
 
 [![Build Status](https://travis-ci.org/mozilla-services/pulseguardian.svg?branch=master)](https://travis-ci.org/mozilla-services/pulseguardian)
 
@@ -33,9 +33,8 @@ Within the chosen environment, install and configure PulseGuardian:
 
         python setup.py develop
 
-Because Auth0 requires an https connection, if you are running the
-development server without the `FAKE_ACCOUNT` option (see below), you
-will also need the pyOpenSSL package:
+If you will be running PulseGuardian with SSL enabled (i.e. over https),
+you will also need the pyOpenSSL package:
 
     pip install pyOpenSSL
 
@@ -90,8 +89,8 @@ TODO: Each of these options should be documented in the source.
 ## Usage
 
 Make sure `rabbitmq-server` is running, your environment variables are
-configured properly, and that you're inside the source directory
-(`pulseguardian`) before you run the following commands.
+configured properly, and that you're inside the root source directory
+before you run the following commands.
 
 Note that tests are run on [Travis CI][]. Before submitting a patch,
 it is highly recommended that you get a Travis CI account and
@@ -101,15 +100,17 @@ reviewer can quickly verify that all tests still pass with your changes.
 * Initialize the db with: `python pulseguardian/dbinit.py`. *WARNING*: This removes any
   existing data the app might have previously stored in the database.
 * Set the environment variable `FAKE_ACCOUNT` to a valid email address.
-* Optional: Generate some dummy data (dummy user account, admin account):
-  `python pulseguardian/dbinit.py --dummy`
 * Run the Pulse Guardian daemon with: `python pulseguardian/guardian.py`
 * Run the web app (for development) with: `python pulseguardian/web.py`
 * For production, the web app can be run with [gunicorn][] and such.
 
-The `FAKE_ACCOUNT` variable will make development easier. This feature will
-disable HTTPS and bypass Auth0 for testing. It will also create the
-given user, if necessary, and log in automatically.
+Setting `FAKE_ACCOUNT` to an email address will make development easier. This
+feature bypasses OIDC authentication, logging the user in with the provided
+address.  It will also create the given user, if necessary.
+
+You can also test with a real Auth0 account.  You can create an account at
+https://auth0.com and use the provided credentials in the `OIDC_*` config
+variables.
 
 ## Testing
 
