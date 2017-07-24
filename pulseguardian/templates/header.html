@@ -19,8 +19,11 @@
       {% endif %}
     {% else %}
       <span class="right-link">
-        <span id="signin-link" class="btn btn-info">
-          <a href="/profile"><span class="glyphicon glyphicon-user login-icon"></span>Sign in</span></a>
+        <a href="/profile">
+          <button id="signin-link" class="btn btn-info">
+            <span class="glyphicon glyphicon-user login-icon"></span>Sign in</span>
+          </button>
+        </a>
       </span>
     {% endif %}
 
@@ -28,7 +31,7 @@
       <a href="/profile">
         <span class="username right-link nav-box">
           <span class="glyphicon glyphicon-user"></span>
-	  {{cur_user.email}}
+          {{cur_user.email}}
           {% if session.get('fake_account') %}
             (logged in with fake account)
           {% endif %}
@@ -36,4 +39,5 @@
       </a>
     {% endif %}
   </div>
+
 </div>
