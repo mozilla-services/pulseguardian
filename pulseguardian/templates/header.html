@@ -11,7 +11,10 @@
     {% if session.get('userinfo') %}
       {% if not session.get('fake_account') %}
         <span class="right-link">
-           <a href="/auth/logout"><span id="signout-link" class="btn btn-info">Logout</span></a>
+          <form action="/auth/logout" method="post">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn btn-info">Sign out</button>
+          </form>
         </span>
       {% endif %}
     {% else %}

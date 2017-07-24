@@ -613,8 +613,7 @@ def register_handler():
     return redirect('/profile')
 
 
-@csrf_exempt
-@app.route('/auth/logout')
+@app.route('/auth/logout', methods=['POST'])
 @sh.wrapper()
 @oidc.oidc_logout
 def logout_handler():
