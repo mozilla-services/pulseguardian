@@ -14,6 +14,18 @@ queues. More information on [the wiki][].
 
 ## Setup
 
+On Linux (or the Linux subsystem on Windows 10), you will need some
+system packages installed before you can install the prerequisite Python
+packages.  On Ubuntu, these are
+
+* python
+* python-dev
+* libssl-dev
+* libffi-dev 
+
+You will also need PostgreSQL installed in order to install the psycopg2
+Python package.
+
 Using a virtualenv is highly recommended. One possible installation would be
 
 * Clone the repository and cd into it.
