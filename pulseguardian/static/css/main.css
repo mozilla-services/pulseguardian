@@ -25,9 +25,12 @@ a:hover, a:active, a:focus {
   margin: 0px 0px 0px -15px;
 }
 
-
+button {
+  text-shadow: -1px 1px 0px rgba(0, 0, 0, 0.5);
+}
 
 /* Header */
+
 .header {
   width: 100%;
   padding: 10px;
