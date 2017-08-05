@@ -32,4 +32,4 @@ enum34==1.1.6
 ipaddress==1.0.18
 cffi==1.10.0
 pycparser==2.18
-Flask-pyoidc==1.1.0
+https://github.com/mozilla-iam/Flask-pyoidc/archive/v1.0.0.tar.gz
