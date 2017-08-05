@@ -17,6 +17,10 @@ class PulseManagementException(Exception):
 
 
 def _api_request(path, method='GET', data=None):
+    if not config.rabbit_management_url:
+        raise PulseManagementException("No RabbitMQ management URL "
+                                       "configured.")
+
     session = requests.Session()
     url = '{0}{1}'.format(config.rabbit_management_url, path)
     request = requests.Request(method, url,
