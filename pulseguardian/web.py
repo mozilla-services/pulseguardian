@@ -126,6 +126,9 @@ sh.rewrite({
         'img-src': [
             'self',
         ],
+        'object-src': [
+            'self',
+        ],
         'script-src': [
             'self',
         ],
