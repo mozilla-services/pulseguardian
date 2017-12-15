@@ -3,10 +3,12 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import sys
+import time
 sys.path.append('..')
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 
 from pulseguardian import config
@@ -22,4 +24,10 @@ Base.query = db_session.query_property()
 
 
 def init_db():
-    Base.metadata.create_all(bind=engine)
+    while True:
+        try:
+            Base.metadata.create_all(bind=engine)
+        except OperationalError:
+            time.sleep(5)
+        else:
+            break
