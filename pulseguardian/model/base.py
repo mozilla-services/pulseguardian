@@ -3,13 +3,15 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import sys
+import time
 sys.path.append('..')
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 
-from pulseguardian import config
+from pulseguardian import config, mozdef
 
 Base = declarative_base()
 engine = create_engine(config.database_url,
@@ -22,4 +24,18 @@ Base.query = db_session.query_property()
 
 
 def init_db():
-    Base.metadata.create_all(bind=engine)
+    while True:
+        try:
+            Base.metadata.create_all(bind=engine)
+        except OperationalError as e:
+            mozdef.log(
+                mozdef.NOTICE,
+                mozdef.STARTUP,
+                'Failed to connect to database.  Retrying...',
+                details={
+                    'error': str(e),
+                },
+            )
+            time.sleep(5)
+        else:
+            break
