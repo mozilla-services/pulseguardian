@@ -10,7 +10,7 @@ itsdangerous==0.24
 requests==2.2.1
 wsgiref==0.1.2
 argparse==1.2.1
-psycopg2==2.6.1
+psycopg2==2.7.3.2
 gunicorn==19.7.1
 Flask-SSLify==0.1.5
 alembic==0.8.3
