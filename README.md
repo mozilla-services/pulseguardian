@@ -7,12 +7,43 @@ queues. More information on [the wiki][].
 
 ## Pre-requisites
 
-* RabbitMQ (tested on 3.3.0)
+* RabbitMQ (tested on 3.5.7)
 * Python 2.7
 * pip (to install external dependencies)
 * PostgreSQL (for production; testing environments can use sqlite)
+* docker-compose (to stand up a local Docker-based environment)
 
 ## Setup
+
+### Docker Compose
+
+The easiest way to start a local instance of PulseGuardian is via
+[docker-compose][]:
+
+    $ docker-compose up --build
+
+This will launch four containers: a RabbitMQ instance, a PostGreSQL database,
+the PulseGuardian web process, and the PulseGuardian daemon
+(`guardian.py`).  Pressing control-C will stop all the containers.
+You can also add `-d` to run docker-compose in the background, in
+which case you will need to run `docker-compose down` to stop the containers.
+
+The PulseGuardian code is mounted as `/code` in the web and daemon
+containers.  You can edit the code locally and restart the container(s) to
+pick up changes: `docker-compose restart web` and/or `docker-compose
+restart guardian`.
+
+Because PulseGuardian uses cookies, it is necessary to add an entry to
+your local hosts file for `pulseguardian-web`, mapping to 127.0.0.1.
+After adding this, you can access the web server via
+http://pulseguardian-web:5000/.
+
+RabbitMQ is available via localhost:5672 (AMQP) and
+http://localhost:15672/ (management interface).
+
+### Local
+
+You can also run the web and/or daemon processes locally.
 
 On Linux (or the Linux subsystem on Windows 10), you will need some
 system packages installed before you can install the prerequisite Python
@@ -57,7 +88,7 @@ your system.
 To create a Pulse Docker image, run this from within the root PulseGuardian
 source directory:
 
-    docker build -t="pulse:testing" test
+    docker build -t="pulse:testing" docker/pulse
 
 When that finishes building, you can run a RabbitMQ instance in a Docker
 container with
@@ -98,36 +129,39 @@ See the complete listing of options in `pulseguardian/config.py`.
 
 TODO: Each of these options should be documented in the source.
 
-## Usage
+Initialize the db with `python pulseguardian/dbinit.py`. *WARNING*:
+This removes any existing data the app might have previously stored in
+the database.
 
-Make sure `rabbitmq-server` is running, your environment variables are
-configured properly, and that you're inside the root source directory
-before you run the following commands.
-
-Note that tests are run on [Travis CI][]. Before submitting a patch,
-it is highly recommended that you get a Travis CI account and
-activate it on a GitHub fork of the pulseguardian repo. That way the
-reviewer can quickly verify that all tests still pass with your changes.
-
-* Initialize the db with: `python pulseguardian/dbinit.py`. *WARNING*: This removes any
-  existing data the app might have previously stored in the database.
-* Set the environment variable `FAKE_ACCOUNT` to a valid email address.
-* Run the Pulse Guardian daemon with: `python pulseguardian/guardian.py`
-* Run the web app (for development) with: `python pulseguardian/web.py`
-* For production, the web app can be run with [gunicorn][] and such.
-
-Setting `FAKE_ACCOUNT` to an email address will make development easier. This
-feature bypasses OIDC authentication, logging the user in with the provided
+Set the environment variable `FAKE_ACCOUNT` to a valid email address.
+This setting makes development easier by bypassing OIDC
+authentication, logging the user in automatically with the provided
 address.  It will also create the given user, if necessary.
 
 You can also test with a real Auth0 account.  You can create an account at
 https://auth0.com and use the provided credentials in the `OIDC_*` config
 variables.
 
+Run the Pulse Guardian daemon with: `python pulseguardian/guardian.py`
+
+Run the web app (for development) with: `python pulseguardian/web.py`
+
+For production, the web app can be run with [gunicorn][] and such.
+
 ## Testing
 
-PulseGuardian uses docker to run its test suite. Please follow the
-[docker installation docs][] on how to install it in your system.
+TODO: This process should be updated to run the tests with a
+docker-compose environment.
+
+Tests are automatically run against the GitHub repository via [Travis
+CI][]. Before submitting a patch, it is highly recommended that you
+get a Travis CI account and activate it on a GitHub fork of the
+pulseguardian repo.
+
+For local testing, PulseGuardian uses docker to run its test
+suite. Please follow the [docker installation docs][] on how to
+install it in your system.  Note that these tests are not yet hooked
+up to the environment created with `docker-compose` above.
 
 With docker installed and configured appropriately, run
 
@@ -135,13 +169,6 @@ With docker installed and configured appropriately, run
 
 The required docker image will be built and container started before the tests
 are run.
-
-If you are using OS X with `docker-machine`, don't forget to set the
-environment variables before running the tests via
-
-    eval "$(docker-machine env <machine>)"
-
-where `<machine>` is your docker-machine name, quite possibly `default`.
 
 The docker container forwards ports 5672 and 15672. Please be sure that
 they are available.
@@ -151,7 +178,7 @@ that you have a clean environment before running the tests, i.e., no
 PulseGuardian environment variables set. (FIXME: set up a full test environment
 from within runtests.py rather than relying on defaults.)
 
-Some Linux-specific notes:
+Some Linux-specific notes (TODO: are these still valid/necessary?):
 
 * The docker daemon must always run as the root user, but you need to be able
   to run docker client commands without `sudo`. To achieve that you can:
@@ -192,6 +219,7 @@ To migrate the database,
 * Run `alembic upgrade head`
 
 [the wiki]: https://wiki.mozilla.org/Auto-tools/Projects/Pulse/PulseGuardian
+[docker-compose]: https://docs.docker.com/compose/
 [HACKING.md]: https://hg.mozilla.org/automation/mozillapulse/file/tip/HACKING.md
 [Travis CI]: https://travis-ci.org/mozilla/pulseguardian
 [gunicorn]: https://www.digitalocean.com/community/articles/how-to-deploy-python-wsgi-apps-using-gunicorn-http-server-behind-nginx
