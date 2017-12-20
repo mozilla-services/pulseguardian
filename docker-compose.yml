@@ -1,0 +1,35 @@
+version: "2"
+services:
+  db:
+    image: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  pulse:
+    image: rabbitmq:3-management
+    environment:
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit loopback_users []
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+  pulseguardian-base:
+    build:
+      context: ./
+      dockerfile: ./docker/Dockerfile-pgbase
+  pulseguardian-web:
+    build:
+      context: ./
+      dockerfile: ./docker/Dockerfile-pgweb
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./:/code
+    depends_on:
+      - db
+  pulseguardian-guardian:
+    build:
+      context: ./
+      dockerfile: ./docker/Dockerfile-pgguardian
+    depends_on:
+      - db
+volumes:
+  pgdata:
