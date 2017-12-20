@@ -1,0 +1,21 @@
+FROM python:2.7-slim-stretch
+# postgresql-client assumes a couple man directories are present, and the
+# installation will fail if they aren't.  We need to create these manually
+# because they are not created automatically in the 'slim' image.
+RUN mkdir -p \
+            /usr/share/man/man1 \
+            /usr/share/man/man7
+RUN apt-get update && apt-get install -y \
+                libffi-dev \
+                libssl-dev \
+                postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+ENV PYTHONBUFFERED 1
+ENV DATABASE_URL postgres://postgres:postgres@db:5432/postgres
+ENV FLASK_SECRET_KEY GBhQrZfbN9KGMcyLVImGeS2Wtj3SFCdF
+ENV RABBIT_MANAGEMENT_URL http://pulse:15672/api/
+WORKDIR /code
+ADD requirements.txt /code/
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . /code/
+RUN pip install -e .
