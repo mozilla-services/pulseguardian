@@ -344,7 +344,7 @@ class GuardianTest(unittest.TestCase):
 
         # Wait for messages to be taken into account and get the warned
         # messages, if any.
-        for i in xrange(10):
+        for i in xrange(100):
             time.sleep(0.3)
             queues_to_warn = set(q_data['name'] for q_data
                                  in pulse_management.queues()
@@ -395,7 +395,7 @@ class GuardianTest(unittest.TestCase):
             self.publisher.publish(msg)
 
         # Wait some time for published messages to be taken into account.
-        for i in xrange(10):
+        for i in xrange(100):
             time.sleep(0.3)
             queues_to_delete = [q_data['name'] for q_data
                                 in pulse_management.queues()
@@ -450,7 +450,7 @@ class GuardianTest(unittest.TestCase):
             self.publisher.publish(msg)
 
         # Wait some time for published messages to be taken into account.
-        for i in xrange(10):
+        for i in xrange(100):
             time.sleep(0.3)
             queues_to_delete = [q_data['name'] for q_data
                                 in pulse_management.queues()
