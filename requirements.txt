@@ -4,7 +4,8 @@ MarkupSafe==1.0
 MozillaPulse==1.2.2
 SQLAlchemy==0.9.4
 Werkzeug==0.12.2
-amqp==1.4.5
+kombu==4.1.0
+amqp==2.2.2
 anyjson==0.3.3
 itsdangerous==0.24
 requests==2.2.1
