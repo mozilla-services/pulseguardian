@@ -6,7 +6,7 @@ from subprocess import call, Popen, PIPE
 
 
 def create_image():
-    create_image_command = 'docker build -t="pulse:testing" test'
+    create_image_command = 'docker build -t=pulse:testing test'
     call(create_image_command.split(' '))
 
 
