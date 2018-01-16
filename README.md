@@ -34,7 +34,8 @@ conflict.
 The PulseGuardian code is mounted as `/code` in the web and daemon
 containers.  You can edit the code locally and restart the container(s) to
 pick up changes: `docker-compose restart web` and/or `docker-compose
-restart guardian`.
+restart guardian`.  The RabbitMQ cluster and PulseGuardian database data are
+preserved across restarts as via Docker volumes.
 
 Because PulseGuardian uses cookies, it is necessary to add an entry to
 your local hosts file for `pulseguardian-web`, mapping to 127.0.0.1.
@@ -43,6 +44,16 @@ http://pulseguardian-web:5000/.
 
 RabbitMQ is available via localhost:5672 (AMQP) and
 http://localhost:15672/ (management interface).
+
+You can change the logged-in user by overriding the `FAKE_ACCOUNT`
+environment variable.  One way to do this is by creating a file named
+`docker-compose.override.yml` that contains something like this:
+
+    version: "2"
+    services:
+      pulseguardian-web:
+        environment:
+          - FAKE_ACCOUNT=fake-override@example.com
 
 ### Local
 
