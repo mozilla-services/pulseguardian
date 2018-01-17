@@ -4,6 +4,8 @@ services:
     image: postgres
     volumes:
       - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
   pulse:
     image: rabbitmq:3-management
     environment:
