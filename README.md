@@ -43,7 +43,11 @@ After adding this, you can access the web server via
 http://pulseguardian-web:5000/.
 
 RabbitMQ is available via localhost:5672 (AMQP) and
-http://localhost:15672/ (management interface).
+http://localhost:15672/ (management interface).  The PostGreSQL
+database is available at localhost:5432.  If you have `psql` installed
+locally, you can connect to the database via the following:
+
+    psql -h localhost -p 5432 -d postgres -U postgres
 
 You can change the logged-in user by overriding the `FAKE_ACCOUNT`
 environment variable.  One way to do this is by creating a file named
