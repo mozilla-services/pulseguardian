@@ -71,7 +71,7 @@
 </div>
 {% endmacro %}
 
-{% if cur_user.admin %}
+{% if users|length > 1 %}
   <h2>Users</h2>
 
   {% for user in users %}
@@ -87,6 +87,6 @@
   {% endif %}
 {% else %}
   <h3>Queues</h3>
-  {{ user_information(cur_user) }}
+  {{ user_information(users|first) }}
 {% endif %}
 

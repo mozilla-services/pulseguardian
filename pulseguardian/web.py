@@ -200,14 +200,19 @@ def requires_admin(f):
     return decorated_function
 
 
+def current_user(session):
+    if not session.get('userinfo'):
+        return None
+
+    return User.query.filter(
+        User.email == session['userinfo']['email']
+    ).first()
+
+
 @app.context_processor
 def inject_user():
     """Injects a user and configuration in templates' context."""
-    if session.get('userinfo'):
-        cur_user = User.query.filter(User.email ==
-                                     session['userinfo']['email']).first()
-    else:
-        cur_user = None
+    cur_user = current_user(session)
 
     if cur_user and cur_user.pulse_users:
         pulse_user = cur_user.pulse_users[0]
@@ -327,10 +332,13 @@ def all_pulse_users():
 @sh.wrapper()
 @oidc.oidc_auth
 def queues():
-    users = no_owner_queues = []
     if g.user.admin:
         users = User.query.all()
         no_owner_queues = list(Queue.query.filter(Queue.owner == None))
+    else:
+        users = [current_user(session)]
+        no_owner_queues = []
+
     return render_template('queues.html', users=users,
                            no_owner_queues=no_owner_queues)
 
@@ -339,9 +347,13 @@ def queues():
 @sh.wrapper()
 @oidc.oidc_auth
 def queues_listing():
-    users = no_owner_queues = []
     if g.user.admin:
+        users = User.query.all()
         no_owner_queues = list(Queue.query.filter(Queue.owner == None))
+    else:
+        users = [current_user(session)]
+        no_owner_queues = []
+
     return render_template('queues_listing.html', users=users,
                            no_owner_queues=no_owner_queues)
 
