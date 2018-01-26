@@ -43,7 +43,7 @@ $(document).ready(function() {
     setInterval(function() {
         if (autoReload) {
             $('#queues-info').load('/queues_listing', function() {
-                deleteableObjectHandler('queue');
+                deleteableObjectHandler('queues', 'queue');
             });
         }
     }, reloadInterval);
