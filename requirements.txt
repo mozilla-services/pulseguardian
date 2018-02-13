@@ -8,7 +8,7 @@ kombu==4.1.0
 amqp==2.2.2
 anyjson==0.3.3
 itsdangerous==0.24
-requests==2.2.1
+requests==2.18.4
 wsgiref==0.1.2
 argparse==1.2.1
 psycopg2==2.7.3.2
