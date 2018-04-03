@@ -44,5 +44,8 @@ class OpenIDConnect(object):
             app,
             issuer='https://{DOMAIN}/'.format(DOMAIN=config.oidc_domain),
             client_registration_info=self.client_info(),
+            extra_request_args={
+                'scope': ['openid', 'profile', 'email'],
+            },
         )
         return oidc
