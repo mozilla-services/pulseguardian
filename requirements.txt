@@ -18,7 +18,7 @@ funcsigs==1.0.2
 future==0.16.0
 gunicorn==19.7.1
 idna==2.6
-ipaddress==1.0.19
+ipaddress==1.0.21
 itsdangerous==0.24
 jinja2==2.10
 kombu==4.1.0
