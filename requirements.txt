@@ -17,7 +17,7 @@ Flask-SSLify==0.1.5
 funcsigs==1.0.2
 future==0.16.0
 gunicorn==19.7.1
-idna==2.6
+idna==2.7
 ipaddress==1.0.21
 itsdangerous==0.24
 jinja2==2.10
