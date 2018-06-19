@@ -1,4 +1,4 @@
-alabaster==0.7.10
+alabaster==0.7.11
 alembic==0.9.9
 amqp==2.2.2
 anyjson==0.3.3
