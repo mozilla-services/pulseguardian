@@ -15,7 +15,7 @@ https://github.com/mozilla-iam/Flask-pyoidc/archive/v1.0.0.tar.gz
 flask-secure-headers==0.6
 Flask-SSLify==0.1.5
 funcsigs==1.0.2
-future==0.17.0
+future==0.17.1
 gunicorn==19.8.1
 idna==2.7
 ipaddress==1.0.21
