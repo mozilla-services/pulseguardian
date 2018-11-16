@@ -32,24 +32,5 @@ STARTUP = 'Startup'
 
 
 def log(sev, cat, summary, details=None, tags=None):
-    now = datetime.datetime.utcnow()
+    print '[{}] {}'.format(cat, summary)
 
-    if not details:
-        details = {}
-
-    if not tags:
-        tags = {}
-
-    msg = {
-        'category': cat,
-        'details': details,
-        'hostname': pulseguardian.config.flask_host,
-        'processid': os.getpid(),
-        'processname': os.path.basename(sys.argv[0]),
-        'severity': sev,
-        'summary': summary,
-        'tags': [],
-        'timestamp': now.strftime('%Y-%m-%dT%H:%M:%S+00:00'),
-    }
-
-    print json.dumps(msg)
