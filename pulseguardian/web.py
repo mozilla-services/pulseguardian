@@ -68,6 +68,7 @@ app = Flask(__name__)
 app.config['SERVER_NAME'] = config.flask_server_name
 app.config['PREFERRED_URL_SCHEME'] = ('https' if config.flask_use_ssl
                                       else 'http')
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.secret_key = config.flask_secret_key
 
 # Redirect to https if running on Heroku dyno.
