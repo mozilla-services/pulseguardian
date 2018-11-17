@@ -63,48 +63,6 @@ DEV_CERT_BASE = 'dev'
 # Role for admin user
 ADMIN_ROLE = 'admin'
 
-
-# Monkey-patch werkzeug.
-
-def generate_adhoc_ssl_pair(cn=None):
-    """Generate a 1024-bit self-signed SSL pair.
-    This is a verbatim copy of werkzeug.serving.generate_adhoc_ssl_pair
-    from commit 91ec97963c77188cc75ba19b66e1ba0929376a34 except the key
-    length has been increased from 768 bits to 1024 bits, since recent
-    versions of Firefox and other browsers have increased key-length
-    requirements.
-    """
-    from random import random
-    from OpenSSL import crypto
-
-    # pretty damn sure that this is not actually accepted by anyone
-    if cn is None:
-        cn = '*'
-
-    cert = crypto.X509()
-    cert.set_serial_number(int(random() * sys.maxint))
-    cert.gmtime_adj_notBefore(0)
-    cert.gmtime_adj_notAfter(60 * 60 * 24 * 365)
-
-    subject = cert.get_subject()
-    subject.CN = cn
-    subject.O = 'Dummy Certificate'
-
-    issuer = cert.get_issuer()
-    issuer.CN = 'Untrusted Authority'
-    issuer.O = 'Self-Signed'
-
-    pkey = crypto.PKey()
-    pkey.generate_key(crypto.TYPE_RSA, 1024)
-    cert.set_pubkey(pkey)
-    cert.sign(pkey, 'md5')
-
-    return cert, pkey
-
-
-# This is used by werkzeug.serving.make_ssl_devcert().
-werkzeug.serving.generate_adhoc_ssl_pair = generate_adhoc_ssl_pair
-
 # Initialize the web app.
 app = Flask(__name__)
 app.config['SERVER_NAME'] = config.flask_server_name
