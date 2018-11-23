@@ -12,7 +12,7 @@ $(document).ready(function() {
     var autoReload = true;
     var reloadInterval = 8000;
 
-    function deleteableObjectHandler(collectionClass, objectType) {
+    function deletableObjectHandler(collectionClass, objectType) {
         $('.' + objectType + 's .delete').click(function() {
             var objectInstance = $(this).closest('.' + objectType);
             var objectName = objectInstance.data(objectType + '-name');
@@ -25,8 +25,8 @@ $(document).ready(function() {
         });
     }
 
-    deleteableObjectHandler('queues', 'queue');
-    deleteableObjectHandler('pulse-users', 'pulse-user');
+    deletableObjectHandler('queues', 'queue');
+    deletableObjectHandler('pulse-users', 'pulse-user');
 
     $('.pulse-users .edit').click(function() {
         var details = $($(this).closest('.pulse-user'))
@@ -43,7 +43,7 @@ $(document).ready(function() {
     setInterval(function() {
         if (autoReload) {
             $('#queues-info').load('/queues_listing', function() {
-                deleteableObjectHandler('queues', 'queue');
+                deletableObjectHandler('queues', 'queue');
             });
         }
     }, reloadInterval);
@@ -53,7 +53,7 @@ $(document).ready(function() {
         $(this).toggleClass('inactive');
     });
 
-    function deleteableObject(objectType) {
+    function deletableObject(objectType) {
         function deleteObject(objectInstance, objectName, csrfToken) {
             $.ajax({
                 url: '/' + objectType + '/' + objectName,
@@ -88,6 +88,6 @@ $(document).ready(function() {
         });
     }
 
-    deleteableObject('queue');
-    deleteableObject('pulse-user');
+    deletableObject('queue');
+    deletableObject('pulse-user');
 });
