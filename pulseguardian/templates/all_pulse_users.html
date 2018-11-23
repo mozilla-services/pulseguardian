@@ -17,7 +17,7 @@
       </thead>
       <tbody>
       {% for pulse_user in pulse_users %}
-        <tr class="pulse-user" data-pulse-user-name="{{pulse_user.username}}">>
+        <tr class="pulse-user" data-pulse-user-name="{{pulse_user.username}}">
           <td>{{ pulse_user.username }}</td>
           <td>{{ pulse_user.owners|sort(attribute='email')|join(', ', attribute='email') }}</td>
           {% if g.user.admin %}
