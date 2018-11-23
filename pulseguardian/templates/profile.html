@@ -46,7 +46,7 @@
                  class="form-control"/>
 
           <br/>
-          <strong>Owners:</strong>(comma separated)
+          <strong>Owners:</strong> (comma separated)
           <input name="owners-list" type="text" value="{{ pulse_user.owners|join(',', attribute='email')|default(cur_user.email, true) }}"
                  class="form-control"/>
 
