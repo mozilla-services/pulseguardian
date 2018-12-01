@@ -2,13 +2,13 @@
 
 {% block body %}
 <div class="col-md-12">
-  <h3>All Pulse Users</h3>
+  <h3>All RabbitMQ Accounts</h3>
 
   <ul class="list-group pulse-users" data-csrf-token="{{ csrf_token() }}">
     <table id="pulse_users" width="100%">
       <thead>
         <tr>
-          <th>Pulse User</th>
+          <th>RabbitMQ Account</th>
           <th>Owners</th>
           {% if g.user.admin %}
           <th>Actions</th>

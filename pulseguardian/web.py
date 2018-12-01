@@ -378,7 +378,7 @@ def delete_pulse_user(pulse_username):
             mozdef.log(
                 mozdef.ERROR,
                 mozdef.OTHER,
-                'Error deleting Pulse user',
+                'Error deleting RabbitMQ account',
                 details=details,
             )
             return jsonify(ok=False)
@@ -386,7 +386,7 @@ def delete_pulse_user(pulse_username):
         mozdef.log(
             mozdef.NOTICE,
             mozdef.OTHER,
-            'Pulse user deleted',
+            'RabbitMQ account deleted',
             details=details,
         )
         db_session.delete(pulse_user)
@@ -469,7 +469,7 @@ def update_info():
             PulseUser.username == pulse_username).one()
     except sqlalchemy.orm.exc.NoResultFound:
         return profile(
-            messages=["Pulse user {} not found.".format(pulse_username)])
+            messages=["RabbitMQ account {} not found.".format(pulse_username)])
 
     if g.user not in pulse_user.owners:
         return profile(
@@ -569,7 +569,7 @@ def register_handler():
 
     if (in_rabbitmq or
             PulseUser.query.filter(PulseUser.username == username).first()):
-        errors.append("A user with the same username already exists.")
+        errors.append("An account with the same username already exists.")
 
     if errors:
         return render_template('register.html', email=email,
