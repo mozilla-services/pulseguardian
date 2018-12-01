@@ -4,34 +4,21 @@
 <div class="col-md-8">
   <h2>What's Pulse?</h2>
 
-  <p>
-    Mozilla currently has a ton of different systems that are
-    interconnected via polling, screen scraping, email, and other
-    brittle methods. To make their lives easier community members
-    often build tools on top of this house of cards, adding yet
-    another level of scraping and polling. Many systems don't even
-    export important data for others to scrape and use, preventing
-    better tools from being written.
-  </p>
+  <p>Pulse is a RabbitMQ-based system that allows applications to react to
+  various automation events.  The system is designed to allow loose
+  coupling via a pub-sub event model.</p>
 
-  <p>
-    Mozilla Pulse is a message broker / event system system. The
-    goal is to eliminate polling and add visibility into all aspects
-    of Mozilla and its systems. This allows more robust, dynamic,
-    and informative tools.
-  </p>
+  <p>Because RabbitMQ isn't designed to be a publicly available service,
+  PulseGuardian was built as a management tool.  It provides the ability
+  to create and delete RabbitMQ accounts.  To prevent misbehaving
+  applications from overloading Pulse, it also monitors queues,
+  sending warnings to PulseGuardian users if queues grow too large,
+  and subsequently deleting them if no action is taken.</p>
 
-  <p>
-    Pulse isn't any one thing. At its heart, it is a RabbitMQ
-    system with a particular configuration and a set of conventions
-    for using it. Pulse follows the pub-sub pattern, in which
-    publishers send messages to topic exchanges, and consumers
-    create queues bound to these exchanges in order to subscribe to
-    the publishers' messages. The
-    <a href="https://pypi.python.org/pypi/MozillaPulse">mozillapulse</a>
-    Python package provides classes for existing publishers, consumers, and
-    messages so you can quickly build Pulse applications.
-  </p>
+  <p>There is also a Python package,
+  <a href="https://pypi.python.org/pypi/MozillaPulse">mozillapulse</a>,
+  which provides classes for some often-used publishers, consumers, and
+  messages so you can quickly build Pulse applications.</p>
 
   <p>
     <strong>
@@ -51,14 +38,5 @@
     <li>For Python, the underlying library used to talk AMQP
       is <a href="http://kombu.readthedocs.org/">kombu</a></li>
   </ul>
-</div>
-
-<div class="col-md-4">
-  <h2>What is this website made for?</h2>
-
-  <p>
-    Use this website to sign-up for a Pulse consumer account, monitor
-    your open queues or get information about the Pulse system.
-  </p>
 </div>
 {% endblock %}
