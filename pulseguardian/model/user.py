@@ -6,17 +6,17 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import backref, relationship
 
 from pulseguardian.model.base import Base, db_session
-from pulseguardian.model.pulse_user import PulseUser
+from pulseguardian.model.pulse_user import RabbitMQAccount
 
 
-pulse_user_owners = Table('pulse_user_owners',
-                          Base.metadata,
-                          Column('users_id',
-                                 Integer,
-                                 ForeignKey('users.id')),
-                          Column('pulse_users_id',
-                                 Integer,
-                                 ForeignKey('pulse_users.id')))
+rabbitmq_account_owners = Table('pulse_user_owners',
+                                Base.metadata,
+                                Column('users_id',
+                                       Integer,
+                                       ForeignKey('users.id')),
+                                Column('pulse_users_id',
+                                       Integer,
+                                       ForeignKey('pulse_users.id')))
 
 
 class User(Base):
@@ -28,9 +28,10 @@ class User(Base):
     email = Column(String(255), unique=True)
     admin = Column(Boolean)
 
-    pulse_users = relationship(PulseUser, backref=backref('owners'),
-                               cascade='save-update, merge, delete',
-                               secondary=pulse_user_owners)
+    rabbitmq_accounts = relationship(RabbitMQAccount,
+                                     backref=backref('owners'),
+                                     cascade='save-update, merge, delete',
+                                     secondary=rabbitmq_account_owners)
 
     @staticmethod
     def new_user(email, admin=False):

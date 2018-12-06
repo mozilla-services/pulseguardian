@@ -53,7 +53,7 @@ from werkzeug.routing import NotFound
 
 from pulseguardian import auth, config, management as pulse_management, mozdef
 from pulseguardian.model.base import db_session, init_db
-from pulseguardian.model.pulse_user import PulseUser
+from pulseguardian.model.pulse_user import RabbitMQAccount
 from pulseguardian.model.queue import Queue
 from pulseguardian.model.user import User
 
@@ -173,13 +173,13 @@ def inject_user():
     """Injects a user and configuration in templates' context."""
     cur_user = current_user(session)
 
-    if cur_user and cur_user.pulse_users:
-        pulse_user = cur_user.pulse_users[0]
+    if cur_user and cur_user.rabbitmq_accounts:
+        rabbitmq_account = cur_user.rabbitmq_accounts[0]
     else:
-        pulse_user = None
+        rabbitmq_account = None
 
-    return dict(cur_user=cur_user, pulse_user=pulse_user, config=config,
-                session=session)
+    return dict(cur_user=cur_user, rabbitmq_account=rabbitmq_account,
+                config=config, session=session)
 
 
 @app.before_request
@@ -243,7 +243,7 @@ def shutdown_session(exception=None):
 @sh.wrapper()
 def index():
     if session.get('id_token'):
-        if g.user.pulse_users:
+        if g.user.rabbitmq_accounts:
             return redirect('/rabbitmq_accounts')
         return redirect('/register')
     return render_template('index.html')
@@ -279,12 +279,13 @@ def all_users():
     return render_template('all_users.html', users=users)
 
 
-@app.route('/all_pulse_users')
+@app.route('/all_rabbitmq_accounts')
 @sh.wrapper()
 @oidc.oidc_auth
 def all_pulse_users():
-    pulse_users = PulseUser.query.options(joinedload('owners'))
-    return render_template('all_pulse_users.html', pulse_users=pulse_users)
+    rabbitmq_accounts = RabbitMQAccount.query.options(joinedload('owners'))
+    return render_template('all_pulse_users.html',
+                           rabbitmq_accounts=rabbitmq_accounts)
 
 
 @app.route('/queues')
@@ -359,20 +360,21 @@ def delete_queue(queue_name):
     return jsonify(ok=False)
 
 
-@app.route('/pulse-user/<pulse_username>', methods=['DELETE'])
+@app.route('/rabbitmq-account/<rabbitmq_username>', methods=['DELETE'])
 @sh.wrapper()
 @oidc.oidc_auth
-def delete_pulse_user(pulse_username):
-    pulse_user = PulseUser.query.filter(
-        PulseUser.username == pulse_username).first()
+def delete_rabbitmq_account(rabbitmq_username):
+    rabbitmq_account = RabbitMQAccount.query.filter(
+        RabbitMQAccount.username == rabbitmq_username).first()
 
-    if pulse_user and (g.user.admin or g.user in pulse_user.owners):
+    if rabbitmq_account and (g.user.admin or g.user in
+                             rabbitmq_account.owners):
         details = {
             'username': g.user.email,
-            'pulseusername': pulse_username,
+            'rabbitmqusername': rabbitmq_username,
         }
         try:
-            pulse_management.delete_user(pulse_user.username)
+            pulse_management.delete_user(rabbitmq_account.username)
         except pulse_management.PulseManagementException as e:
             details['message'] = str(e)
             mozdef.log(
@@ -389,7 +391,7 @@ def delete_pulse_user(pulse_username):
             'RabbitMQ account deleted',
             details=details,
         )
-        db_session.delete(pulse_user)
+        db_session.delete(rabbitmq_account)
         db_session.commit()
         return jsonify(ok=True)
 
@@ -459,19 +461,21 @@ def bindings_listing(queue_name):
 @sh.wrapper()
 @oidc.oidc_auth
 def update_info():
-    pulse_username = request.form['pulse-user']
+    rabbitmq_username = request.form['rabbitmq-username']
     new_password = request.form['new-password']
     password_verification = request.form['new-password-verification']
     new_owners = _clean_owners_str(request.form['owners-list'])
 
     try:
-        pulse_user = PulseUser.query.filter(
-            PulseUser.username == pulse_username).one()
+        rabbitmq_account = RabbitMQAccount.query.filter(
+            RabbitMQAccount.username == rabbitmq_username).one()
     except sqlalchemy.orm.exc.NoResultFound:
         return rabbitmq_accounts(
-            messages=["RabbitMQ account {} not found.".format(pulse_username)])
+            messages=[
+                "RabbitMQ account {} not found.".format(rabbitmq_username)
+            ])
 
-    if g.user not in pulse_user.owners:
+    if g.user not in rabbitmq_account.owners:
         return rabbitmq_accounts(
             messages=[
                 "Invalid user: {} is not an owner.".format(g.user.email)
@@ -486,24 +490,24 @@ def update_info():
                 error="Password verification doesn't match the password."
             )
 
-        if not PulseUser.strong_password(new_password):
+        if not RabbitMQAccount.strong_password(new_password):
             return rabbitmq_accounts(
                 error="Your password must contain a mix of letters and "
                 "numerical characters and be at least 6 characters long."
             )
 
-        pulse_user.change_password(new_password)
+        rabbitmq_account.change_password(new_password)
         messages.append("Password updated for user {0}.".format(
-                        pulse_username))
+                        rabbitmq_username))
 
     # Update the owners list, if needed.
-    old_owners = {user.email for user in pulse_user.owners}
+    old_owners = {user.email for user in rabbitmq_account.owners}
     if new_owners and new_owners != old_owners:
         # The list was changed.  Do an update.
         new_owner_users = list(User.query.filter(User.email.in_(new_owners)))
         if new_owner_users:
             # At least some of the new owners are real users in the db.
-            pulse_user.owners = new_owner_users
+            rabbitmq_account.owners = new_owner_users
             db_session.commit()
 
             updated_owners = {user.email for user in new_owner_users}
@@ -544,7 +548,7 @@ def register_handler():
 
     if password != password_verification:
         errors.append("Password verification doesn't match the password.")
-    elif not PulseUser.strong_password(password):
+    elif not RabbitMQAccount.strong_password(password):
         errors.append("Your password must contain a mix of letters and "
                       "numerical characters and be at least 6 characters "
                       "long.")
@@ -570,7 +574,8 @@ def register_handler():
             in_rabbitmq = False
 
     if (in_rabbitmq or
-            PulseUser.query.filter(PulseUser.username == username).first()):
+            RabbitMQAccount.query.filter(
+                RabbitMQAccount.username == username).first()):
         errors.append("An account with the same username already exists.")
 
     if errors:
@@ -584,7 +589,7 @@ def register_handler():
         return register(error="Invalid owners list: {}".format(
             request.form['owners-list'] or "None"))
 
-    PulseUser.new_user(username, password, owner_users)
+    RabbitMQAccount.new_user(username, password, owner_users)
 
     return redirect('/rabbitmq_accounts')
 

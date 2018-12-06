@@ -11,8 +11,9 @@ import traceback
 from pulseguardian import config, management as pulse_management, mozdef
 from pulseguardian.model.base import init_db, db_session
 from pulseguardian.model.binding import Binding
-from pulseguardian.model.user import PulseUser, User
+from pulseguardian.model.pulse_user import RabbitMQAccount
 from pulseguardian.model.queue import Queue
+from pulseguardian.model.user import User
 from pulseguardian.sendemail import sendemail
 
 
@@ -154,8 +155,8 @@ class PulseGuardian(object):
             else:
                 log_details['valid'] = True
                 owner_name = m.group(1)
-                owner = PulseUser.query.filter(
-                    PulseUser.username == owner_name).first()
+                owner = RabbitMQAccount.query.filter(
+                    RabbitMQAccount.username == owner_name).first()
                 log_details['ownername'] = owner_name
                 log_details['newowner'] = not owner
 
@@ -163,11 +164,11 @@ class PulseGuardian(object):
                 # pulseguardian database, add the user to the DB, owned by an
                 # admin.
                 if owner is None:
-                    # PulseUser needs at least one owner as well, but since
-                    # we have no way of knowing who really owns it, find the
-                    # first admin, and set it to that.
+                    # RabbitMQAccount needs at least one owner as well, but
+                    # since we have no way of knowing who really owns it, find
+                    # the first admin, and set it to that.
                     user = User.query.filter(User.admin == True).first()
-                    owner = PulseUser.new_user(owner_name, owners=user)
+                    owner = RabbitMQAccount.new_user(owner_name, owners=user)
 
             mozdef.log(
                 mozdef.NOTICE,

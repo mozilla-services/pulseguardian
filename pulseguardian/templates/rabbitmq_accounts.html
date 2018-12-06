@@ -16,27 +16,27 @@
     </span>
   </h3>
 
-  <ul class="list-group pulse-users" data-csrf-token="{{ csrf_token() }}">
+  <ul class="list-group rabbitmq-accounts" data-csrf-token="{{ csrf_token() }}">
 
-    {% for pulse_user in cur_user.pulse_users %}
-    <li class="list-group-item pulse-user"
-        data-pulse-user-name="{{pulse_user.username}}">
+    {% for rabbitmq_account in cur_user.rabbitmq_accounts %}
+    <li class="list-group-item rabbitmq-account"
+        data-rabbitmq-account-name="{{rabbitmq_account.username}}">
       <form action="/update_info" method="post">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"/>
-        <input type="hidden" name="pulse-user" value="{{pulse_user.username}}"/>
+        <input type="hidden" name="rabbitmq-username" value="{{rabbitmq_account.username}}"/>
         <h4>
-          {{pulse_user.username}}
+          {{rabbitmq_account.username}}
           <span class="pull-right">
             <span class="glyphicon glyphicon-pencil edit"></span>
             <span class="glyphicon glyphicon-remove delete"></span>
           </span>
           <div class="owners"><small>
             <span class="owners-label-cell"><span class="owners-label">Owners:</span></span>
-            <span class="owners-list-cell">{{ pulse_user.owners|sort(attribute='email')|join(', ', attribute='email') }}</span>
+            <span class="owners-list-cell">{{ rabbitmq_account.owners|sort(attribute='email')|join(', ', attribute='email') }}</span>
           </small></div>
         </h4>
 
-        <div class="pulse-user-details hidden">
+        <div class="rabbitmq-account-details hidden">
           <strong>New password:</strong>
           <input name="new-password" type="password"
                  class="form-control"/>
@@ -47,7 +47,7 @@
 
           <br/>
           <strong>Owners:</strong> (comma separated)
-          <input name="owners-list" type="text" value="{{ pulse_user.owners|join(',', attribute='email')|default(cur_user.email, true) }}"
+          <input name="owners-list" type="text" value="{{ rabbitmq_account.owners|join(',', attribute='email')|default(cur_user.email, true) }}"
                  class="form-control"/>
 
           <br/>

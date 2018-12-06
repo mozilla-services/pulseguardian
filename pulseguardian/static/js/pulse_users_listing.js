@@ -4,5 +4,5 @@
 
 $(document).ready(function() {
     // DataTables
-    $('#pulse_users').dataTable();
+    $('#rabbitmq_accounts').dataTable();
 });

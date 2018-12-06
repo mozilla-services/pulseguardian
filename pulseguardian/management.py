@@ -5,12 +5,12 @@
 """Wrapper functions around the RabbitMQ management plugin's REST API."""
 
 import json
-import logging
 from urllib import quote
 
 import requests
 
 from pulseguardian import config
+
 
 class PulseManagementException(Exception):
     pass

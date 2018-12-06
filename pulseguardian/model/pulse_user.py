@@ -12,7 +12,7 @@ from pulseguardian.model.base import Base, db_session
 from pulseguardian.model.queue import Queue
 
 
-class PulseUser(Base):
+class RabbitMQAccount(Base):
     """User class, linked to a rabbitmq user (with the same username).
     Provides access to a user's queues.
     """
@@ -27,8 +27,8 @@ class PulseUser(Base):
 
     @staticmethod
     def new_user(username, password='', owners=None, create_rabbitmq_user=True):
-        """Initializes a new user, generating a salt and encrypting
-        his password. Then creates a RabbitMQ user if needed and sets
+        """Initializes a new account object, generating a salt and encrypting
+        its password. Then creates a RabbitMQ user if needed and sets
         permissions.
 
         :param create_rabbitmq_user: Whether to add this user to the rabbitmq
@@ -37,16 +37,16 @@ class PulseUser(Base):
         # Ensure that ``owners`` is a list.
         if owners and not isinstance(owners, list):
             owners = [owners]
-        pulse_user = PulseUser(owners=owners, username=username)
+        rabbitmq_account = RabbitMQAccount(owners=owners, username=username)
 
         if create_rabbitmq_user:
-            pulse_user._create_user(password)
-            pulse_user._set_permissions()
+            rabbitmq_account._create_user(password)
+            rabbitmq_account._set_permissions()
 
-        db_session.add(pulse_user)
+        db_session.add(rabbitmq_account)
         db_session.commit()
 
-        return pulse_user
+        return rabbitmq_account
 
     @staticmethod
     def strong_password(password):
@@ -84,7 +84,7 @@ class PulseUser(Base):
                                         write=write_conf_perms)
 
     def __repr__(self):
-        return "<PulseUser(username='{0}', owners='{1}')>".format(
+        return "<RabbitMQAccount(username='{0}', owners='{1}')>".format(
             self.username,
             ', '.join([owner.email for owner in self.owners]))
 

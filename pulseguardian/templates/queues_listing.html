@@ -52,11 +52,11 @@
 
 {% macro user_information(user) %}
 <div class="user" data-email="{{user.email}}">
-  {% if user.pulse_users %}
-    {% for pulse_user in user.pulse_users %}
-      <h4>{{pulse_user.username}}</h4>
-      {% if pulse_user.queues %}
-        {{ list_queues(pulse_user.queues) }}
+  {% if user.rabbitmq_accounts %}
+    {% for rabbitmq_account in user.rabbitmq_accounts %}
+      <h4>{{rabbitmq_account.username}}</h4>
+      {% if rabbitmq_account.queues %}
+        {{ list_queues(rabbitmq_account.queues) }}
       {% else %}
         <p>
           No queues for now!
