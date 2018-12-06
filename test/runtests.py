@@ -31,7 +31,7 @@ from pulseguardian import dbinit, management as pulse_management, web
 from pulseguardian.guardian import PulseGuardian
 from pulseguardian.model.base import db_session
 from pulseguardian.model.binding import Binding
-from pulseguardian.model.pulse_user import PulseUser
+from pulseguardian.model.pulse_user import RabbitMQAccount
 from pulseguardian.model.queue import Queue
 from pulseguardian.model.user import User
 
@@ -145,19 +145,19 @@ class GuardianTest(unittest.TestCase):
         self.consumer_cfg['password'] = CONSUMER_PASSWORD
 
         self.user = User.new_user(email=CONSUMER_EMAIL, admin=False)
-        # As a default owner for pulse_user in some tests where an owner is not
-        # provided.
+        # As a default owner for rabbitmq_account in some tests where an owner
+        # is not provided.
         self.admin = User.new_user(email=ADMIN_EMAIL, admin=True)
 
         db_session.add(self.user)
         db_session.commit()
 
-        self.pulse_user = PulseUser.new_user(
+        self.rabbitmq_account = RabbitMQAccount.new_user(
             username=CONSUMER_USER,
             password=CONSUMER_PASSWORD,
             owners=self.user)
 
-        db_session.add(self.pulse_user)
+        db_session.add(self.rabbitmq_account)
         db_session.commit()
 
     def tearDown(self):
@@ -335,7 +335,7 @@ class GuardianTest(unittest.TestCase):
         self._wait_for_queue()
 
         # Get the queue's object.
-        db_session.refresh(self.pulse_user)
+        db_session.refresh(self.rabbitmq_account)
 
         # Queue multiple messages while no consumer exists.
         for i in xrange(self.guardian.warn_queue_size + 1):
@@ -355,7 +355,7 @@ class GuardianTest(unittest.TestCase):
                 break
 
         # Test that no queue has been warned at the beginning of the process.
-        self.assertTrue(not any(q.warned for q in self.pulse_user.queues))
+        self.assertTrue(not any(q.warned for q in self.rabbitmq_account.queues))
         # ... but some queues should be now.
         self.assertGreater(len(queues_to_warn), 0)
 
@@ -364,10 +364,10 @@ class GuardianTest(unittest.TestCase):
                                      pulse_management.bindings())
 
         # Refresh the user's queues state.
-        db_session.refresh(self.pulse_user)
+        db_session.refresh(self.rabbitmq_account)
 
         # Test that the queues that had to be "warned" were.
-        self.assertTrue(all(q.warned for q in self.pulse_user.queues
+        self.assertTrue(all(q.warned for q in self.rabbitmq_account.queues
                             if q in queues_to_warn))
 
         # The queues that needed to be warned haven't been deleted.
@@ -385,9 +385,9 @@ class GuardianTest(unittest.TestCase):
         self._wait_for_queue()
 
         # Get the queue's object
-        db_session.refresh(self.pulse_user)
+        db_session.refresh(self.rabbitmq_account)
 
-        self.assertGreater(len(self.pulse_user.queues), 0)
+        self.assertGreater(len(self.rabbitmq_account.queues), 0)
 
         # Queue multiple messages while no consumer exists.
         for i in xrange(self.guardian.del_queue_size + 1):
@@ -436,12 +436,12 @@ class GuardianTest(unittest.TestCase):
         self._wait_for_queue()
 
         # Get the queue's object
-        db_session.refresh(self.pulse_user)
+        db_session.refresh(self.rabbitmq_account)
 
-        self.assertGreater(len(self.pulse_user.queues), 0)
+        self.assertGreater(len(self.rabbitmq_account.queues), 0)
 
         # set queues as unbound so they won't be deleted
-        for queue in self.pulse_user.queues:
+        for queue in self.rabbitmq_account.queues:
             queue.unbound = 1
 
         # Queue multiple messages while no consumer exists.
@@ -488,9 +488,9 @@ class GuardianTest(unittest.TestCase):
         self._setup_queue()
 
         # Get the queue's object
-        db_session.refresh(self.pulse_user)
+        db_session.refresh(self.rabbitmq_account)
 
-        self.assertEqual(len(self.pulse_user.queues), 1)
+        self.assertEqual(len(self.rabbitmq_account.queues), 1)
 
         # check queue bindings in the DB
         queues = Queue.query.all()
@@ -568,11 +568,11 @@ class ModelTest(unittest.TestCase):
         db_session.add(user)
         db_session.commit()
 
-        pulse_user = PulseUser.new_user(username='dummy',
-                                        password='DummyPassword',
-                                        owners=user,
-                                        create_rabbitmq_user=False)
-        db_session.add(pulse_user)
+        rabbitmq_account = RabbitMQAccount.new_user(username='dummy',
+                                                    password='DummyPassword',
+                                                    owners=user,
+                                                    create_rabbitmq_user=False)
+        db_session.add(rabbitmq_account)
         db_session.commit()
 
         self.assertTrue(user in User.query.all())
@@ -581,10 +581,12 @@ class ModelTest(unittest.TestCase):
         self.assertEqual(
             User.query.filter(User.email == 'dummy@email.com').first(), user)
         self.assertEqual(
-            PulseUser.query.filter(PulseUser.username == 'dummy').first(),
-            pulse_user)
+            RabbitMQAccount.query.filter(
+                RabbitMQAccount.username == 'dummy').first(),
+            rabbitmq_account)
         self.assertEqual(
-            PulseUser.query.filter(PulseUser.username == 'DUMMY').first(),
+            RabbitMQAccount.query.filter(
+                RabbitMQAccount.username == 'DUMMY').first(),
             None)
 
     def test_user_set_admin(self):
@@ -616,7 +618,7 @@ class WebTest(unittest.TestCase):
         self.curr_user = User.new_user(email=self.curr_email, admin=False)
         self.all_users = [mif_u, maf_u, self.curr_user]
 
-    def set_pulse_user_email_list(self, username, email_str):
+    def set_rabbitmq_account_email_list(self, username, email_str):
         with web.app.test_client() as c:
             templates = "{}/pulseguardian/templates".format(os.getcwd())
             c.application.template_folder = templates
@@ -627,40 +629,41 @@ class WebTest(unittest.TestCase):
 
             c.post('/update_info',
                    data={"owners-list": email_str,
-                         "pulse-user": username,
+                         "rabbitmq-username": username,
                          "new-password": "",
                          "new-password-verification": ""})
 
-        pu_after = PulseUser.query.first()
+        pu_after = RabbitMQAccount.query.first()
         pu_after_emails = {owner.email for owner in pu_after.owners}
         return pu_after_emails
 
-    def test_pulse_user_single_to_multiple_ownership(self):
+    def test_rabbitmq_account_single_to_multiple_ownership(self):
         self.setup_3_users()
-        PulseUser.new_user(username="mick",
-                           owners=self.curr_user,
-                           password="mitochondria5")
+        RabbitMQAccount.new_user(username="mick",
+                                 owners=self.curr_user,
+                                 password="mitochondria5")
 
-        new_emails = self.set_pulse_user_email_list(
+        new_emails = self.set_rabbitmq_account_email_list(
             "mick", ','.join(self.all_emails))
         self.assertEquals(new_emails, set(self.all_emails))
 
-    def test_pulse_user_multiple_to_single_ownership(self):
+    def test_rabbitmq_account_multiple_to_single_ownership(self):
         self.setup_3_users()
-        PulseUser.new_user(username="mick",
-                           owners=self.all_users,
-                           password="mitochondria5")
+        RabbitMQAccount.new_user(username="mick",
+                                 owners=self.all_users,
+                                 password="mitochondria5")
 
-        new_emails = self.set_pulse_user_email_list("mick", self.curr_email)
+        new_emails = self.set_rabbitmq_account_email_list("mick",
+                                                          self.curr_email)
         self.assertEquals(new_emails, {self.curr_email})
 
     def test_pulse_odd_whitespace_ownership_list(self):
         self.setup_3_users()
-        PulseUser.new_user(username="mick",
-                           owners=self.all_users,
-                           password="mitochondria5")
+        RabbitMQAccount.new_user(username="mick",
+                                 owners=self.all_users,
+                                 password="mitochondria5")
 
-        new_emails = self.set_pulse_user_email_list(
+        new_emails = self.set_rabbitmq_account_email_list(
             "mick", ",  {},   {},{},".format(*self.all_emails))
         self.assertEquals(new_emails, set(self.all_emails))
 

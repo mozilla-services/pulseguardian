@@ -4,8 +4,9 @@
 <div class="col-md-12">
   <h3>All RabbitMQ Accounts</h3>
 
-  <ul class="list-group pulse-users" data-csrf-token="{{ csrf_token() }}">
-    <table id="pulse_users" width="100%">
+  <ul class="list-group rabbitmq-accounts"
+      data-csrf-token="{{ csrf_token() }}">
+    <table id="rabbitmq_accounts" width="100%">
       <thead>
         <tr>
           <th>RabbitMQ Account</th>
@@ -16,10 +17,11 @@
         </tr>
       </thead>
       <tbody>
-      {% for pulse_user in pulse_users %}
-        <tr class="pulse-user" data-pulse-user-name="{{pulse_user.username}}">
-          <td>{{ pulse_user.username }}</td>
-          <td>{{ pulse_user.owners|sort(attribute='email')|join(', ', attribute='email') }}</td>
+      {% for rabbitmq_account in rabbitmq_accounts %}
+        <tr class="rabbitmq-account"
+          data-rabbitmq-account-name="{{rabbitmq_account.username}}">
+          <td>{{ rabbitmq_account.username }}</td>
+          <td>{{ rabbitmq_account.owners|sort(attribute='email')|join(', ', attribute='email') }}</td>
           {% if g.user.admin %}
           <td><span class="glyphicon glyphicon-remove delete"></span></td>
           {% endif %}

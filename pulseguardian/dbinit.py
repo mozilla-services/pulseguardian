@@ -9,7 +9,7 @@ from pulseguardian import config, management as pulse_management
 from pulseguardian.model.base import db_session, init_db
 from pulseguardian.model.binding import Binding
 from pulseguardian.model.user import User
-from pulseguardian.model.pulse_user import PulseUser
+from pulseguardian.model.pulse_user import RabbitMQAccount
 from pulseguardian.model.queue import Queue
 
 logging.basicConfig()
@@ -22,9 +22,9 @@ def init_and_clear_db():
     init_db()
 
     # Remove all users and pulse users created by the web app.
-    for pulse_user in PulseUser.query.all():
+    for rabbitmq_account in RabbitMQAccount.query.all():
         try:
-            pulse_management.delete_user(pulse_user.username)
+            pulse_management.delete_user(rabbitmq_account.username)
         except pulse_management.PulseManagementException:
             pass
 
@@ -33,8 +33,8 @@ def init_and_clear_db():
         db_session.delete(queue)
     for binding in Binding.query.all():
         db_session.delete(binding)
-    for pulse_user in PulseUser.query.all():
-        db_session.delete(pulse_user)
+    for rabbitmq_account in RabbitMQAccount.query.all():
+        db_session.delete(rabbitmq_account)
     for user in User.query.all():
         db_session.delete(user)
 
@@ -49,27 +49,27 @@ def dummy_data():
     users = User.query.all()
 
     for i in xrange(4):
-        PulseUser.new_user(
+        RabbitMQAccount.new_user(
             username='dummy{0}'.format(i),
             password='dummy',
             owners=users[0])
 
-    pulse_users = PulseUser.query.all()
+    rabbitmq_accounts = RabbitMQAccount.query.all()
 
     # And some dummy queues
-    dummy_queue = Queue(name='dummy-empty-queue', size=0, owner=pulse_users[0])
+    dummy_queue = Queue(name='dummy-empty-queue', size=0, owner=rabbitmq_accounts[0])
     db_session.add(dummy_queue)
     db_session.commit()
 
-    dummy_queue = Queue(name='dummy-non-empty-queue', size=config.warn_queue_size/5, owner=pulse_users[0])
+    dummy_queue = Queue(name='dummy-non-empty-queue', size=config.warn_queue_size/5, owner=rabbitmq_accounts[0])
     db_session.add(dummy_queue)
     db_session.commit()
 
-    dummy_queue = Queue(name='dummy-warning-queue', size=config.warn_queue_size + 1, owner=pulse_users[1])
+    dummy_queue = Queue(name='dummy-warning-queue', size=config.warn_queue_size + 1, owner=rabbitmq_accounts[1])
     db_session.add(dummy_queue)
     db_session.commit()
 
-    dummy_queue = Queue(name='dummy-deletion-queue', size=int(config.del_queue_size * 1.2), owner=pulse_users[2])
+    dummy_queue = Queue(name='dummy-deletion-queue', size=int(config.del_queue_size * 1.2), owner=rabbitmq_accounts[2])
     db_session.add(dummy_queue)
     db_session.commit()
 
