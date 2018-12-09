@@ -32,6 +32,7 @@ oidc_client_id = os.getenv('OIDC_CLIENT_ID', None)
 oidc_client_secret = os.getenv('OIDC_CLIENT_SECRET', None)
 
 # Mail
+email_enabled = bool(int(os.getenv('EMAIL_ENABLED', 1)))
 email_account = os.getenv('EMAIL_ACCOUNT', 'automation@mozilla.com')
 email_password = os.getenv('EMAIL_PASSWORD', None)
 email_from = os.getenv('EMAIL_FROM', 'Mozilla A-Team <auto-tools@mozilla.com>')
