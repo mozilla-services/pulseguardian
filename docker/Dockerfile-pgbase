@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
                 libssl-dev \
                 postgresql-client \
     && rm -rf /var/lib/apt/lists/*
-ENV PYTHONBUFFERED 1
+ENV PYTHONUNBUFFERED 1
 ENV DATABASE_URL postgres://postgres:postgres@db:5432/postgres
 ENV FLASK_SECRET_KEY GBhQrZfbN9KGMcyLVImGeS2Wtj3SFCdF
 ENV RABBIT_MANAGEMENT_URL http://pulse:15672/api/
