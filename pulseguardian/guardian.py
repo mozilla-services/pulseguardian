@@ -461,5 +461,5 @@ if __name__ == '__main__':
     # Initialize the database if necessary.
     init_db()
 
-    pulse_guardian = PulseGuardian()
+    pulse_guardian = PulseGuardian(emails=config.email_enabled)
     pulse_guardian.guard()
