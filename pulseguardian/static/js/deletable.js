@@ -7,58 +7,49 @@
 // confirmation dialog) which should be organized better.  See also
 // dialogs.html.
 
-$(document).ready(function() {
-     function deletableObjectHandler(collectionClass, objectType) {
-        $('.' + objectType + 's .delete').click(function() {
-            var objectInstance = $(this).closest('.' + objectType);
-            var objectName = objectInstance.data(objectType + '-name');
-            var modal = $('.modal-delete-' + objectType);
-            modal.data(objectType + '-object', objectInstance);
-            modal.data('csrf-token',
-                       $('.' + collectionClass).data('csrf-token'));
-            modal.find('.' + objectType + '-name').text(objectName);
-            modal.modal();
-        });
-    }
+function deletableObjectHandler(collectionClass, objectType) {
+    $('.' + objectType + 's .delete').click(function() {
+        var objectInstance = $(this).closest('.' + objectType);
+        var objectName = objectInstance.data(objectType + '-name');
+        var modal = $('.modal-delete-' + objectType);
+        modal.data(objectType + '-object', objectInstance);
+        modal.data('csrf-token',
+                   $('.' + collectionClass).data('csrf-token'));
+        modal.find('.' + objectType + '-name').text(objectName);
+        modal.modal();
+    });
+}
 
-    deletableObjectHandler('queues', 'queue');
-    deletableObjectHandler('pulse-users', 'pulse-user');
-
-    function deletableObject(objectType) {
-        function deleteObject(objectInstance, objectName, csrfToken) {
-            $.ajax({
-                url: '/' + objectType + '/' + objectName,
-                type: 'DELETE',
-                headers: {
-                    'X-CSRF-Token': csrfToken,
-                },
-                success: function(result) {
-                    if (!result.ok) {
-                        errorMessage("Couldn't delete " + objectType + " '" +
-                                     objectName + "'.");
-                        return;
-                    }
-
-                    $(objectInstance).slideUp(300);
-                },
-                error: function() {
+function deletableObject(objectType) {
+    function deleteObject(objectInstance, objectName, csrfToken) {
+        $.ajax({
+            url: '/' + objectType + '/' + objectName,
+            type: 'DELETE',
+            headers: {
+                'X-CSRF-Token': csrfToken,
+            },
+            success: function(result) {
+                if (!result.ok) {
                     errorMessage("Couldn't delete " + objectType + " '" +
-                             objectName + "'.");
-                },
-                complete: function() {
-                    $('.modal-delete-' + objectType).modal('hide');
+                                 objectName + "'.");
+                    return;
                 }
-            });
-        }
-
-        var modalClass = '.modal-delete-' + objectType;
-        $(modalClass + ' .delete-' + objectType + '-ok').click(function() {
-            deleteObject($(modalClass).data(objectType + '-object'),
-                         $(modalClass + ' .' + objectType + '-name').text(),
-                         $(modalClass).data('csrf-token'));
+                $(objectInstance).slideUp(300);
+            },
+            error: function() {
+                errorMessage("Couldn't delete " + objectType + " '" +
+                             objectName + "'.");
+            },
+            complete: function() {
+                $('.modal-delete-' + objectType).modal('hide');
+            }
         });
     }
 
-    deletableObject('queue');
-    deletableObject('pulse-user');
-});
+    var modalClass = '.modal-delete-' + objectType;
+    $(modalClass + ' .delete-' + objectType + '-ok').click(function() {
+        deleteObject($(modalClass).data(objectType + '-object'),
+                     $(modalClass + ' .' + objectType + '-name').text(),
+                     $(modalClass).data('csrf-token'));
+    });
+}

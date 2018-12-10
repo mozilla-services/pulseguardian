@@ -3,10 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 $(document).ready(function() {
-    // Auto-reload
-    var autoReload = true;
-    var reloadInterval = 8000;
-
     $('.pulse-users .edit').click(function() {
         var details = $($(this).closest('.pulse-user'))
                 .find('.pulse-user-details');
@@ -19,16 +15,6 @@ $(document).ready(function() {
         }
     });
 
-    setInterval(function() {
-        if (autoReload) {
-            $('#queues-info').load('/queues_listing', function() {
-                deletableObjectHandler('queues', 'queue');
-            });
-        }
-    }, reloadInterval);
-
-    $('.autoreload').click(function() {
-        autoReload = !autoReload;
-        $(this).toggleClass('inactive');
-    });
+    deletableObjectHandler('pulse-users', 'pulse-user');
+    deletableObject('pulse-user');
 });
