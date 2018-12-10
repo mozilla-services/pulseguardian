@@ -244,7 +244,7 @@ def shutdown_session(exception=None):
 def index():
     if session.get('id_token'):
         if g.user.pulse_users:
-            return redirect('/profile')
+            return redirect('/rabbitmq_accounts')
         return redirect('/register')
     return render_template('index.html')
 
@@ -257,15 +257,15 @@ def register(error=None):
                            error=error)
 
 
-@app.route('/profile')
+@app.route('/rabbitmq_accounts')
 @sh.wrapper()
 @oidc.oidc_auth
-def profile(error=None, messages=None):
+def rabbitmq_accounts(error=None, messages=None):
     users = no_owner_queues = []
     if g.user.admin:
         users = User.query.all()
         no_owner_queues = list(Queue.query.filter(Queue.owner == None))
-    return render_template('profile.html', users=users,
+    return render_template('rabbitmq_accounts.html', users=users,
                            no_owner_queues=no_owner_queues,
                            error=error, messages=messages)
 
@@ -468,11 +468,11 @@ def update_info():
         pulse_user = PulseUser.query.filter(
             PulseUser.username == pulse_username).one()
     except sqlalchemy.orm.exc.NoResultFound:
-        return profile(
+        return rabbitmq_accounts(
             messages=["RabbitMQ account {} not found.".format(pulse_username)])
 
     if g.user not in pulse_user.owners:
-        return profile(
+        return rabbitmq_accounts(
             messages=[
                 "Invalid user: {} is not an owner.".format(g.user.email)
             ]
@@ -482,13 +482,15 @@ def update_info():
     error = None
     if new_password:
         if new_password != password_verification:
-            return profile(error="Password verification doesn't match the "
-                           "password.")
+            return rabbitmq_accounts(
+                error="Password verification doesn't match the password."
+            )
 
         if not PulseUser.strong_password(new_password):
-            return profile(error="Your password must contain a mix of "
-                           "letters and numerical characters and be at "
-                           "least 6 characters long.")
+            return rabbitmq_accounts(
+                error="Your password must contain a mix of letters and "
+                "numerical characters and be at least 6 characters long."
+            )
 
         pulse_user.change_password(new_password)
         messages.append("Password updated for user {0}.".format(
@@ -518,7 +520,7 @@ def update_info():
     if not error and not messages:
         messages = ["No info updated."]
 
-    return profile(messages=messages, error=error)
+    return rabbitmq_accounts(messages=messages, error=error)
 
 
 def _clean_owners_str(owners_str):
@@ -584,7 +586,7 @@ def register_handler():
 
     PulseUser.new_user(username, password, owner_users)
 
-    return redirect('/profile')
+    return redirect('/rabbitmq_accounts')
 
 
 @app.route('/auth/logout', methods=['POST'])

@@ -19,7 +19,7 @@
       {% endif %}
     {% else %}
       <span class="right-link">
-        <a href="/profile">
+        <a href="/rabbitmq_accounts">
           <button id="signin-link" class="btn btn-info">
             <span class="glyphicon glyphicon-user login-icon"></span>Sign in</span>
           </button>
@@ -28,7 +28,7 @@
     {% endif %}
 
     {% if cur_user %}
-      <a href="/profile">
+      <a href="/rabbitmq_accounts">
         <span class="username right-link nav-box">
           <span class="glyphicon glyphicon-user"></span>
           {{cur_user.email}}
