@@ -284,7 +284,7 @@ def all_users():
 @oidc.oidc_auth
 def all_pulse_users():
     rabbitmq_accounts = RabbitMQAccount.query.options(joinedload('owners'))
-    return render_template('all_pulse_users.html',
+    return render_template('all_rabbitmq_accounts.html',
                            rabbitmq_accounts=rabbitmq_accounts)
 
 
