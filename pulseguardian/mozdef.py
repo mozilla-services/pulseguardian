@@ -32,5 +32,5 @@ STARTUP = 'Startup'
 
 
 def log(sev, cat, summary, details=None, tags=None):
-    print '[{}] {}'.format(cat, summary)
+    print '[{}] {} {} {}'.format(cat, summary, json.dumps(details), json.dumps(tags))
 
