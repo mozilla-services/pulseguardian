@@ -283,6 +283,7 @@ The queue will be automatically deleted when it exceeds {4} messages.
 
 Make sure your clients are running correctly and are cleaning up unused
 durable queues.
+Login: https://pulseguardian.mozilla.org/queues
 '''.format(queue_data['name'], exchange, queue_data['messages_ready'],
            queue_data['messages'], self.del_queue_size)
 
