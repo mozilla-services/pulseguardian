@@ -29,7 +29,7 @@ oic==0.9.1.0 # pyup: ignore
 psycopg2-binary==2.7.6.1
 pycparser==2.19
 pycryptodomex==3.7.2
-pyjwkest==1.4.0
+pyjwkest==1.4.2
 pyOpenSSL==18.0.0
 python-dateutil==2.7.5
 python-editor==1.0.3
