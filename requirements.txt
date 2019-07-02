@@ -3,7 +3,7 @@ alembic==1.0.5
 amqp==2.3.2
 anyjson==0.3.3
 asn1crypto==0.24.0
-Beaker==1.10.0
+Beaker==1.10.1
 certifi==2018.11.29
 cffi==1.11.5
 chardet==3.0.4
