@@ -30,7 +30,7 @@ psycopg2-binary==2.7.6.1
 pycparser==2.19
 pycryptodomex==3.7.2
 pyjwkest==1.4.0
-pyOpenSSL==18.0.0
+pyOpenSSL==19.0.0
 python-dateutil==2.7.5
 python-editor==1.0.3
 pytz==2018.7
