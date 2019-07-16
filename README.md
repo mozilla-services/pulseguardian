@@ -236,6 +236,13 @@ To migrate the database,
   requirements.txt`
 * Run `alembic upgrade head`
 
+## Deployment
+
+This project is deployed to the Heroku app `pulseguardian`.
+This is via Git pushes to Heroku, rather than the more common pull-from-GitHub approach.
+To set this up, run `heroku git:remote -a pulseguardian`.
+Then just push the latest `master` branch to the `heroku` remote.
+
 [the wiki]: https://wiki.mozilla.org/Auto-tools/Projects/Pulse/PulseGuardian
 [docker-compose]: https://docs.docker.com/compose/
 [HACKING.md]: https://hg.mozilla.org/automation/mozillapulse/file/tip/HACKING.md
