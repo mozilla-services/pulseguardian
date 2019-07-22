@@ -21,7 +21,7 @@ idna==2.8
 ipaddress==1.0.21
 itsdangerous==1.1.0
 jinja2==2.10.1
-kombu==4.2.1
+kombu==4.6.3
 Mako==1.0.7
 MarkupSafe==1.1.0
 MozillaPulse==1.3
