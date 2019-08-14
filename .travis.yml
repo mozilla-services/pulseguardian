@@ -1,4 +1,7 @@
+sudo: required
 language: python
+services:
+  - rabbitmq
 python:
   - "2.7"
 before_install:
@@ -13,3 +16,7 @@ script:
 notifications:
   irc: "irc.mozilla.org#pulse"
   on_success: change
+addons:
+  apt:
+    packages:
+    - rabbitmq-server
