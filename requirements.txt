@@ -16,7 +16,7 @@ flask-secure-headers==0.6
 Flask-SSLify==0.1.5
 funcsigs==1.0.2
 future==0.18.0
-gunicorn==19.8.1
+gunicorn==19.9.0
 idna==2.8
 ipaddress==1.0.22
 itsdangerous==1.1.0
