@@ -29,6 +29,7 @@ def _api_request(path, method='GET', data=None):
                                data=json.dumps(data)).prepare()
     request.headers['Content-type'] = 'application/json'
     response = session.send(request)
+    session.close()
 
     if response is None or not response.content:
         return None
