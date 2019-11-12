@@ -5,7 +5,7 @@
 """Wrapper functions around the RabbitMQ management plugin's REST API."""
 
 import json
-from urllib import quote
+from urllib.parse import quote
 
 import requests
 

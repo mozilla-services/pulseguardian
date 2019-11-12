@@ -48,7 +48,7 @@ def dummy_data():
     User.new_user(email='dummy0@dummy.com')
     users = User.query.all()
 
-    for i in xrange(4):
+    for i in range(4):
         RabbitMQAccount.new_user(
             username='dummy{0}'.format(i),
             password='dummy',

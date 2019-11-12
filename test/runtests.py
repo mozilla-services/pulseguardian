@@ -12,13 +12,13 @@ import sys
 import time
 import unittest
 import uuid
-from urlparse import urlparse
+from urllib.parse import urlparse
 
 from kombu import Exchange
 from mozillapulse import consumers, publishers
 from mozillapulse.messages.test import TestMessage
 
-os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24))
+os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24)).decode('ascii')
 
 # Change the DB for the tests before the model is initialized.
 from pulseguardian import config
@@ -338,13 +338,13 @@ class GuardianTest(unittest.TestCase):
         db_session.refresh(self.rabbitmq_account)
 
         # Queue multiple messages while no consumer exists.
-        for i in xrange(self.guardian.warn_queue_size + 1):
+        for i in range(self.guardian.warn_queue_size + 1):
             msg = self._build_message(i)
             self.publisher.publish(msg)
 
         # Wait for messages to be taken into account and get the warned
         # messages, if any.
-        for i in xrange(100):
+        for i in range(100):
             time.sleep(0.3)
             queues_to_warn = set(q_data['name'] for q_data
                                  in pulse_management.queues()
@@ -390,12 +390,12 @@ class GuardianTest(unittest.TestCase):
         self.assertGreater(len(self.rabbitmq_account.queues), 0)
 
         # Queue multiple messages while no consumer exists.
-        for i in xrange(self.guardian.del_queue_size + 1):
+        for i in range(self.guardian.del_queue_size + 1):
             msg = self._build_message(i)
             self.publisher.publish(msg)
 
         # Wait some time for published messages to be taken into account.
-        for i in xrange(100):
+        for i in range(100):
             time.sleep(0.3)
             queues_to_delete = [q_data['name'] for q_data
                                 in pulse_management.queues()
@@ -445,12 +445,12 @@ class GuardianTest(unittest.TestCase):
             queue.unbound = 1
 
         # Queue multiple messages while no consumer exists.
-        for i in xrange(self.guardian.del_queue_size + 1):
+        for i in range(self.guardian.del_queue_size + 1):
             msg = self._build_message(i)
             self.publisher.publish(msg)
 
         # Wait some time for published messages to be taken into account.
-        for i in xrange(100):
+        for i in range(100):
             time.sleep(0.3)
             queues_to_delete = [q_data['name'] for q_data
                                 in pulse_management.queues()
@@ -645,7 +645,7 @@ class WebTest(unittest.TestCase):
 
         new_emails = self.set_rabbitmq_account_email_list(
             "mick", ','.join(self.all_emails))
-        self.assertEquals(new_emails, set(self.all_emails))
+        self.assertEqual(new_emails, set(self.all_emails))
 
     def test_rabbitmq_account_multiple_to_single_ownership(self):
         self.setup_3_users()
@@ -655,7 +655,7 @@ class WebTest(unittest.TestCase):
 
         new_emails = self.set_rabbitmq_account_email_list("mick",
                                                           self.curr_email)
-        self.assertEquals(new_emails, {self.curr_email})
+        self.assertEqual(new_emails, {self.curr_email})
 
     def test_pulse_odd_whitespace_ownership_list(self):
         self.setup_3_users()
@@ -665,7 +665,7 @@ class WebTest(unittest.TestCase):
 
         new_emails = self.set_rabbitmq_account_email_list(
             "mick", ",  {},   {},{},".format(*self.all_emails))
-        self.assertEquals(new_emails, set(self.all_emails))
+        self.assertEqual(new_emails, set(self.all_emails))
 
     def test_register_reserved_name(self):
         try:
@@ -686,7 +686,7 @@ class WebTest(unittest.TestCase):
                         "password-verification": "ohXoof9yoo",
                         "owners-list": CONSUMER_EMAIL,
                     })
-                self.assertIn(config.reserved_users_message, resp.data)
+                self.assertIn(config.reserved_users_message.encode('ascii'), resp.data)
         finally:
             config.reserved_users_regex = None
             config.reserved_users_message = None
