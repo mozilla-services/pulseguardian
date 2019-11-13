@@ -1,4 +1,4 @@
-FROM python:2.7-slim-stretch
+FROM python:3.6-slim-stretch
 # postgresql-client assumes a couple man directories are present, and the
 # installation will fail if they aren't.  We need to create these manually
 # because they are not created automatically in the 'slim' image.
