@@ -3,7 +3,7 @@ language: python
 services:
   - rabbitmq
 python:
-  - "2.7"
+  - "3.6"
 before_install:
   - sudo rabbitmq-plugins enable rabbitmq_management
   - sudo /etc/init.d/rabbitmq-server restart
