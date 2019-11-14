@@ -225,6 +225,10 @@ class PulseGuardian(object):
                     self.deletion_email(queue.owner.owners, queue_data)
                 if self.on_delete:
                     self.on_delete(queue.name)
+                pulse_management.delete_queue(vhost=queue_data['vhost'],
+                                              queue=queue.name)
+                db_session.delete(queue)
+                db_session.commit()
                 continue
 
             if queue.owner is None or not queue.owner.owners:
