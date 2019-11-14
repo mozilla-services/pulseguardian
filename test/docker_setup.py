@@ -38,4 +38,4 @@ def check_rabbitmq():
     logs_output = Popen(get_logs_command.split(' '),
                         stdout=PIPE).communicate()[0]
 
-    return string_to_check in logs_output
+    return string_to_check in logs_output.decode('utf8')

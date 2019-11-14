@@ -24,7 +24,6 @@ install_requires = [
     'requests',
     'Flask-SSLify',
     'alembic',
-    'flask-secure-headers',
     'Flask-pyoidc',
     'Flask',
 ]
@@ -37,7 +36,7 @@ setup(name='PulseGuardian',
       author='Mozilla A-Team',
       author_email='auto-tools@mozilla.com',
       license='MPL 2.0',
-      packages=['pulseguardian', 'pulseguardian.model'],
+      packages=['pulseguardian', 'pulseguardian.model', 'flask_secure_headers'],
       install_requires=install_requires,
       cmdclass={'test': TestCommand}
 )
