@@ -19,7 +19,7 @@ gunicorn==20.0.4
 idna==2.8
 ipaddress==1.0.23
 itsdangerous==1.1.0
-jinja2==2.11.0
+jinja2==2.11.1
 kombu==4.6.7
 Mako==1.1.1
 MarkupSafe==1.1.1
