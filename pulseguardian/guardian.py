@@ -267,7 +267,7 @@ class PulseGuardian(object):
         exchange = 'could not be determined'
         detailed_data = pulse_management.queue(vhost=queue_data['vhost'],
                                                queue=queue_data['name'])
-        if 'incoming' in detailed_data:
+        if 'incoming' in detailed_data and detailed_data['incoming']:
             exchange = detailed_data['incoming'][0]['exchange']['name']
         return exchange
 
