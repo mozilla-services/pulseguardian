@@ -69,7 +69,7 @@ def delete_queue(vhost, queue):
     vhost = quote(vhost, '')
     queue = quote(queue, '')
     _api_request('queues/{0}/{1}'.format(vhost, queue),
-                      method='DELETE')
+                 method='DELETE')
 
 
 def delete_all_queues():
@@ -94,7 +94,7 @@ def create_user(username, password, tags=''):
     username = quote(username, '')
     data = dict(password=password, tags=tags)
     _api_request('users/{0}'.format(username), method='PUT',
-                      data=data)
+                 data=data)
 
 
 def delete_user(username):

@@ -167,7 +167,7 @@ class PulseGuardian(object):
                     # RabbitMQAccount needs at least one owner as well, but
                     # since we have no way of knowing who really owns it, find
                     # the first admin, and set it to that.
-                    user = User.query.filter(User.admin == True).first()
+                    user = User.query.filter_by(admin=True).first()
                     owner = RabbitMQAccount.new_user(owner_name, owners=user)
 
             mozdef.log(
@@ -267,7 +267,7 @@ class PulseGuardian(object):
         exchange = 'could not be determined'
         detailed_data = pulse_management.queue(vhost=queue_data['vhost'],
                                                queue=queue_data['name'])
-        if detailed_data['incoming']:
+        if 'incoming' in detailed_data:
             exchange = detailed_data['incoming'][0]['exchange']['name']
         return exchange
 
