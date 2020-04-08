@@ -53,11 +53,13 @@ You can change the logged-in user by overriding the `FAKE_ACCOUNT`
 environment variable.  One way to do this is by creating a file named
 `docker-compose.override.yml` that contains something like this:
 
-    version: "2"
-    services:
-      pulseguardian-web:
-        environment:
-          - FAKE_ACCOUNT=fake-override@example.com
+```yml
+version: "2"
+services:
+  pulseguardian-web:
+    environment:
+      - FAKE_ACCOUNT=fake-override@example.com
+```
 
 ### Local
 
@@ -140,8 +142,10 @@ be mostly fine.  You will need to set `FLASK_SECRET_KEY` and probably
 `pulseguardian.db`, run the following from within the root PulseGuardian
 source directory:
 
-    export FLASK_SECRET_KEY=`python gen_secret_key.py`
-    export DATABASE_URL=sqlite:///`pwd`/db
+```bash
+export FLASK_SECRET_KEY=`python gen_secret_key.py`
+export DATABASE_URL=sqlite:///`pwd`/db
+```
 
 See the complete listing of options in `pulseguardian/config.py`.
 
