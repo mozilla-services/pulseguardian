@@ -4,13 +4,13 @@
 
 import sys
 import time
-sys.path.append('..')
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 
+sys.path.append('..')
 from pulseguardian import config, mozdef
 
 Base = declarative_base()

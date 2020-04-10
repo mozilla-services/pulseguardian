@@ -132,6 +132,7 @@ def generate_csrf_token():
         session['_csrf_token'] = base64.b64encode(os.urandom(24)).decode('ascii')
     return session['_csrf_token']
 
+
 app.jinja_env.globals['csrf_token'] = generate_csrf_token
 
 
@@ -264,7 +265,7 @@ def rabbitmq_accounts(error=None, messages=None):
     users = no_owner_queues = []
     if g.user.admin:
         users = User.query.all()
-        no_owner_queues = list(Queue.query.filter(Queue.owner == None))
+        no_owner_queues = list(Queue.query.filter(Queue.owner is None))
     return render_template('rabbitmq_accounts.html', users=users,
                            no_owner_queues=no_owner_queues,
                            error=error, messages=messages)
@@ -294,7 +295,7 @@ def all_pulse_users():
 def queues():
     if g.user.admin:
         users = User.query.all()
-        no_owner_queues = list(Queue.query.filter(Queue.owner == None))
+        no_owner_queues = list(Queue.query.filter(Queue.owner is None))
     else:
         users = [current_user(session)]
         no_owner_queues = []
@@ -309,7 +310,7 @@ def queues():
 def queues_listing():
     if g.user.admin:
         users = User.query.all()
-        no_owner_queues = list(Queue.query.filter(Queue.owner == None))
+        no_owner_queues = list(Queue.query.filter(Queue.owner is None))
     else:
         users = [current_user(session)]
         no_owner_queues = []

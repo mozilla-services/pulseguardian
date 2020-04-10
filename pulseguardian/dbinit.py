@@ -78,6 +78,7 @@ def dummy_data():
 
     logger.info('Finished generating dummy data.')
 
+
 if __name__ == '__main__':
     init_and_clear_db()
     if '--dummy' in sys.argv:
