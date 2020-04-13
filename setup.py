@@ -7,16 +7,21 @@
 
 from setuptools import setup, Command
 
+
 class TestCommand(Command):
     user_options = []
+
     def initialize_options(self):
         pass
+
     def finalize_options(self):
         pass
+
     def run(self):
         import subprocess
         errno = subprocess.call(['python', 'test/runtests.py', '--log=INFO'])
         raise SystemExit(errno)
+
 
 install_requires = [
     'MozillaPulse',
@@ -39,4 +44,4 @@ setup(name='PulseGuardian',
       packages=['pulseguardian', 'pulseguardian.model', 'flask_secure_headers'],
       install_requires=install_requires,
       cmdclass={'test': TestCommand}
-)
+      )

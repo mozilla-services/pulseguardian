@@ -2,12 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import datetime
 import json
-import os
-import sys
 
-import pulseguardian.config
 
 # Severities
 DEBUG = 'DEBUG'
@@ -33,4 +29,3 @@ STARTUP = 'Startup'
 
 def log(sev, cat, summary, details=None, tags=None):
     print('[{}] {} {} {}'.format(cat, summary, json.dumps(details), json.dumps(tags)))
-

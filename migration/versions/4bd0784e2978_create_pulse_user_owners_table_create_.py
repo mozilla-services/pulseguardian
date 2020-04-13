@@ -6,12 +6,6 @@ Create Date: 2016-01-11 08:44:00.365481
 
 """
 
-# revision identifiers, used by Alembic.
-revision = '4bd0784e2978'
-down_revision = '4ea622b0c81d'
-branch_labels = None
-depends_on = None
-
 from alembic import op
 from sqlalchemy.orm import Session
 import sqlalchemy as sa
@@ -21,6 +15,12 @@ from pulseguardian.model.pulse_user import PulseUser
 # them allows alembic to be able to use the relationships of ``owner`` and
 # ``owners`` to the User and pulse_user_owners tables.
 from pulseguardian.model.user import User, pulse_user_owners
+
+# revision identifiers, used by Alembic.
+revision = '4bd0784e2978'
+down_revision = '4ea622b0c81d'
+branch_labels = None
+depends_on = None
 
 
 def upgrade():

@@ -3,7 +3,6 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import base64
-import errno
 import logging
 import multiprocessing
 import os
@@ -18,15 +17,12 @@ from kombu import Exchange
 from mozillapulse import consumers, publishers
 from mozillapulse.messages.test import TestMessage
 
-os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24)).decode('ascii')
-
 # Change the DB for the tests before the model is initialized.
 from pulseguardian import config
-config.database_url = 'sqlite:///pulseguardian_test.db'
-config.fake_account = 'guardtest@guardtest.com'
 
 from docker_setup import (check_rabbitmq, create_image,
                           setup_container, teardown_container)
+
 from pulseguardian import dbinit, management as pulse_management, web
 from pulseguardian.guardian import PulseGuardian
 from pulseguardian.model.base import db_session
@@ -34,6 +30,11 @@ from pulseguardian.model.binding import Binding
 from pulseguardian.model.pulse_user import RabbitMQAccount
 from pulseguardian.model.queue import Queue
 from pulseguardian.model.user import User
+
+os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24)).decode('ascii')
+
+config.database_url = 'sqlite:///pulseguardian_test.db'
+config.fake_account = 'guardtest@guardtest.com'
 
 web.app.config['TESTING'] = True
 
@@ -256,9 +257,9 @@ class GuardianTest(unittest.TestCase):
             self.guardian.monitor_queues(pulse_management.queues(),
                                          pulse_management.bindings())
             if Binding.query.filter(
-                Binding.queue_name == queue_name,
-                Binding.exchange == exchange_name,
-                Binding.routing_key == routing_key).first():
+                                    Binding.queue_name == queue_name,
+                                    Binding.exchange == exchange_name,
+                                    Binding.routing_key == routing_key).first():
                 break
 
     def _wait_for_binding_delete(self, queue_name, exchange_name, routing_key):
@@ -272,9 +273,9 @@ class GuardianTest(unittest.TestCase):
             self.guardian.clear_deleted_queues(pulse_management.queues(),
                                                pulse_management.bindings())
             if not Binding.query.filter(
-                Binding.queue_name == queue_name,
-                Binding.exchange == exchange_name,
-                Binding.routing_key == routing_key).first():
+                                        Binding.queue_name == queue_name,
+                                        Binding.exchange == exchange_name,
+                                        Binding.routing_key == routing_key).first():
                 break
 
     def test_abnormal_queue_name(self):
@@ -374,8 +375,8 @@ class GuardianTest(unittest.TestCase):
         queues_to_warn_bis = set(q_data['name'] for q_data
                                  in pulse_management.queues()
                                  if self.guardian.warn_queue_size
-                                    < q_data['messages_ready']
-                                    <= self.guardian.del_queue_size)
+                                 < q_data['messages_ready']
+                                 <= self.guardian.del_queue_size)
         self.assertEqual(queues_to_warn_bis, queues_to_warn)
 
     def test_delete(self):
@@ -400,7 +401,7 @@ class GuardianTest(unittest.TestCase):
             queues_to_delete = [q_data['name'] for q_data
                                 in pulse_management.queues()
                                 if q_data['messages_ready']
-                                   > self.guardian.del_queue_size]
+                                > self.guardian.del_queue_size]
             if queues_to_delete:
                 break
 
@@ -409,8 +410,10 @@ class GuardianTest(unittest.TestCase):
 
         # Setting up a callback to capture deleted queues
         deleted_queues = []
+
         def on_delete(queue):
             deleted_queues.append(queue)
+
         self.guardian.on_delete = on_delete
 
         # Monitor the queues; this should delete overgrown queues
@@ -425,8 +428,8 @@ class GuardianTest(unittest.TestCase):
         # And that no queue has overgrown.
         queues_to_delete = [q_data['name'] for q_data
                             in pulse_management.queues()
-                            if q_data['messages_ready'] >
-                               self.guardian.del_queue_size]
+                            if q_data['messages_ready']
+                            > self.guardian.del_queue_size]
         self.assertEqual(len(queues_to_delete), 0)
 
     def test_delete_skip_unbounded(self):
@@ -455,7 +458,7 @@ class GuardianTest(unittest.TestCase):
             queues_to_delete = [q_data['name'] for q_data
                                 in pulse_management.queues()
                                 if q_data['messages_ready']
-                                   > self.guardian.del_queue_size]
+                                > self.guardian.del_queue_size]
             if queues_to_delete:
                 break
 
@@ -690,6 +693,7 @@ class WebTest(unittest.TestCase):
         finally:
             config.reserved_users_regex = None
             config.reserved_users_message = None
+
 
 def setup_host():
     global pulse_cfg
