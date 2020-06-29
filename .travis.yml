@@ -2,6 +2,8 @@ sudo: required
 language: python
 services:
   - rabbitmq
+env:
+  - FLASK_SECRET_KEY=H5uMeOWaXO6iuEQxn9DR8GWutA9oZxWQ DATABASE_URL=sqlite:////home/travis/db
 python:
   - "3.6"
 before_install:
@@ -13,9 +15,6 @@ install:
 script:
   - pip check
   - python test/runtests.py --use-local
-notifications:
-  irc: "irc.mozilla.org#pulse"
-  on_success: change
 addons:
   apt:
     packages:
