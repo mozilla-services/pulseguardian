@@ -408,8 +408,8 @@ Error:
             )
 
             try:
-                queues = pulse_management.queues()
-                bindings = pulse_management.bindings()
+                queues = pulse_management.queues(vhost=config.rabbit_vhost)
+                bindings = pulse_management.bindings(vhost=config.rabbit_vhost)
 
                 mozdef.log(
                     mozdef.DEBUG,

@@ -335,7 +335,7 @@ def delete_queue(queue_name):
         }
 
         try:
-            pulse_management.delete_queue(vhost='/', queue=queue.name)
+            pulse_management.delete_queue(vhost=config.rabbit_vhost, queue=queue.name)
         except pulse_management.PulseManagementException as e:
             details['message'] = str(e)
             mozdef.log(
@@ -454,7 +454,7 @@ def bindings_listing(queue_name):
     queue = Queue.query.get(queue_name)
     bindings = []
     if queue:
-        bindings = pulse_management.queue_bindings(vhost='/', queue=queue.name)
+        bindings = pulse_management.queue_bindings(vhost=config.rabbit_vhost, queue=queue.name)
     return jsonify({"queue_name": queue_name, "bindings": bindings})
 
 

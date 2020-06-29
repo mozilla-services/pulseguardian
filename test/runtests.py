@@ -241,8 +241,8 @@ class GuardianTest(unittest.TestCase):
             attempts += 1
             if attempts > 1:
                 time.sleep(self.QUEUE_RECORD_CHECK_PERIOD)
-            self.guardian.monitor_queues(pulse_management.queues(),
-                                         pulse_management.bindings())
+            self.guardian.monitor_queues(pulse_management.queues(vhost='/'),
+                                         pulse_management.bindings(vhost='/'))
             if Queue.query.filter(Queue.name == consumer.queue_name).first():
                 break
 
@@ -254,8 +254,8 @@ class GuardianTest(unittest.TestCase):
             attempts += 1
             if attempts > 1:
                 time.sleep(self.QUEUE_RECORD_CHECK_PERIOD)
-            self.guardian.monitor_queues(pulse_management.queues(),
-                                         pulse_management.bindings())
+            self.guardian.monitor_queues(pulse_management.queues(vhost='/'),
+                                         pulse_management.bindings(vhost='/'))
             if Binding.query.filter(
                                     Binding.queue_name == queue_name,
                                     Binding.exchange == exchange_name,
@@ -270,8 +270,8 @@ class GuardianTest(unittest.TestCase):
             attempts += 1
             if attempts > 1:
                 time.sleep(self.QUEUE_RECORD_CHECK_PERIOD)
-            self.guardian.clear_deleted_queues(pulse_management.queues(),
-                                               pulse_management.bindings())
+            self.guardian.clear_deleted_queues(pulse_management.queues(vhost='/'),
+                                               pulse_management.bindings(vhost='/'))
             if not Binding.query.filter(
                                         Binding.queue_name == queue_name,
                                         Binding.exchange == exchange_name,
@@ -361,8 +361,8 @@ class GuardianTest(unittest.TestCase):
         self.assertGreater(len(queues_to_warn), 0)
 
         # Monitor the queues; this should detect queues that should be warned.
-        self.guardian.monitor_queues(pulse_management.queues(),
-                                     pulse_management.bindings())
+        self.guardian.monitor_queues(pulse_management.queues(vhost='/'),
+                                     pulse_management.bindings(vhost='/'))
 
         # Refresh the user's queues state.
         db_session.refresh(self.rabbitmq_account)
@@ -417,8 +417,8 @@ class GuardianTest(unittest.TestCase):
         self.guardian.on_delete = on_delete
 
         # Monitor the queues; this should delete overgrown queues
-        self.guardian.monitor_queues(pulse_management.queues(),
-                                     pulse_management.bindings())
+        self.guardian.monitor_queues(pulse_management.queues(vhost='/'),
+                                     pulse_management.bindings(vhost='/'))
 
         # Test that the queues that had to be deleted were deleted...
         self.assertTrue(not any(q in queues_to_delete for q
@@ -476,8 +476,8 @@ class GuardianTest(unittest.TestCase):
         # that has grown too large.
         # In this case, it should run the check and decide to not delete
         # any queues.
-        self.guardian.monitor_queues(pulse_management.queues(),
-                                     pulse_management.bindings())
+        self.guardian.monitor_queues(pulse_management.queues(vhost='/'),
+                                     pulse_management.bindings(vhost='/'))
 
         # Test that none of the queues were deleted...
         self.assertTrue(all(q in queues_to_delete for q
