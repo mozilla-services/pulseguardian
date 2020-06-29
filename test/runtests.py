@@ -17,8 +17,11 @@ from kombu import Exchange
 from mozillapulse import consumers, publishers
 from mozillapulse.messages.test import TestMessage
 
-# Change the DB for the tests before the model is initialized.
 from pulseguardian import config
+
+# Change the DB for the tests and set fake_account *before* the model is initialized.
+config.database_url = 'sqlite:///pulseguardian_test.db'
+config.fake_account = 'guardtest@guardtest.com'
 
 from docker_setup import (check_rabbitmq, create_image,
                           setup_container, teardown_container)
@@ -32,9 +35,6 @@ from pulseguardian.model.queue import Queue
 from pulseguardian.model.user import User
 
 os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24)).decode('ascii')
-
-config.database_url = 'sqlite:///pulseguardian_test.db'
-config.fake_account = 'guardtest@guardtest.com'
 
 web.app.config['TESTING'] = True
 
