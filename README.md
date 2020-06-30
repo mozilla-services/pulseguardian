@@ -108,7 +108,7 @@ your system.
 To create a Pulse Docker image, run this from within the root PulseGuardian
 source directory:
 
-    docker build -t="pulse:testing" docker/pulse
+    docker build -t="pulse:testing" test
 
 When that finishes building, you can run a RabbitMQ instance in a Docker
 container with
