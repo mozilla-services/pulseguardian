@@ -3,7 +3,7 @@ language: python
 services:
   - rabbitmq
 env:
-  - FLASK_SECRET_KEY=H5uMeOWaXO6iuEQxn9DR8GWutA9oZxWQ DATABASE_URL=sqlite:////home/travis/db
+  - DATABASE_URL=sqlite:////home/travis/db
 python:
   - "3.6"
 before_install:

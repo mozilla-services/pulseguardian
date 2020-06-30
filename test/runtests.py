@@ -17,6 +17,8 @@ from kombu import Exchange
 from mozillapulse import consumers, publishers
 from mozillapulse.messages.test import TestMessage
 
+os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24)).decode('ascii')
+
 from pulseguardian import config
 
 # Change the DB for the tests and set fake_account *before* the model is initialized.
@@ -33,8 +35,6 @@ from pulseguardian.model.binding import Binding
 from pulseguardian.model.pulse_user import RabbitMQAccount
 from pulseguardian.model.queue import Queue
 from pulseguardian.model.user import User
-
-os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24)).decode('ascii')
 
 web.app.config['TESTING'] = True
 
