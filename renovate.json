@@ -8,5 +8,8 @@
       "automerge": true,
       "automergeType": "branch"
     }
+  ],
+  "schedule": [
+    "before 6am every weekday"
   ]
 }
