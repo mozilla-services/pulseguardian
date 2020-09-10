@@ -11,5 +11,6 @@
   ],
   "schedule": [
     "before 6am every weekday"
-  ]
+  ],
+  "rebaseWhen": "behind-base-branch"
 }
