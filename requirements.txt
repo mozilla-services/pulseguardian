@@ -31,7 +31,7 @@ pyjwkest==1.4.2
 pyOpenSSL==19.1.0
 python-dateutil==2.8.1
 python-editor==1.0.4
-pytz==2019.3
+pytz==2020.1
 requests==2.24.0
 six==1.14.0
 urllib3==1.25.9
