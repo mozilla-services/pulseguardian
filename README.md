@@ -3,7 +3,7 @@
 A system to manage Pulse: administers RabbitMQ users and handles overgrowing
 queues. More information on [the wiki][].
 
-[![Build Status](https://travis-ci.org/mozilla-services/pulseguardian.svg?branch=master)](https://travis-ci.org/mozilla-services/pulseguardian)
+[![Build Status](https://travis-ci.org/mozilla-services/pulseguardian.svg?branch=main)](https://travis-ci.org/mozilla-services/pulseguardian)
 
 ## Pre-requisites
 
@@ -72,7 +72,7 @@ packages.  On Ubuntu, these are
 * python
 * python-dev
 * libssl-dev
-* libffi-dev 
+* libffi-dev
 
 You will also need PostgreSQL installed in order to install the psycopg2
 Python package.
@@ -236,8 +236,7 @@ used for all installations, including for local development.  The database URL,
 
 To migrate the database,
 
-* Install the alembic package (if you haven't yet): `pip install -r
-  requirements.txt`
+* Install the alembic package (if you haven't yet): `pip install -r requirements.txt`
 * Run `alembic upgrade head`
 
 ## Deployment
@@ -245,7 +244,7 @@ To migrate the database,
 This project is deployed to the Heroku app `pulseguardian`.
 This is via Git pushes to Heroku, rather than the more common pull-from-GitHub approach.
 To set this up, run `heroku git:remote -a pulseguardian`.
-Then just push the latest `master` branch to the `heroku` remote.
+Then just push the latest `main` branch to the `heroku` remote: `git push heroku main`
 
 [the wiki]: https://wiki.mozilla.org/Auto-tools/Projects/Pulse/PulseGuardian
 [docker-compose]: https://docs.docker.com/compose/
