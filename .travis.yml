@@ -3,7 +3,7 @@ language: python
 services:
   - rabbitmq
 env:
-  - DATABASE_URL=sqlite:////home/travis/db
+  - DATABASE_URL=sqlite:////home/travis/db OPENSSL=1.1.1
 python:
   - "3.6"
 before_install:
