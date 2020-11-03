@@ -8,7 +8,7 @@ queues. More information on [the wiki][].
 ## Pre-requisites
 
 * RabbitMQ (tested on 3.5.7)
-* Python 3.6
+* Python 3.9
 * pip (to install external dependencies)
 * PostgreSQL (for production; testing environments can use sqlite)
 * docker-compose (to stand up a local Docker-based environment)
