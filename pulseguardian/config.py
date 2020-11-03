@@ -2,7 +2,7 @@ import base64
 import os
 
 # Web app
-flask_host = os.getenv('FLASK_HOST', 'localhost')
+flask_host = os.getenv('FLASK_HOST', 'localhost.localdomain')
 flask_port = int(os.getenv('FLASK_PORT', 5000))
 flask_use_ssl = bool(int(os.getenv('FLASK_USE_SSL', 1)))
 flask_server_name = os.getenv('FLASK_SERVER_NAME', None)
