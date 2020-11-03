@@ -5,7 +5,7 @@ services:
 env:
   - DATABASE_URL=sqlite:////home/travis/db
 python:
-  - "3.6"
+  - "3.9"
 before_install:
   - sudo rabbitmq-plugins enable rabbitmq_management
   - sudo /etc/init.d/rabbitmq-server restart
