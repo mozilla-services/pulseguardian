@@ -32,11 +32,13 @@ class OpenIDConnect(object):
     """Auth object for login, logout, and response validation."""
 
     def get_provider(self):
+        auth_params = {"scope": ["openid", "profile", "email"]}
         return ProviderConfiguration(
             issuer="https://{DOMAIN}/".format(DOMAIN=config.oidc_domain),
             client_metadata=ClientMetadata(
                 config.oidc_client_id, config.oidc_client_secret
             ),
+            auth_request_params=auth_params
         )
 
     def auth(self, app):
@@ -46,8 +48,5 @@ class OpenIDConnect(object):
         oidc = OIDCAuthentication(
             {"pg_provider": self.get_provider()},
             app=app,
-            extra_request_args={
-                "scope": ["openid", "profile", "email"],
-            },
         )
         return oidc
