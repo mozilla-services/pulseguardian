@@ -5,7 +5,6 @@
 import functools
 
 from flask_pyoidc.flask_pyoidc import OIDCAuthentication
-from flask_pyoidc.provider_configuration import ProviderConfiguration, ClientMetadata
 
 from pulseguardian import config
 
@@ -31,14 +30,10 @@ class FakeOIDCAuthentication(object):
 class OpenIDConnect(object):
     """Auth object for login, logout, and response validation."""
 
-    def get_provider(self):
-        auth_params = {"scope": ["openid", "profile", "email"]}
-        return ProviderConfiguration(
-            issuer="https://{DOMAIN}/".format(DOMAIN=config.oidc_domain),
-            client_metadata=ClientMetadata(
-                config.oidc_client_id, config.oidc_client_secret
-            ),
-            auth_request_params=auth_params
+    def client_info(self):
+        return dict(
+            client_id=config.oidc_client_id,
+            client_secret=config.oidc_client_secret,
         )
 
     def auth(self, app):
@@ -46,7 +41,11 @@ class OpenIDConnect(object):
             return FakeOIDCAuthentication()
 
         oidc = OIDCAuthentication(
-            {"pg_provider": self.get_provider()},
-            app=app,
+            app,
+            issuer='https://{DOMAIN}/'.format(DOMAIN=config.oidc_domain),
+            client_registration_info=self.client_info(),
+            extra_request_args={
+                'scope': ['openid', 'profile', 'email'],
+            },
         )
         return oidc

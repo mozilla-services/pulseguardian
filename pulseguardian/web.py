@@ -71,8 +71,6 @@ app.config['PREFERRED_URL_SCHEME'] = ('https' if config.flask_use_ssl
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.secret_key = config.flask_secret_key
 
-provider_name = config.oidc_client_id
-
 # Redirect to https if running on Heroku dyno.
 if 'DYNO' in os.environ:
     sslify = SSLify(app)
@@ -253,7 +251,7 @@ def index():
 
 
 @app.route('/register')
-@oidc.oidc_auth(provider_name)
+@oidc.oidc_auth
 @sh.wrapper()
 def register(error=None):
     return render_template('register.html', email=session['userinfo']['email'],
@@ -262,7 +260,7 @@ def register(error=None):
 
 @app.route('/rabbitmq_accounts')
 @sh.wrapper()
-@oidc.oidc_auth(provider_name)
+@oidc.oidc_auth
 def rabbitmq_accounts(error=None, messages=None):
     users = no_owner_queues = []
     if g.user.admin:
@@ -275,7 +273,7 @@ def rabbitmq_accounts(error=None, messages=None):
 
 @app.route('/all_users')
 @sh.wrapper()
-@oidc.oidc_auth(provider_name)
+@oidc.oidc_auth
 @requires_admin
 def all_users():
     users = User.query.all()
@@ -284,7 +282,7 @@ def all_users():
 
 @app.route('/all_rabbitmq_accounts')
 @sh.wrapper()
-@oidc.oidc_auth(provider_name)
+@oidc.oidc_auth
 def all_pulse_users():
     rabbitmq_accounts = RabbitMQAccount.query.options(joinedload('owners'))
     return render_template('all_rabbitmq_accounts.html',
@@ -293,7 +291,7 @@ def all_pulse_users():
 
 @app.route('/queues')
 @sh.wrapper()
-@oidc.oidc_auth(provider_name)
+@oidc.oidc_auth
 def queues():
     if g.user.admin:
         users = User.query.all()
@@ -308,7 +306,7 @@ def queues():
 
 @app.route('/queues_listing')
 @sh.wrapper()
-@oidc.oidc_auth(provider_name)
+@oidc.oidc_auth
 def queues_listing():
     if g.user.admin:
         users = User.query.all()
@@ -325,7 +323,7 @@ def queues_listing():
 
 @app.route('/queue/<path:queue_name>', methods=['DELETE'])
 @sh.wrapper()
-@oidc.oidc_auth(provider_name)
+@oidc.oidc_auth
 def delete_queue(queue_name):
     queue = Queue.query.get(queue_name)
 
@@ -365,7 +363,7 @@ def delete_queue(queue_name):
 
 @app.route('/rabbitmq-account/<rabbitmq_username>', methods=['DELETE'])
 @sh.wrapper()
-@oidc.oidc_auth(provider_name)
+@oidc.oidc_auth
 def delete_rabbitmq_account(rabbitmq_username):
     rabbitmq_account = RabbitMQAccount.query.filter(
         RabbitMQAccount.username == rabbitmq_username).first()
@@ -403,7 +401,7 @@ def delete_rabbitmq_account(rabbitmq_username):
 
 @app.route('/user/<user_id>/set-admin', methods=['PUT'])
 @sh.wrapper()
-@oidc.oidc_auth(provider_name)
+@oidc.oidc_auth
 @requires_admin
 def set_user_admin(user_id):
     if 'isAdmin' not in request.json:
@@ -462,7 +460,7 @@ def bindings_listing(queue_name):
 
 @app.route("/update_info", methods=['POST'])
 @sh.wrapper()
-@oidc.oidc_auth(provider_name)
+@oidc.oidc_auth
 def update_info():
     rabbitmq_username = request.form['rabbitmq-username']
     new_password = request.form['new-password']
