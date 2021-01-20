@@ -1,6 +1,6 @@
 alabaster==0.7.12
 alembic==1.5.1
-amqp==5.0.2
+amqp==5.0.3
 anyjson==0.3.3
 asn1crypto==1.4.0
 Beaker==1.11.0
