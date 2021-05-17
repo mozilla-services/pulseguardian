@@ -245,7 +245,7 @@ class PulseGuardian(object):
                 queue.warned = True
                 if self.on_warn:
                     self.on_warn(queue.name)
-                self.warning_email(queue.owner.owners, queue_data)
+                self.warning_email(queue.owner.owners, queue_data, queue.unbounded)
             elif queue.size <= self.warn_queue_size and queue.warned:
                 # A previously warned queue got out of the warning threshold;
                 # its owner should not be warned again.
@@ -263,21 +263,29 @@ class PulseGuardian(object):
             db_session.add(queue)
             db_session.commit()
 
-    def warning_email(self, users, queue_data):
+    def warning_email(self, users, queue_data, is_unbounded):
         subject = 'Pulse warning: queue "{0}" is overgrowing'.format(
             queue_data['name'])
+        if is_unbounded:
+            auto_delete_msg = '''\
+This queue is unbounded and will not be automatically deleted.
+'''.strip()
+        else:
+            auto_delete_msg = '''\
+The queue will be automatically deleted when it exceeds {0} messages.
+'''.format(self.del_queue_size).strip()
         body = '''\
 Warning: your queue "{0}" is overgrowing ({1} ready messages,
 {2} total messages).
 
-The queue will be automatically deleted when it exceeds {3} messages.
+{3}
 
 Make sure your clients are running correctly and are cleaning up unused
 durable queues.
 
 Check messages in the queue at: https://pulseguardian.mozilla.org/queues
 '''.format(queue_data['name'], queue_data['messages_ready'],
-           queue_data['messages'], self.del_queue_size)
+           queue_data['messages'], auto_delete_msg)
 
         if self.emails and users:
             self._sendemail(
