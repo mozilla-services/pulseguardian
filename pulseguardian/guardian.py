@@ -245,7 +245,7 @@ class PulseGuardian(object):
                 queue.warned = True
                 if self.on_warn:
                     self.on_warn(queue.name)
-                self.warning_email(queue.owner.owners, queue_data)
+                self.warning_email(queue.owner.owners, queue_data, queue.unbounded)
             elif queue.size <= self.warn_queue_size and queue.warned:
                 # A previously warned queue got out of the warning threshold;
                 # its owner should not be warned again.
@@ -263,47 +263,45 @@ class PulseGuardian(object):
             db_session.add(queue)
             db_session.commit()
 
-    def _exchange_from_queue(self, queue_data):
-        exchange = 'could not be determined'
-        detailed_data = pulse_management.queue(vhost=queue_data['vhost'],
-                                               queue=queue_data['name'])
-        if 'incoming' in detailed_data and detailed_data['incoming']:
-            exchange = detailed_data['incoming'][0]['exchange']['name']
-        return exchange
-
-    def warning_email(self, users, queue_data):
-        exchange = self._exchange_from_queue(queue_data)
-
+    def warning_email(self, users, queue_data, is_unbounded):
         subject = 'Pulse warning: queue "{0}" is overgrowing'.format(
             queue_data['name'])
-        body = '''Warning: your queue "{0}" on exchange "{1}" is
-overgrowing ({2} ready messages, {3} total messages).
+        if is_unbounded:
+            auto_delete_msg = '''\
+This queue is unbounded and will not be automatically deleted.
+'''.strip()
+        else:
+            auto_delete_msg = '''\
+The queue will be automatically deleted when it exceeds {0} messages.
+'''.format(self.del_queue_size).strip()
+        body = '''\
+Warning: your queue "{0}" is overgrowing ({1} ready messages,
+{2} total messages).
 
-The queue will be automatically deleted when it exceeds {4} messages.
+{3}
 
 Make sure your clients are running correctly and are cleaning up unused
 durable queues.
 
 Check messages in the queue at: https://pulseguardian.mozilla.org/queues
-'''.format(queue_data['name'], exchange, queue_data['messages_ready'],
-           queue_data['messages'], self.del_queue_size)
+'''.format(queue_data['name'], queue_data['messages_ready'],
+           queue_data['messages'], auto_delete_msg)
 
         if self.emails and users:
             self._sendemail(
                 subject=subject, to_users=users, text_data=body)
 
     def deletion_email(self, users, queue_data):
-        exchange = self._exchange_from_queue(queue_data)
-
         subject = 'Pulse warning: queue "{0}" has been deleted'.format(
             queue_data['name'])
-        body = '''Your queue "{0}" on exchange "{1}" has been
-deleted after exceeding the maximum number of unread messages.  Upon deletion
-there were {2} messages in the queue, out of a maximum {3} messages.
+        body = '''\
+Your queue "{0}" been deleted after exceeding the maximum number of unread
+messages.  Upon deletion there were {1} messages in the queue, out of a maximum
+{2} messages.
 
 Make sure your clients are running correctly and are cleaning up unused
 durable queues.
-'''.format(queue_data['name'], exchange, queue_data['messages'],
+'''.format(queue_data['name'], queue_data['messages'],
            self.del_queue_size)
 
         if self.emails and users:
@@ -311,14 +309,12 @@ durable queues.
                 subject=subject, to_users=users, text_data=body)
 
     def back_to_normal_email(self, users, queue_data):
-        exchange = self._exchange_from_queue(queue_data)
-
         subject = 'Pulse warning: queue "{0}" is back to normal'.format(
             queue_data['name'])
-        body = '''Your queue "{0}" on exchange "{1}" is
-now back to normal ({2} ready messages, {3} total messages).
-'''.format(queue_data['name'], exchange, queue_data['messages_ready'],
-           queue_data['messages'], self.del_queue_size)
+        body = '''\
+your queue "{0}" is now back to normal ({1} ready messages, {2} total messages).
+'''.format(queue_data['name'], queue_data['messages_ready'],
+           queue_data['messages'])
 
         if self.emails and users:
             self._sendemail(
