@@ -1,3 +1,4 @@
+import re
 import base64
 import os
 
@@ -43,6 +44,8 @@ email_ssl = bool(int(os.getenv('EMAIL_SSL', 0)))
 # Database
 database_url = os.getenv('DATABASE_URL',
                          'postgresql://root@localhost/pulseguardian')
+# `postgres://` is deprecated in favor of `postgresql://`, but heroku doesn't use postgresql
+database_url = re.sub('^postgres:', 'postgresql:', database_url)
 pool_recycle_interval = int(os.getenv('POOL_RECYCLE_INTERVAL', 60))
 
 # RabbitMQ
