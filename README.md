@@ -253,3 +253,4 @@ Then just push the latest `main` branch to the `heroku` remote: `git push heroku
 [gunicorn]: https://www.digitalocean.com/community/articles/how-to-deploy-python-wsgi-apps-using-gunicorn-http-server-behind-nginx
 [docker installation docs]: https://docs.docker.com/installation/#installation
 [Alembic]: https://alembic.readthedocs.org
+
