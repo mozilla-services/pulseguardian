@@ -1,5 +1,5 @@
 alabaster==0.7.12
-alembic==1.6.2
+alembic==1.6.3
 amqp==5.0.6
 anyjson==0.3.3
 asn1crypto==1.4.0
