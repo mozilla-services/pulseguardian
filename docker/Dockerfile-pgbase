@@ -1,4 +1,4 @@
-FROM python:3.9.1-slim-buster
+FROM python:3.9.18-slim-buster
 # postgresql-client assumes a couple man directories are present, and the
 # installation will fail if they aren't.  We need to create these manually
 # because they are not created automatically in the 'slim' image.
