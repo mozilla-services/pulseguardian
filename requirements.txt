@@ -1,5 +1,5 @@
 alabaster==0.7.12
-alembic==1.6.5
+alembic==1.13.1
 amqp==5.0.6
 asn1crypto==1.4.0
 Beaker==1.11.0
