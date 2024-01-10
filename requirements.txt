@@ -1,4 +1,4 @@
-alabaster==0.7.12
+alabaster==0.7.16
 alembic==1.6.5
 amqp==5.0.6
 asn1crypto==1.4.0
