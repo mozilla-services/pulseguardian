@@ -2,7 +2,7 @@ alabaster==0.7.12
 alembic==1.6.5
 amqp==5.0.6
 asn1crypto==1.4.0
-Beaker==1.11.0
+Beaker==1.13.0
 certifi==2020.12.5
 cffi==1.14.5
 chardet==4.0.0
