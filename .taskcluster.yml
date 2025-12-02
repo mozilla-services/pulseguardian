@@ -1,0 +1,74 @@
+version: 1
+reporting: checks-v1
+policy:
+  pullRequests: public
+tasks:
+  $let:
+    owner: taskcluster-internal@mozilla.com
+    repo:
+      $if: 'tasks_for == "github-push"'
+      then:
+        url: ${event.repository.html_url}
+        ref: ${event.after}
+      else:
+        $if: 'tasks_for == "github-pull-request"'
+        then:
+          url: ${event.pull_request.head.repo.html_url}
+          ref: ${event.pull_request.head.sha}
+        else:
+          url: ${event.repository.html_url}
+          ref: ${event.release.tag_name}
+  in:
+    $let:
+      tests:
+        - image: 'python:3.13'
+          name: pulseguardian tests
+          command:
+            - /bin/bash
+            - '--login'
+            - '-c'
+            - >-
+              apt-get update &&
+              apt-get install -y rabbitmq-server curl &&
+              service rabbitmq-server start &&
+              sleep 5 &&
+              rabbitmq-plugins enable rabbitmq_management &&
+              service rabbitmq-server restart &&
+              sleep 5 &&
+              curl -LsSf https://astral.sh/uv/install.sh | sh &&
+              export PATH="/root/.local/bin:$PATH" &&
+              git clone ${repo.url} repo &&
+              cd repo &&
+              git config advice.detachedHead false &&
+              git checkout ${repo.ref} &&
+              export DATABASE_URL=sqlite:////tmp/db &&
+              uv venv &&
+              . .venv/bin/activate &&
+              uv pip install -e ".[dev]" &&
+              python test/runtests.py --use-local
+    in:
+      $let:
+        test_tasks:
+          $map: {$eval: tests}
+          each(test):
+            taskId: {$eval: as_slugid(test.name)}
+            provisionerId: proj-misc
+            workerType: ci
+            created: {$fromNow: ''}
+            deadline: {$fromNow: '60 minutes'}
+            payload:
+              maxRunTime: 3600
+              image: ${test.image}
+              command: {$eval: 'test.command'}
+            metadata:
+              name: ${test.name}
+              description: ${test.name}
+              owner: ${owner}
+              source: ${repo.url}
+
+      in:
+        $flattenDeep:
+        - $if: 'tasks_for == "github-push" && event["ref"] == "refs/heads/main"'
+          then: {$eval: test_tasks}
+        - $if: 'tasks_for == "github-pull-request" && event["action"] in ["opened", "reopened", "synchronize"]'
+          then: {$eval: test_tasks}

@@ -8,8 +8,8 @@ queues. More information on [the wiki][].
 ## Pre-requisites
 
 * RabbitMQ (tested on 3.5.7)
-* Python 3.9
-* pip (to install external dependencies)
+* Python 3.13+
+* pip or [uv](https://docs.astral.sh/uv/) (to install dependencies)
 * PostgreSQL (for production; testing environments can use sqlite)
 * docker-compose (to stand up a local Docker-based environment)
 
@@ -77,29 +77,11 @@ packages.  On Ubuntu, these are
 You will also need PostgreSQL installed in order to install the psycopg2
 Python package.
 
-Using a virtualenv is highly recommended. One possible installation would be
+Using uv and virtualenv is highly recommended. 
 
-* Clone the repository and cd into it.
-* Create and activate a virtualenv:
-
-        virtualenv venv
-        source venv/bin/activate
-
-Within the chosen environment, install and configure PulseGuardian:
-
-* Install the requirements:
-
-        pip install -r requirements.txt
-
-* Install the package.  This will ensure you have access to the `pulseguardian`
-  package from anywhere in your virtualenv.
-
-        python setup.py develop
-
-If you will be running PulseGuardian with SSL enabled (i.e. over https),
-you will also need the pyOpenSSL package:
-
-    pip install pyOpenSSL
+    uv venv
+    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+    uv pip install -e ".[dev]"
 
 You will also need a RabbitMQ instance running somewhere.  Docker provides a
 lightweight and isolated solution.  See the [docker installation docs][] for
@@ -130,7 +112,7 @@ You can remove the container with
 And you can remove the images with
 
     docker rmi pulse:testing
-    docker rmi ubuntu:14.04
+    docker rmi ubuntu:24.04
 
 You can also use either a local RabbitMQ server or a VM.  See the
 mozillapulse [HACKING.md][] file for instructions on setting up both of these.
@@ -236,7 +218,7 @@ used for all installations, including for local development.  The database URL,
 
 To migrate the database,
 
-* Install the alembic package (if you haven't yet): `pip install -r requirements.txt`
+* Install the alembic package (if you haven't yet): `pip install -r requirements.txt` (or `uv pip install -r requirements.txt` if using uv)
 * Run `alembic upgrade head`
 
 ## Deployment
@@ -253,4 +235,3 @@ Then just push the latest `main` branch to the `heroku` remote: `git push heroku
 [gunicorn]: https://www.digitalocean.com/community/articles/how-to-deploy-python-wsgi-apps-using-gunicorn-http-server-behind-nginx
 [docker installation docs]: https://docs.docker.com/installation/#installation
 [Alembic]: https://alembic.readthedocs.org
-

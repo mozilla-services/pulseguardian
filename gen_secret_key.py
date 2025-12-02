@@ -6,4 +6,4 @@ import base64
 import os
 
 key = os.urandom(24)
-print(base64.b64encode(key).decode('ascii'))
+print(base64.b64encode(key).decode("ascii"))

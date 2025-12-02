@@ -46,8 +46,7 @@ def run_migrations_offline():
 
     """
     url = pg_config.database_url
-    context.configure(
-        url=url, target_metadata=target_metadata, literal_binds=True)
+    context.configure(url=url, target_metadata=target_metadata, literal_binds=True)
 
     with context.begin_transaction():
         context.run_migrations()
@@ -60,16 +59,14 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
-    connectable = create_engine(pg_config.database_url,
-                                pool_recycle=pg_config.pool_recycle_interval,
-                                convert_unicode=True,
-                                poolclass=pool.NullPool)
+    connectable = create_engine(
+        pg_config.database_url,
+        pool_recycle=pg_config.pool_recycle_interval,
+        poolclass=pool.NullPool,
+    )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

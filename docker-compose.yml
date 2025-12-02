@@ -1,4 +1,3 @@
-version: "2"
 services:
   db:
     image: postgres:11-alpine
@@ -6,34 +5,88 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   pulse:
-    image: rabbitmq:3-management-alpine
+    image: rabbitmq:3.12.1-management-alpine
     environment:
       - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit loopback_users []
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+      - RABBITMQ_DEFAULT_VHOST=/
     ports:
       - "5672:5672"
       - "15672:15672"
-  pulseguardian-base:
+    healthcheck:
+      test: rabbitmq-diagnostics ping
+      interval: 3s
+      timeout: 4s
+      retries: 100
+      start_period: 3s
+  db-init:
+    image: pulseguardian-base:latest
     build:
       context: ./
-      dockerfile: ./docker/Dockerfile-pgbase
+      dockerfile: ./docker/Dockerfile
+    volumes:
+      - ./:/code
+      - db-init-marker:/db-init
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres@db/postgres
+    command: >
+      sh -c '
+      if [ ! -f /db-init/.initialized ]; then
+        echo "Initializing database...";
+        python pulseguardian/dbinit.py && touch /db-init/.initialized;
+        echo "Database initialized successfully";
+      else
+        echo "Database already initialized, skipping...";
+      fi
+      '
   pulseguardian-web:
+    image: pulseguardian-base:latest
     build:
       context: ./
-      dockerfile: ./docker/Dockerfile-pgweb
+      dockerfile: ./docker/Dockerfile
     ports:
       - "5000:5000"
     volumes:
       - ./:/code
     depends_on:
-      - pulseguardian-base
-      - db
+      db-init:
+        condition: service_completed_successfully
+      pulse:
+        condition: service_healthy
+    environment:
+      - FAKE_ACCOUNT=fake@example.com
+      - FLASK_DEBUG_MODE=1
+      - FLASK_HOST=pulseguardian-web
+      - FLASK_USE_SSL=0
+      - DATABASE_URL=postgresql://postgres@db/postgres
+    command: ["python", "pulseguardian/web.py"]
   pulseguardian-guardian:
+    image: pulseguardian-base:latest
     build:
       context: ./
-      dockerfile: ./docker/Dockerfile-pgguardian
+      dockerfile: ./docker/Dockerfile
+    volumes:
+      - ./:/code
     depends_on:
-      - pulseguardian-base
-      - db
+      db-init:
+        condition: service_completed_successfully
+      pulse:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres@db/postgres
+    command: ["python", "pulseguardian/guardian.py"]
 volumes:
   pgdata:
+  db-init-marker:

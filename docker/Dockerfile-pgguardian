@@ -1,2 +1,0 @@
-FROM pulseguardian_pulseguardian-base
-CMD ["python", "pulseguardian/guardian.py"]

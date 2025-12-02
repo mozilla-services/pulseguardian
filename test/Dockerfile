@@ -1,5 +1,5 @@
 # Base image
-FROM ubuntu:14.04
+FROM ubuntu:24.04
 
 # Update repositories
 RUN apt-get update

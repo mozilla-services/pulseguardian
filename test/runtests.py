@@ -11,22 +11,29 @@ import sys
 import time
 import unittest
 import uuid
+from unittest.mock import Mock, patch
 from urllib.parse import urlparse
 
 from kombu import Exchange
 from mozillapulse import consumers, publishers
 from mozillapulse.messages.test import TestMessage
 
-os.environ['FLASK_SECRET_KEY'] = base64.b64encode(os.urandom(24)).decode('ascii')
+os.environ["FLASK_SECRET_KEY"] = base64.b64encode(os.urandom(24)).decode("ascii")
 
 from pulseguardian import config
 
 # Change the DB for the tests and set fake_account *before* the model is initialized.
-config.database_url = 'sqlite:///pulseguardian_test.db'
-config.fake_account = 'guardtest@guardtest.com'
+config.database_url = "sqlite:///pulseguardian_test.db"
+config.fake_account = "guardtest@guardtest.com"
 
-from docker_setup import (check_rabbitmq, create_image,
-                          setup_container, teardown_container)
+from docker_setup import (
+    check_rabbitmq,
+    create_image,
+    setup_container,
+    teardown_container,
+)
+
+from sqlalchemy import select
 
 from pulseguardian import dbinit, management as pulse_management, web
 from pulseguardian.guardian import PulseGuardian
@@ -36,34 +43,33 @@ from pulseguardian.model.pulse_user import RabbitMQAccount
 from pulseguardian.model.queue import Queue
 from pulseguardian.model.user import User
 
-web.app.config['TESTING'] = True
+web.app.config["TESTING"] = True
 
 # Default RabbitMQ host settings
-DEFAULT_RABBIT_HOST = 'localhost'
+DEFAULT_RABBIT_HOST = "localhost"
 DEFAULT_RABBIT_PORT = 5672
 DEFAULT_RABBIT_MANAGEMENT_PORT = 15672
-DEFAULT_RABBIT_VHOST = '/'
-DEFAULT_RABBIT_USER = 'guest'
-DEFAULT_RABBIT_PASSWORD = 'guest'
+DEFAULT_RABBIT_VHOST = "/"
+DEFAULT_RABBIT_USER = "guest"
+DEFAULT_RABBIT_PASSWORD = "guest"
 
 DEFAULT_USE_LOCAL = False
 DEFAULT_RABBITMQ_TIMEOUT = 20  # in seconds
 
-CONSUMER_USER = 'guardtest'
-CONSUMER_PASSWORD = 'guardtest'
-CONSUMER_EMAIL = 'guardtest@guardtest.com'
-ADMIN_EMAIL = 'admin@guardtest.com'
+CONSUMER_USER = "guardtest"
+CONSUMER_PASSWORD = "guardtest"
+CONSUMER_EMAIL = "guardtest@guardtest.com"
+ADMIN_EMAIL = "admin@guardtest.com"
 
 TEST_WARN_SIZE = 20
 TEST_DELETE_SIZE = 30
-DEFAULT_LOGLEVEL = 'INFO'
+DEFAULT_LOGLEVEL = "INFO"
 
 # Global pulse configuration.
 pulse_cfg = dict(ssl=False)
 
 
 class PulseGuardianTestConsumer(consumers.PulseTestConsumer):
-
     QUEUE_NAME = None
 
     @property
@@ -72,25 +78,20 @@ class PulseGuardianTestConsumer(consumers.PulseTestConsumer):
 
 
 class AbnormalQueueConsumer(PulseGuardianTestConsumer):
-
-    QUEUE_NAME = 'abnormal.queue'
+    QUEUE_NAME = "abnormal.queue"
 
 
 class ReservedQueueConsumer(PulseGuardianTestConsumer):
-
-    QUEUE_NAME = 'queue/reserved-user/abc'
+    QUEUE_NAME = "queue/reserved-user/abc"
 
 
 class SecondaryQueueConsumer(PulseGuardianTestConsumer):
-
     def __init__(self, **kwargs):
         super(SecondaryQueueConsumer, self).__init__(**kwargs)
-        self.QUEUE_NAME = 'queue/{}/secondary'.format(
-            CONSUMER_USER)
+        self.QUEUE_NAME = "queue/{}/secondary".format(CONSUMER_USER)
 
 
 class ConsumerSubprocess(multiprocessing.Process):
-
     def __init__(self, consumer_class, config, durable=False):
         multiprocessing.Process.__init__(self)
         self.consumer_class = consumer_class
@@ -104,13 +105,13 @@ class ConsumerSubprocess(multiprocessing.Process):
         def cb(body, message):
             queue.put(body)
             message.ack()
+
         consumer = self.consumer_class(durable=self.durable, **self.config)
-        consumer.configure(topic='#', callback=cb)
+        consumer.configure(topic="#", callback=cb)
         consumer.listen()
 
 
 class GuardianTest(unittest.TestCase):
-
     """Launches a consumer process that creates a queue then disconnects,
     and then floods the exchange with messages and checks that PulseGuardian
     warns the queue's owner and deletes the queue if it gets over the maximum
@@ -133,17 +134,19 @@ class GuardianTest(unittest.TestCase):
 
         self.proc = None
         self.publisher = None
-        self.guardian = PulseGuardian(warn_queue_size=TEST_WARN_SIZE,
-                                      del_queue_size=TEST_DELETE_SIZE,
-                                      emails=False)
+        self.guardian = PulseGuardian(
+            warn_queue_size=TEST_WARN_SIZE,
+            del_queue_size=TEST_DELETE_SIZE,
+            emails=False,
+        )
 
         dbinit.init_and_clear_db()
 
         self.consumer_cfg = pulse_cfg.copy()
-        self.consumer_cfg['applabel'] = str(uuid.uuid1())
+        self.consumer_cfg["applabel"] = str(uuid.uuid1())
         # Configure/create the test user to be used for message consumption.
-        self.consumer_cfg['user'] = CONSUMER_USER
-        self.consumer_cfg['password'] = CONSUMER_PASSWORD
+        self.consumer_cfg["user"] = CONSUMER_USER
+        self.consumer_cfg["password"] = CONSUMER_PASSWORD
 
         self.user = User.new_user(email=CONSUMER_EMAIL, admin=False)
         # As a default owner for rabbitmq_account in some tests where an owner
@@ -154,18 +157,16 @@ class GuardianTest(unittest.TestCase):
         db_session.commit()
 
         self.rabbitmq_account = RabbitMQAccount.new_user(
-            username=CONSUMER_USER,
-            password=CONSUMER_PASSWORD,
-            owners=self.user)
+            username=CONSUMER_USER, password=CONSUMER_PASSWORD, owners=self.user
+        )
 
         db_session.add(self.rabbitmq_account)
         db_session.commit()
 
     def tearDown(self):
         self._terminate_consumer_proc()  # Just in case.
-        for queue in Queue.query.all():
-            pulse_management.delete_queue(vhost=DEFAULT_RABBIT_VHOST,
-                                          queue=queue.name)
+        for queue in Queue.get_all():
+            pulse_management.delete_queue(vhost=DEFAULT_RABBIT_VHOST, queue=queue.name)
 
     def _setup_queue(self):
         """Setup a publisher, consumer and Queue, then terminate consumer"""
@@ -177,7 +178,7 @@ class GuardianTest(unittest.TestCase):
 
     def _build_message(self, msg_id):
         msg = TestMessage()
-        msg.set_data('id', msg_id)
+        msg.set_data("id", msg_id)
         return msg
 
     def _create_publisher(self, create_exchange=True):
@@ -204,8 +205,7 @@ class GuardianTest(unittest.TestCase):
                 raise exc
 
     def _create_consumer_proc(self, durable=False):
-        self.proc = ConsumerSubprocess(self.consumer_class, self.consumer_cfg,
-                                       durable)
+        self.proc = ConsumerSubprocess(self.consumer_class, self.consumer_cfg, durable)
         self.proc.start()
 
     def _terminate_consumer_proc(self):
@@ -216,13 +216,13 @@ class GuardianTest(unittest.TestCase):
 
     def _create_passive_consumer(self):
         cfg = self.consumer_cfg.copy()
-        cfg['connect'] = False
+        cfg["connect"] = False
         consumer = self.consumer_class(**self.consumer_cfg)
-        consumer.configure(topic='#', callback=lambda x, y: None)
+        consumer.configure(topic="#", callback=lambda x, y: None)
         return consumer
 
     def _wait_for_queue(self, queue_should_exist=True):
-        '''Wait until queue has been created by consumer process.'''
+        """Wait until queue has been created by consumer process."""
         consumer = self._create_passive_consumer()
         attempts = 0
         while attempts < self.QUEUE_CHECK_ATTEMPTS:
@@ -234,16 +234,17 @@ class GuardianTest(unittest.TestCase):
         self.assertEqual(consumer.queue_exists(), queue_should_exist)
 
     def _wait_for_queue_record(self):
-        '''Wait until one or more queues have been added to the database.'''
+        """Wait until one or more queues have been added to the database."""
         consumer = self._create_passive_consumer()
         attempts = 0
         while attempts < self.QUEUE_RECORD_CHECK_ATTEMPTS:
             attempts += 1
             if attempts > 1:
                 time.sleep(self.QUEUE_RECORD_CHECK_PERIOD)
-            self.guardian.monitor_queues(pulse_management.queues(vhost='/'),
-                                         pulse_management.bindings(vhost='/'))
-            if Queue.query.filter(Queue.name == consumer.queue_name).first():
+            self.guardian.monitor_queues(
+                pulse_management.queues(vhost="/"), pulse_management.bindings(vhost="/")
+            )
+            if Queue.get_by(name=consumer.queue_name):
                 break
 
     def _wait_for_binding_record(self, queue_name, exchange_name, routing_key):
@@ -254,12 +255,17 @@ class GuardianTest(unittest.TestCase):
             attempts += 1
             if attempts > 1:
                 time.sleep(self.QUEUE_RECORD_CHECK_PERIOD)
-            self.guardian.monitor_queues(pulse_management.queues(vhost='/'),
-                                         pulse_management.bindings(vhost='/'))
-            if Binding.query.filter(
-                                    Binding.queue_name == queue_name,
-                                    Binding.exchange == exchange_name,
-                                    Binding.routing_key == routing_key).first():
+            self.guardian.monitor_queues(
+                pulse_management.queues(vhost="/"), pulse_management.bindings(vhost="/")
+            )
+            binding = db_session.execute(
+                select(Binding).where(
+                    Binding.queue_name == queue_name,
+                    Binding.exchange == exchange_name,
+                    Binding.routing_key == routing_key,
+                )
+            ).scalar_one_or_none()
+            if binding:
                 break
 
     def _wait_for_binding_delete(self, queue_name, exchange_name, routing_key):
@@ -270,27 +276,31 @@ class GuardianTest(unittest.TestCase):
             attempts += 1
             if attempts > 1:
                 time.sleep(self.QUEUE_RECORD_CHECK_PERIOD)
-            self.guardian.clear_deleted_queues(pulse_management.queues(vhost='/'),
-                                               pulse_management.bindings(vhost='/'))
-            if not Binding.query.filter(
-                                        Binding.queue_name == queue_name,
-                                        Binding.exchange == exchange_name,
-                                        Binding.routing_key == routing_key).first():
+            self.guardian.clear_deleted_queues(
+                pulse_management.queues(vhost="/"), pulse_management.bindings(vhost="/")
+            )
+            binding = db_session.execute(
+                select(Binding).where(
+                    Binding.queue_name == queue_name,
+                    Binding.exchange == exchange_name,
+                    Binding.routing_key == routing_key,
+                )
+            ).scalar_one_or_none()
+            if not binding:
                 break
 
     def test_abnormal_queue_name(self):
         self.consumer_class = AbnormalQueueConsumer
         # Use account with full permissions.
-        self.consumer_cfg['user'] = pulse_cfg['user']
-        self.consumer_cfg['password'] = pulse_cfg['password']
+        self.consumer_cfg["user"] = pulse_cfg["user"]
+        self.consumer_cfg["password"] = pulse_cfg["password"]
 
         self._create_publisher()
         self._create_consumer_proc()
         self._wait_for_queue()
         self._wait_for_queue_record()
 
-        queue = Queue.query.filter(Queue.name ==
-                                   AbnormalQueueConsumer.QUEUE_NAME).first()
+        queue = Queue.get_by(name=AbnormalQueueConsumer.QUEUE_NAME)
         owner = queue.owner
 
         # Queue is not durable and will be cleaned up when consumer process
@@ -306,10 +316,10 @@ class GuardianTest(unittest.TestCase):
     def test_reserved_queue_name(self):
         self.consumer_class = ReservedQueueConsumer
         # Use account with full permissions.
-        self.consumer_cfg['user'] = pulse_cfg['user']
-        self.consumer_cfg['password'] = pulse_cfg['password']
+        self.consumer_cfg["user"] = pulse_cfg["user"]
+        self.consumer_cfg["password"] = pulse_cfg["password"]
 
-        config.reserved_users_regex = 'reserved-.*'
+        config.reserved_users_regex = "reserved-.*"
         try:
             self._create_publisher()
             self._create_consumer_proc()
@@ -318,8 +328,7 @@ class GuardianTest(unittest.TestCase):
         finally:
             config.reserved_users_regex = None
 
-        queue = Queue.query.filter(Queue.name ==
-                                   ReservedQueueConsumer.QUEUE_NAME).first()
+        queue = Queue.get_by(name=ReservedQueueConsumer.QUEUE_NAME)
 
         # Queue is not durable and will be cleaned up when consumer process
         # exits; delete it from the queue to avoid assertion failure in
@@ -347,11 +356,13 @@ class GuardianTest(unittest.TestCase):
         # messages, if any.
         for i in range(100):
             time.sleep(0.3)
-            queues_to_warn = set(q_data['name'] for q_data
-                                 in pulse_management.queues()
-                                 if self.guardian.warn_queue_size
-                                 < q_data['messages_ready']
-                                 <= self.guardian.del_queue_size)
+            queues_to_warn = set(
+                q_data["name"]
+                for q_data in pulse_management.queues()
+                if self.guardian.warn_queue_size
+                < q_data["messages_ready"]
+                <= self.guardian.del_queue_size
+            )
             if queues_to_warn:
                 break
 
@@ -361,22 +372,26 @@ class GuardianTest(unittest.TestCase):
         self.assertGreater(len(queues_to_warn), 0)
 
         # Monitor the queues; this should detect queues that should be warned.
-        self.guardian.monitor_queues(pulse_management.queues(vhost='/'),
-                                     pulse_management.bindings(vhost='/'))
+        self.guardian.monitor_queues(
+            pulse_management.queues(vhost="/"), pulse_management.bindings(vhost="/")
+        )
 
         # Refresh the user's queues state.
         db_session.refresh(self.rabbitmq_account)
 
         # Test that the queues that had to be "warned" were.
-        self.assertTrue(all(q.warned for q in self.rabbitmq_account.queues
-                            if q in queues_to_warn))
+        self.assertTrue(
+            all(q.warned for q in self.rabbitmq_account.queues if q in queues_to_warn)
+        )
 
         # The queues that needed to be warned haven't been deleted.
-        queues_to_warn_bis = set(q_data['name'] for q_data
-                                 in pulse_management.queues()
-                                 if self.guardian.warn_queue_size
-                                 < q_data['messages_ready']
-                                 <= self.guardian.del_queue_size)
+        queues_to_warn_bis = set(
+            q_data["name"]
+            for q_data in pulse_management.queues()
+            if self.guardian.warn_queue_size
+            < q_data["messages_ready"]
+            <= self.guardian.del_queue_size
+        )
         self.assertEqual(queues_to_warn_bis, queues_to_warn)
 
     def test_delete(self):
@@ -398,10 +413,11 @@ class GuardianTest(unittest.TestCase):
         # Wait some time for published messages to be taken into account.
         for i in range(100):
             time.sleep(0.3)
-            queues_to_delete = [q_data['name'] for q_data
-                                in pulse_management.queues()
-                                if q_data['messages_ready']
-                                > self.guardian.del_queue_size]
+            queues_to_delete = [
+                q_data["name"]
+                for q_data in pulse_management.queues()
+                if q_data["messages_ready"] > self.guardian.del_queue_size
+            ]
             if queues_to_delete:
                 break
 
@@ -417,19 +433,22 @@ class GuardianTest(unittest.TestCase):
         self.guardian.on_delete = on_delete
 
         # Monitor the queues; this should delete overgrown queues
-        self.guardian.monitor_queues(pulse_management.queues(vhost='/'),
-                                     pulse_management.bindings(vhost='/'))
+        self.guardian.monitor_queues(
+            pulse_management.queues(vhost="/"), pulse_management.bindings(vhost="/")
+        )
 
         # Test that the queues that had to be deleted were deleted...
-        self.assertTrue(not any(q in queues_to_delete for q
-                                in pulse_management.queues()))
+        self.assertTrue(
+            not any(q in queues_to_delete for q in pulse_management.queues())
+        )
         # And that they were deleted by guardian...
         self.assertEqual(sorted(queues_to_delete), sorted(deleted_queues))
         # And that no queue has overgrown.
-        queues_to_delete = [q_data['name'] for q_data
-                            in pulse_management.queues()
-                            if q_data['messages_ready']
-                            > self.guardian.del_queue_size]
+        queues_to_delete = [
+            q_data["name"]
+            for q_data in pulse_management.queues()
+            if q_data["messages_ready"] > self.guardian.del_queue_size
+        ]
         self.assertEqual(len(queues_to_delete), 0)
 
     def test_delete_skip_unbounded(self):
@@ -455,10 +474,11 @@ class GuardianTest(unittest.TestCase):
         # Wait some time for published messages to be taken into account.
         for i in range(100):
             time.sleep(0.3)
-            queues_to_delete = [q_data['name'] for q_data
-                                in pulse_management.queues()
-                                if q_data['messages_ready']
-                                > self.guardian.del_queue_size]
+            queues_to_delete = [
+                q_data["name"]
+                for q_data in pulse_management.queues()
+                if q_data["messages_ready"] > self.guardian.del_queue_size
+            ]
             if queues_to_delete:
                 break
 
@@ -470,18 +490,19 @@ class GuardianTest(unittest.TestCase):
 
         def on_delete(queue):
             deleted_queues.append(queue)
+
         self.guardian.on_delete = on_delete
 
         # Run through the code that decides whether to delete a queue
         # that has grown too large.
         # In this case, it should run the check and decide to not delete
         # any queues.
-        self.guardian.monitor_queues(pulse_management.queues(vhost='/'),
-                                     pulse_management.bindings(vhost='/'))
+        self.guardian.monitor_queues(
+            pulse_management.queues(vhost="/"), pulse_management.bindings(vhost="/")
+        )
 
         # Test that none of the queues were deleted...
-        self.assertTrue(all(q in queues_to_delete for q
-                            in pulse_management.queues()))
+        self.assertTrue(all(q in queues_to_delete for q in pulse_management.queues()))
 
         # And that they were not deleted by guardian...
         self.assertGreater(len(queues_to_delete), 0)
@@ -496,7 +517,7 @@ class GuardianTest(unittest.TestCase):
         self.assertEqual(len(self.rabbitmq_account.queues), 1)
 
         # check queue bindings in the DB
-        queues = Queue.query.all()
+        queues = Queue.get_all()
         self.assertEqual(len(queues), 1)
         queue = queues[0]
         bindings = queue.bindings
@@ -516,7 +537,7 @@ class GuardianTest(unittest.TestCase):
         self._setup_queue()
 
         # check queue bindings in the DB
-        queues = Queue.query.all()
+        queues = Queue.get_all()
         self.assertEqual(len(queues), 2)
         for queue in queues:
             bindings = queue.bindings
@@ -529,7 +550,7 @@ class GuardianTest(unittest.TestCase):
         self._setup_queue()
 
         consumer = self._create_passive_consumer()
-        exchange = Exchange(consumer.exchange, type='topic')
+        exchange = Exchange(consumer.exchange, type="topic")
         queue = consumer._create_queue(exchange)
         bound = queue.bind(consumer.connection.channel())
         routing_key = "foo"
@@ -538,12 +559,12 @@ class GuardianTest(unittest.TestCase):
         self._wait_for_binding_record(queue.name, exchange.name, routing_key)
 
         def test_bindings(exp_routing_keys):
-            queues = Queue.query.all()
+            queues = Queue.get_all()
             self.assertEqual(len(queues), 1)
             self.assertEqual(len(queues[0].bindings), len(exp_routing_keys))
             db_queue = queues[0]
 
-            mgmt_bindings = pulse_management.queue_bindings('/', db_queue.name)
+            mgmt_bindings = pulse_management.queue_bindings("/", db_queue.name)
             mgmt_routing_keys = {x["routing_key"] for x in mgmt_bindings}
             self.assertEqual(mgmt_routing_keys, exp_routing_keys)
 
@@ -560,53 +581,52 @@ class GuardianTest(unittest.TestCase):
 
 
 class ModelTest(unittest.TestCase):
-
     """Tests the underlying model (users and queues)."""
 
     def setUp(self):
         dbinit.init_and_clear_db()
 
     def test_user(self):
-        user = User.new_user(email='dUmMy@EmAil.com', admin=False)
+        user = User.new_user(email="dUmMy@EmAil.com", admin=False)
         db_session.add(user)
         db_session.commit()
 
-        rabbitmq_account = RabbitMQAccount.new_user(username='dummy',
-                                                    password='DummyPassword',
-                                                    owners=user,
-                                                    create_rabbitmq_user=False)
+        rabbitmq_account = RabbitMQAccount.new_user(
+            username="dummy",
+            password="DummyPassword",
+            owners=user,
+            create_rabbitmq_user=False,
+        )
         db_session.add(rabbitmq_account)
         db_session.commit()
 
-        self.assertTrue(user in User.query.all())
+        self.assertTrue(user in User.get_all())
 
         # Emails are normalized by putting them lower-case
+        self.assertEqual(User.get_by(email="dummy@email.com"), user)
         self.assertEqual(
-            User.query.filter(User.email == 'dummy@email.com').first(), user)
+            RabbitMQAccount.get_by(username="dummy"),
+            rabbitmq_account,
+        )
         self.assertEqual(
-            RabbitMQAccount.query.filter(
-                RabbitMQAccount.username == 'dummy').first(),
-            rabbitmq_account)
-        self.assertEqual(
-            RabbitMQAccount.query.filter(
-                RabbitMQAccount.username == 'DUMMY').first(),
-            None)
+            RabbitMQAccount.get_by(username="DUMMY"),
+            None,
+        )
 
     def test_user_set_admin(self):
-        user = User.new_user(email='adminusr@email.com', admin=False)
+        user = User.new_user(email="adminusr@email.com", admin=False)
         db_session.add(user)
         db_session.commit()
 
-        user = User.query.filter(User.email == 'adminusr@email.com').first()
+        user = User.get_by(email="adminusr@email.com")
         user.set_admin(True)
 
-        userDb = User.query.filter(User.email == 'adminusr@email.com').first()
+        userDb = User.get_by(email="adminusr@email.com")
 
         self.assertTrue(userDb.admin)
 
 
 class WebTest(unittest.TestCase):
-
     def setUp(self):
         dbinit.init_and_clear_db()
 
@@ -626,114 +646,409 @@ class WebTest(unittest.TestCase):
             templates = "{}/pulseguardian/templates".format(os.getcwd())
             c.application.template_folder = templates
             with c.session_transaction() as sess:
-                sess['email'] = CONSUMER_EMAIL
-                sess['fake_account'] = True
-                sess['logged_in'] = True
+                sess["email"] = CONSUMER_EMAIL
+                sess["fake_account"] = True
+                sess["logged_in"] = True
 
-            c.post('/update_info',
-                   data={"owners-list": email_str,
-                         "rabbitmq-username": username,
-                         "new-password": "",
-                         "new-password-verification": ""})
+            c.post(
+                "/update_info",
+                data={
+                    "owners-list": email_str,
+                    "rabbitmq-username": username,
+                    "new-password": "",
+                    "new-password-verification": "",
+                },
+            )
 
-        pu_after = RabbitMQAccount.query.first()
+        pu_after = db_session.execute(select(RabbitMQAccount)).scalars().first()
         pu_after_emails = {owner.email for owner in pu_after.owners}
         return pu_after_emails
 
     def test_rabbitmq_account_single_to_multiple_ownership(self):
         self.setup_3_users()
-        RabbitMQAccount.new_user(username="mick",
-                                 owners=self.curr_user,
-                                 password="mitochondria5")
+        RabbitMQAccount.new_user(
+            username="mick", owners=self.curr_user, password="mitochondria5"
+        )
 
         new_emails = self.set_rabbitmq_account_email_list(
-            "mick", ','.join(self.all_emails))
+            "mick", ",".join(self.all_emails)
+        )
         self.assertEqual(new_emails, set(self.all_emails))
 
     def test_rabbitmq_account_multiple_to_single_ownership(self):
         self.setup_3_users()
-        RabbitMQAccount.new_user(username="mick",
-                                 owners=self.all_users,
-                                 password="mitochondria5")
+        RabbitMQAccount.new_user(
+            username="mick", owners=self.all_users, password="mitochondria5"
+        )
 
-        new_emails = self.set_rabbitmq_account_email_list("mick",
-                                                          self.curr_email)
+        new_emails = self.set_rabbitmq_account_email_list("mick", self.curr_email)
         self.assertEqual(new_emails, {self.curr_email})
 
     def test_pulse_odd_whitespace_ownership_list(self):
         self.setup_3_users()
-        RabbitMQAccount.new_user(username="mick",
-                                 owners=self.all_users,
-                                 password="mitochondria5")
+        RabbitMQAccount.new_user(
+            username="mick", owners=self.all_users, password="mitochondria5"
+        )
 
         new_emails = self.set_rabbitmq_account_email_list(
-            "mick", ",  {},   {},{},".format(*self.all_emails))
+            "mick", ",  {},   {},{},".format(*self.all_emails)
+        )
         self.assertEqual(new_emails, set(self.all_emails))
 
     def test_register_reserved_name(self):
         try:
-            config.reserved_users_regex = 'rese[r]ved'
-            config.reserved_users_message = 'NO RESERVED NAMES'
+            config.reserved_users_regex = "rese[r]ved"
+            config.reserved_users_message = "NO RESERVED NAMES"
             with web.app.test_client() as c:
                 templates = "{}/pulseguardian/templates".format(os.getcwd())
                 c.application.template_folder = templates
                 with c.session_transaction() as sess:
-                    sess['email'] = CONSUMER_EMAIL
-                    sess['fake_account'] = True
-                    sess['logged_in'] = True
+                    sess["email"] = CONSUMER_EMAIL
+                    sess["fake_account"] = True
+                    sess["logged_in"] = True
 
                 resp = c.post(
-                    '/register', data={
+                    "/register",
+                    data={
                         "username": "reserved-name",
                         "password": "ohXoof9yoo",
                         "password-verification": "ohXoof9yoo",
                         "owners-list": CONSUMER_EMAIL,
-                    })
-                self.assertIn(config.reserved_users_message.encode('ascii'), resp.data)
+                    },
+                )
+                self.assertIn(config.reserved_users_message.encode("ascii"), resp.data)
         finally:
             config.reserved_users_regex = None
             config.reserved_users_message = None
 
 
+class AuthTest(unittest.TestCase):
+    """Tests for OIDC/authlib authentication flow."""
+
+    def setUp(self):
+        dbinit.init_and_clear_db()
+        self.test_user = User.new_user(email=CONSUMER_EMAIL, admin=False)
+        db_session.add(self.test_user)
+        db_session.commit()
+
+    def test_login_route_redirects_to_auth0(self):
+        """Test that /login route initiates OAuth redirect to Auth0"""
+        original_fake = config.fake_account
+        original_domain = config.oidc_domain
+        original_client_id = config.oidc_client_id
+        original_client_secret = config.oidc_client_secret
+
+        try:
+            config.fake_account = None
+            config.oidc_domain = "test.auth0.com"
+            config.oidc_client_id = "test_client_123"
+            config.oidc_client_secret = "test_secret_456"
+
+            from pulseguardian import auth
+            test_auth = auth.OpenIDConnect()
+            test_auth.auth(web.app)
+
+            with patch.object(web, 'authentication', test_auth):
+                with patch.object(test_auth.oauth.auth0, 'authorize_redirect') as mock_redirect:
+                    from flask import redirect
+                    mock_redirect.return_value = redirect("http://auth0.example.com/authorize")
+
+                    with web.app.test_client() as c:
+                        _ = c.get('/login')
+
+                        self.assertTrue(mock_redirect.called)
+                        call_args = mock_redirect.call_args
+                        redirect_uri = call_args[0][0] if call_args[0] else call_args[1].get('redirect_uri')
+                        self.assertIn('/callback', redirect_uri)
+        finally:
+            config.fake_account = original_fake
+            config.oidc_domain = original_domain
+            config.oidc_client_id = original_client_id
+            config.oidc_client_secret = original_client_secret
+            from pulseguardian import auth
+            web.authentication = auth.OpenIDConnect().auth(web.app)
+
+    def test_callback_route_handles_token_and_redirects(self):
+        """Test that /callback handles token exchange and redirects to /register for new users"""
+        original_fake = config.fake_account
+        original_domain = config.oidc_domain
+        original_client_id = config.oidc_client_id
+        original_client_secret = config.oidc_client_secret
+
+        try:
+            config.fake_account = None
+            config.oidc_domain = "test.auth0.com"
+            config.oidc_client_id = "test_client_123"
+            config.oidc_client_secret = "test_secret_456"
+
+            from pulseguardian import auth
+            test_auth = auth.OpenIDConnect()
+            test_auth.auth(web.app)
+
+            mock_token = {
+                'userinfo': {
+                    'email': CONSUMER_EMAIL,
+                    'name': 'Test User'
+                },
+                'id_token': 'mock_id_token_12345'
+            }
+
+            with patch.object(web, 'authentication', test_auth):
+                with patch.object(test_auth.oauth.auth0, 'authorize_access_token') as mock_token_func:
+                    mock_token_func.return_value = mock_token
+
+                    with web.app.test_client() as c:
+                        response = c.get('/callback')
+
+                        self.assertTrue(mock_token_func.called)
+
+                        with c.session_transaction() as sess:
+                            self.assertIn('userinfo', sess)
+                            self.assertIn('id_token', sess)
+                            self.assertEqual(sess['userinfo'], mock_token['userinfo'])
+                            self.assertEqual(sess['id_token'], mock_token['id_token'])
+
+                        self.assertEqual(response.status_code, 302)
+                        self.assertIn('/register', response.location)
+        finally:
+            config.fake_account = original_fake
+            config.oidc_domain = original_domain
+            config.oidc_client_id = original_client_id
+            config.oidc_client_secret = original_client_secret
+            from pulseguardian import auth
+            web.authentication = auth.OpenIDConnect().auth(web.app)
+
+    def test_callback_redirects_to_accounts_when_user_has_accounts(self):
+        """Test that /callback redirects to /rabbitmq_accounts when user has existing accounts"""
+        original_fake = config.fake_account
+        original_domain = config.oidc_domain
+        original_client_id = config.oidc_client_id
+        original_client_secret = config.oidc_client_secret
+
+        try:
+            config.fake_account = None
+            config.oidc_domain = "test.auth0.com"
+            config.oidc_client_id = "test_client_123"
+            config.oidc_client_secret = "test_secret_456"
+
+            RabbitMQAccount.new_user(
+                username="testuser",
+                password="testpass",
+                owners=self.test_user
+            )
+
+            from pulseguardian import auth
+            test_auth = auth.OpenIDConnect()
+            test_auth.auth(web.app)
+
+            mock_token = {
+                'userinfo': {
+                    'email': CONSUMER_EMAIL,
+                    'name': 'Test User'
+                },
+                'id_token': 'mock_id_token_12345'
+            }
+
+            with patch.object(web, 'authentication', test_auth):
+                with patch.object(test_auth.oauth.auth0, 'authorize_access_token') as mock_token_func:
+                    mock_token_func.return_value = mock_token
+
+                    with web.app.test_client() as c:
+                        response = c.get('/callback')
+
+                        self.assertEqual(response.status_code, 302)
+                        self.assertIn('/rabbitmq_accounts', response.location)
+        finally:
+            config.fake_account = original_fake
+            config.oidc_domain = original_domain
+            config.oidc_client_id = original_client_id
+            config.oidc_client_secret = original_client_secret
+            from pulseguardian import auth
+            web.authentication = auth.OpenIDConnect().auth(web.app)
+
+    def test_oidc_auth_decorator_redirects_unauthenticated(self):
+        """Test that oidc_auth decorator redirects unauthenticated users to /login"""
+        original_fake = config.fake_account
+        original_domain = config.oidc_domain
+        original_client_id = config.oidc_client_id
+        original_client_secret = config.oidc_client_secret
+
+        try:
+            config.fake_account = None
+            config.oidc_domain = "test.auth0.com"
+            config.oidc_client_id = "test_client_123"
+            config.oidc_client_secret = "test_secret_456"
+
+            from pulseguardian import auth
+            test_auth = auth.OpenIDConnect()
+            test_auth.auth(web.app)
+
+            @test_auth.oidc_auth
+            def test_view():
+                return "success"
+
+            with web.app.test_client() as c:
+                with web.app.test_request_context():
+                    # Call the decorated function without session
+                    response = test_view()
+
+                    # Should redirect to login
+                    self.assertEqual(response.status_code, 302)
+                    self.assertIn('/login', response.location)
+        finally:
+            config.fake_account = original_fake
+            config.oidc_domain = original_domain
+            config.oidc_client_id = original_client_id
+            config.oidc_client_secret = original_client_secret
+            from pulseguardian import auth
+            web.authentication = auth.OpenIDConnect().auth(web.app)
+            web.oidc = web.authentication
+
+    def test_oidc_auth_decorator_allows_authenticated(self):
+        """Test that oidc_auth decorator allows access for authenticated users"""
+        original_fake = config.fake_account
+        original_domain = config.oidc_domain
+        original_client_id = config.oidc_client_id
+        original_client_secret = config.oidc_client_secret
+
+        try:
+            config.fake_account = None
+            config.oidc_domain = "test.auth0.com"
+            config.oidc_client_id = "test_client_123"
+            config.oidc_client_secret = "test_secret_456"
+
+            from pulseguardian import auth
+            from flask import session
+            test_auth = auth.OpenIDConnect()
+            test_auth.auth(web.app)
+
+            # Create a test view function and apply the decorator
+            @test_auth.oidc_auth
+            def test_view():
+                return "success"
+
+            with web.app.test_client() as c:
+                with c.session_transaction() as sess:
+                    sess['userinfo'] = {
+                        'email': CONSUMER_EMAIL,
+                        'name': 'Test User'
+                    }
+                    sess['id_token'] = 'mock_token'
+
+                with web.app.test_request_context():
+                    from flask import session as request_session
+                    request_session['userinfo'] = {
+                        'email': CONSUMER_EMAIL,
+                        'name': 'Test User'
+                    }
+                    request_session['id_token'] = 'mock_token'
+
+                    # Call the decorated function with session
+                    response = test_view()
+
+                    # Should not redirect, should return the view result
+                    self.assertEqual(response, "success")
+        finally:
+            config.fake_account = original_fake
+            config.oidc_domain = original_domain
+            config.oidc_client_id = original_client_id
+            config.oidc_client_secret = original_client_secret
+            from pulseguardian import auth
+            web.authentication = auth.OpenIDConnect().auth(web.app)
+            web.oidc = web.authentication
+
+    def test_oidc_logout_decorator_clears_session_and_redirects(self):
+        """Test that oidc_logout decorator clears session and redirects to Auth0 logout"""
+        original_fake = config.fake_account
+        original_domain = config.oidc_domain
+        original_client_id = config.oidc_client_id
+        original_client_secret = config.oidc_client_secret
+
+        try:
+            config.fake_account = None
+            config.oidc_domain = "test.auth0.com"
+            config.oidc_client_id = "test_client_123"
+            config.oidc_client_secret = "test_secret_456"
+
+            from pulseguardian import auth
+            from flask import session
+            test_auth = auth.OpenIDConnect()
+            test_auth.auth(web.app)
+
+            @test_auth.oidc_logout
+            def test_logout_view():
+                return "logout_called"
+
+            with web.app.test_client() as c:
+                with web.app.test_request_context():
+                    from flask import session as request_session
+                    request_session['userinfo'] = {'email': CONSUMER_EMAIL}
+                    request_session['id_token'] = 'mock_token'
+                    request_session['other_data'] = 'test'
+
+                    self.assertIn('userinfo', request_session)
+                    self.assertIn('id_token', request_session)
+
+                    response = test_logout_view()
+
+                    self.assertNotIn('userinfo', request_session)
+                    self.assertNotIn('id_token', request_session)
+                    self.assertNotIn('other_data', request_session)
+
+                    self.assertEqual(response.status_code, 302)
+                    self.assertIn('test.auth0.com/v2/logout', response.location)
+                    self.assertIn('client_id=test_client_123', response.location)
+                    self.assertIn('returnTo=', response.location)
+        finally:
+            config.fake_account = original_fake
+            config.oidc_domain = original_domain
+            config.oidc_client_id = original_client_id
+            config.oidc_client_secret = original_client_secret
+            from pulseguardian import auth
+            web.authentication = auth.OpenIDConnect().auth(web.app)
+            web.oidc = web.authentication
+
+
 def setup_host():
     global pulse_cfg
 
-    if pulse_cfg['host'] == DEFAULT_RABBIT_HOST:
+    if pulse_cfg["host"] == DEFAULT_RABBIT_HOST:
         try:
             # IF DOCKER_HOST env variable exists, use as the host value
-            host = os.environ['DOCKER_HOST']
+            host = os.environ["DOCKER_HOST"]
 
             # Value of env variable will be something similar to:
             # 'tcp://192.168.59.103:2376'. We only need the ip
-            pulse_cfg['host'] = urlparse(host).hostname
+            pulse_cfg["host"] = urlparse(host).hostname
         except KeyError:
             # Env variable doesn't exist, use default
             pass
         finally:
-            pulse_cfg['port'] = 5672
-            pulse_cfg['management_port'] = 15672
+            pulse_cfg["port"] = 5672
+            pulse_cfg["management_port"] = 15672
     # else, use the supplied host
 
     # set the rabbit values of the ``config`` based on the pulse_cfg
-    config.rabbit_management_url = 'http://{}:{}/api/'.format(
-        pulse_cfg['host'], pulse_cfg['management_port'])
-    config.rabbit_user = pulse_cfg['user']
-    config.rabbit_password = pulse_cfg['password']
+    config.rabbit_management_url = "http://{}:{}/api/".format(
+        pulse_cfg["host"], pulse_cfg["management_port"]
+    )
+    config.rabbit_user = pulse_cfg["user"]
+    config.rabbit_password = pulse_cfg["password"]
 
 
 def main(pulse_opts):
     global pulse_cfg
 
     # Configuring logging
-    loglevel = pulse_opts['loglevel']
+    loglevel = pulse_opts["loglevel"]
     numeric_level = getattr(logging, loglevel.upper(), None)
     if not isinstance(numeric_level, int):
-        raise ValueError('Invalid log level: %s' % loglevel)
+        raise ValueError("Invalid log level: %s" % loglevel)
     logging.disable(level=numeric_level - 1)
 
     pulse_cfg.update(pulse_opts)
 
-    if not pulse_cfg['use_local']:
+    if not pulse_cfg["use_local"]:
         try:
             setup_host()
 
@@ -744,7 +1059,7 @@ def main(pulse_opts):
 
             # Although the container has started, the rabbitmq-server needs
             # some time to start.
-            logging.info('Waiting for rabbitmq-server to start.')
+            logging.info("Waiting for rabbitmq-server to start.")
             timeout = time.time() + DEFAULT_RABBITMQ_TIMEOUT
             while True:
                 # Check if rabbitmq-server has started
@@ -753,8 +1068,7 @@ def main(pulse_opts):
 
                 # Timeout exceeded
                 if time.time() > timeout:
-                    raise RuntimeError('rabbitmq-server startup timeout '
-                                       'exceeded')
+                    raise RuntimeError("rabbitmq-server startup timeout exceeded")
 
                 # We don't want to hog the CPU, so we sleep 1 second before
                 # trying again.
@@ -768,41 +1082,68 @@ def main(pulse_opts):
         unittest.main(argv=sys.argv[0:1])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from optparse import OptionParser
+
     parser = OptionParser()
-    parser.add_option('--host', action='store', dest='host',
-                      default=DEFAULT_RABBIT_HOST,
-                      help='host running RabbitMQ; defaults to %s' %
-                      DEFAULT_RABBIT_HOST)
-    parser.add_option('--port', action='store', type='int', dest='port',
-                      default=DEFAULT_RABBIT_PORT,
-                      help='port on which RabbitMQ is running; defaults to %d'
-                      % DEFAULT_RABBIT_PORT)
-    parser.add_option('--management-port', action='store', type='int',
-                      dest='management_port',
-                      default=DEFAULT_RABBIT_MANAGEMENT_PORT,
-                      help='RabbitMQ managment port; defaults to %d'
-                      % DEFAULT_RABBIT_MANAGEMENT_PORT)
-    parser.add_option('--vhost', action='store', dest='vhost',
-                      default=DEFAULT_RABBIT_VHOST,
-                      help='name of pulse vhost; defaults to "%s"' %
-                      DEFAULT_RABBIT_VHOST)
-    parser.add_option('--user', action='store', dest='user',
-                      default=DEFAULT_RABBIT_USER,
-                      help='name of pulse RabbitMQ user; defaults to "%s"' %
-                      DEFAULT_RABBIT_USER)
-    parser.add_option('--password', action='store', dest='password',
-                      default=DEFAULT_RABBIT_PASSWORD,
-                      help='password of pulse RabbitMQ user; defaults to "%s"'
-                      % DEFAULT_RABBIT_PASSWORD)
-    parser.add_option('--use-local', action='store_true', dest='use_local',
-                      default=DEFAULT_USE_LOCAL,
-                      help='use local setup; defaults to "%s"'
-                      % DEFAULT_USE_LOCAL)
-    parser.add_option('--log', action='store', dest='loglevel',
-                      default=DEFAULT_LOGLEVEL,
-                      help='logging level; defaults to "%s"'
-                      % DEFAULT_LOGLEVEL)
+    parser.add_option(
+        "--host",
+        action="store",
+        dest="host",
+        default=DEFAULT_RABBIT_HOST,
+        help="host running RabbitMQ; defaults to %s" % DEFAULT_RABBIT_HOST,
+    )
+    parser.add_option(
+        "--port",
+        action="store",
+        type="int",
+        dest="port",
+        default=DEFAULT_RABBIT_PORT,
+        help="port on which RabbitMQ is running; defaults to %d" % DEFAULT_RABBIT_PORT,
+    )
+    parser.add_option(
+        "--management-port",
+        action="store",
+        type="int",
+        dest="management_port",
+        default=DEFAULT_RABBIT_MANAGEMENT_PORT,
+        help="RabbitMQ managment port; defaults to %d" % DEFAULT_RABBIT_MANAGEMENT_PORT,
+    )
+    parser.add_option(
+        "--vhost",
+        action="store",
+        dest="vhost",
+        default=DEFAULT_RABBIT_VHOST,
+        help='name of pulse vhost; defaults to "%s"' % DEFAULT_RABBIT_VHOST,
+    )
+    parser.add_option(
+        "--user",
+        action="store",
+        dest="user",
+        default=DEFAULT_RABBIT_USER,
+        help='name of pulse RabbitMQ user; defaults to "%s"' % DEFAULT_RABBIT_USER,
+    )
+    parser.add_option(
+        "--password",
+        action="store",
+        dest="password",
+        default=DEFAULT_RABBIT_PASSWORD,
+        help='password of pulse RabbitMQ user; defaults to "%s"'
+        % DEFAULT_RABBIT_PASSWORD,
+    )
+    parser.add_option(
+        "--use-local",
+        action="store_true",
+        dest="use_local",
+        default=DEFAULT_USE_LOCAL,
+        help='use local setup; defaults to "%s"' % DEFAULT_USE_LOCAL,
+    )
+    parser.add_option(
+        "--log",
+        action="store",
+        dest="loglevel",
+        default=DEFAULT_LOGLEVEL,
+        help='logging level; defaults to "%s"' % DEFAULT_LOGLEVEL,
+    )
     (opts, args) = parser.parse_args()
     main(opts.__dict__)
