@@ -21,7 +21,7 @@ tasks:
   in:
     $let:
       tests:
-        - image: 'python:3.10'
+        - image: 'python:3.13'
           name: pulseguardian tests
           command:
             - /bin/bash
@@ -29,20 +29,22 @@ tasks:
             - '-c'
             - >-
               apt-get update &&
-              apt-get install -y rabbitmq-server &&
+              apt-get install -y rabbitmq-server curl &&
               service rabbitmq-server start &&
               sleep 5 &&
               rabbitmq-plugins enable rabbitmq_management &&
               service rabbitmq-server restart &&
               sleep 5 &&
+              curl -LsSf https://astral.sh/uv/install.sh | sh &&
+              export PATH="/root/.local/bin:$PATH" &&
               git clone ${repo.url} repo &&
               cd repo &&
               git config advice.detachedHead false &&
               git checkout ${repo.ref} &&
               export DATABASE_URL=sqlite:////tmp/db &&
-              pip install -r requirements.txt &&
-              pip install . &&
-              pip check &&
+              uv venv &&
+              . .venv/bin/activate &&
+              uv pip install -e ".[dev]" &&
               python test/runtests.py --use-local
     in:
       $let:

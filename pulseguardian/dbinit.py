@@ -22,64 +22,75 @@ def init_and_clear_db():
     init_db()
 
     # Remove all users and pulse users created by the web app.
-    for rabbitmq_account in RabbitMQAccount.query.all():
+    for rabbitmq_account in RabbitMQAccount.get_all():
         try:
             pulse_management.delete_user(rabbitmq_account.username)
         except pulse_management.PulseManagementException:
             pass
 
     # Clear the database of old data.
-    for queue in Queue.query.all():
+    for queue in Queue.get_all():
         db_session.delete(queue)
-    for binding in Binding.query.all():
+    for binding in Binding.get_all():
         db_session.delete(binding)
-    for rabbitmq_account in RabbitMQAccount.query.all():
+    for rabbitmq_account in RabbitMQAccount.get_all():
         db_session.delete(rabbitmq_account)
-    for user in User.query.all():
+    for user in User.get_all():
         db_session.delete(user)
 
     db_session.commit()
 
-    logger.info('Finished initializing database.')
+    logger.info("Finished initializing database.")
 
 
 def dummy_data():
     # Dummy test users
-    User.new_user(email='dummy0@dummy.com')
-    users = User.query.all()
+    User.new_user(email="dummy0@dummy.com")
+    users = User.get_all()
 
     for i in range(4):
         RabbitMQAccount.new_user(
-            username='dummy{0}'.format(i),
-            password='dummy',
-            owners=users[0])
+            username="dummy{0}".format(i), password="dummy", owners=users[0]
+        )
 
-    rabbitmq_accounts = RabbitMQAccount.query.all()
+    rabbitmq_accounts = RabbitMQAccount.get_all()
 
     # And some dummy queues
-    dummy_queue = Queue(name='dummy-empty-queue', size=0, owner=rabbitmq_accounts[0])
+    dummy_queue = Queue(name="dummy-empty-queue", size=0, owner=rabbitmq_accounts[0])
     db_session.add(dummy_queue)
     db_session.commit()
 
-    dummy_queue = Queue(name='dummy-non-empty-queue', size=config.warn_queue_size/5, owner=rabbitmq_accounts[0])
+    dummy_queue = Queue(
+        name="dummy-non-empty-queue",
+        size=config.warn_queue_size / 5,
+        owner=rabbitmq_accounts[0],
+    )
     db_session.add(dummy_queue)
     db_session.commit()
 
-    dummy_queue = Queue(name='dummy-warning-queue', size=config.warn_queue_size + 1, owner=rabbitmq_accounts[1])
+    dummy_queue = Queue(
+        name="dummy-warning-queue",
+        size=config.warn_queue_size + 1,
+        owner=rabbitmq_accounts[1],
+    )
     db_session.add(dummy_queue)
     db_session.commit()
 
-    dummy_queue = Queue(name='dummy-deletion-queue', size=int(config.del_queue_size * 1.2), owner=rabbitmq_accounts[2])
+    dummy_queue = Queue(
+        name="dummy-deletion-queue",
+        size=int(config.del_queue_size * 1.2),
+        owner=rabbitmq_accounts[2],
+    )
     db_session.add(dummy_queue)
     db_session.commit()
 
     # Test admin user
-    User.new_user(email='admin@admin.com', admin=True)
+    User.new_user(email="admin@admin.com", admin=True)
 
-    logger.info('Finished generating dummy data.')
+    logger.info("Finished generating dummy data.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     init_and_clear_db()
-    if '--dummy' in sys.argv:
+    if "--dummy" in sys.argv:
         dummy_data()

@@ -5,22 +5,46 @@
 import sys
 import time
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import DeclarativeBase, scoped_session, sessionmaker
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.ext.declarative import declarative_base
 
-sys.path.append('..')
+sys.path.append("..")
 from pulseguardian import config, mozdef
 
-Base = declarative_base()
-engine = create_engine(config.database_url,
-                       pool_recycle=config.pool_recycle_interval,
-                       convert_unicode=True)
-db_session = scoped_session(sessionmaker(autocommit=False,
-                                         autoflush=False,
-                                         bind=engine))
-Base.query = db_session.query_property()
+
+class Base(DeclarativeBase):
+    """Base class for all SQLAlchemy models with convenience query methods."""
+
+    @classmethod
+    def get_by(cls, **kwargs):
+        """Convenience method for filter_by queries.
+
+        Example: User.get_by(email='test@example.com')
+        """
+        stmt = select(cls)
+        for key, value in kwargs.items():
+            stmt = stmt.where(getattr(cls, key) == value)
+        return db_session.execute(stmt).scalar_one_or_none()
+
+    @classmethod
+    def get_all(cls):
+        """Get all records for this model."""
+        return db_session.execute(select(cls)).scalars().all()
+
+
+engine = create_engine(
+    config.database_url,
+    pool_recycle=config.pool_recycle_interval,
+)
+
+db_session = scoped_session(
+    sessionmaker(
+        autocommit=False,
+        autoflush=False,
+        bind=engine,
+    )
+)
 
 
 def init_db():
@@ -31,9 +55,9 @@ def init_db():
             mozdef.log(
                 mozdef.NOTICE,
                 mozdef.STARTUP,
-                'Failed to connect to database.  Retrying...',
+                "Failed to connect to database.  Retrying...",
                 details={
-                    'error': str(e),
+                    "error": str(e),
                 },
             )
             time.sleep(5)

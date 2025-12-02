@@ -4,7 +4,8 @@
 
 import functools
 
-from flask_pyoidc.flask_pyoidc import OIDCAuthentication
+from authlib.integrations.flask_client import OAuth
+from flask import redirect, session, url_for
 
 from pulseguardian import config
 
@@ -28,24 +29,58 @@ class FakeOIDCAuthentication(object):
 
 
 class OpenIDConnect(object):
-    """Auth object for login, logout, and response validation."""
+    """Auth object for login, logout, and response validation using authlib."""
 
-    def client_info(self):
-        return dict(
-            client_id=config.oidc_client_id,
-            client_secret=config.oidc_client_secret,
-        )
+    def __init__(self):
+        self.oauth = None
 
     def auth(self, app):
         if config.fake_account:
             return FakeOIDCAuthentication()
 
-        oidc = OIDCAuthentication(
-            app,
-            issuer='https://{DOMAIN}/'.format(DOMAIN=config.oidc_domain),
-            client_registration_info=self.client_info(),
-            extra_request_args={
-                'scope': ['openid', 'profile', 'email'],
+        self.oauth = OAuth(app)
+
+        # Register Auth0 as an OAuth provider
+        self.oauth.register(
+            name="auth0",
+            client_id=config.oidc_client_id,
+            client_secret=config.oidc_client_secret,
+            server_metadata_url=f"https://{config.oidc_domain}/.well-known/openid-configuration",
+            client_kwargs={
+                "scope": "openid profile email",
             },
         )
-        return oidc
+
+        return self
+
+    def oidc_auth(self, view_func):
+        """Decorator requiring authentication."""
+
+        @functools.wraps(view_func)
+        def wrapper(*args, **kwargs):
+            if "userinfo" not in session:
+                # Redirect to login route if not authenticated
+                return redirect(url_for("login"))
+            return view_func(*args, **kwargs)
+
+        return wrapper
+
+    def oidc_logout(self, view_func):
+        """Decorator for logout endpoint."""
+
+        @functools.wraps(view_func)
+        def wrapper(*args, **kwargs):
+            # Execute the view function
+            result = view_func(*args, **kwargs)
+
+            # Clear session
+            session.clear()
+
+            # Redirect to Auth0 logout endpoint
+            return redirect(
+                f"https://{config.oidc_domain}/v2/logout?"
+                f"client_id={config.oidc_client_id}&"
+                f"returnTo={url_for('index', _external=True)}"
+            )
+
+        return wrapper

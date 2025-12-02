@@ -19,29 +19,31 @@ class TestCommand(Command):
 
     def run(self):
         import subprocess
-        errno = subprocess.call(['python', 'test/runtests.py', '--log=INFO'])
+
+        errno = subprocess.call(["python", "test/runtests.py", "--log=INFO"])
         raise SystemExit(errno)
 
 
 install_requires = [
-    'MozillaPulse',
-    'SQLAlchemy',
-    'requests',
-    'Flask-SSLify',
-    'alembic',
-    'Flask-pyoidc',
-    'Flask',
+    "MozillaPulse",
+    "SQLAlchemy",
+    "requests",
+    "Flask-SSLify",
+    "alembic",
+    "Flask-pyoidc",
+    "Flask",
 ]
 
-setup(name='PulseGuardian',
-      version='0.1',
-      description='Monitoring tool and web app for the Pulse ' +
-                  'message system: pulse.mozilla.org',
-      url='https://wiki.mozilla.org/Auto-tools/Projects/Pulse/PulseGuardian',
-      author='Mozilla A-Team',
-      author_email='auto-tools@mozilla.com',
-      license='MPL 2.0',
-      packages=['pulseguardian', 'pulseguardian.model', 'flask_secure_headers'],
-      install_requires=install_requires,
-      cmdclass={'test': TestCommand}
-      )
+setup(
+    name="PulseGuardian",
+    version="0.1",
+    description="Monitoring tool and web app for the Pulse "
+    + "message system: pulse.mozilla.org",
+    url="https://wiki.mozilla.org/Auto-tools/Projects/Pulse/PulseGuardian",
+    author="Mozilla A-Team",
+    author_email="auto-tools@mozilla.com",
+    license="MPL 2.0",
+    packages=["pulseguardian", "pulseguardian.model", "flask_secure_headers"],
+    install_requires=install_requires,
+    cmdclass={"test": TestCommand},
+)
