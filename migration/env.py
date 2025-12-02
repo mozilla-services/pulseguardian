@@ -62,7 +62,6 @@ def run_migrations_online():
     connectable = create_engine(
         pg_config.database_url,
         pool_recycle=pg_config.pool_recycle_interval,
-        convert_unicode=True,
         poolclass=pool.NullPool,
     )
 

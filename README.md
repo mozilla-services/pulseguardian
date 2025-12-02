@@ -77,26 +77,7 @@ packages.  On Ubuntu, these are
 You will also need PostgreSQL installed in order to install the psycopg2
 Python package.
 
-Using a virtualenv is highly recommended. One possible installation would be
-
-* Clone the repository and cd into it.
-* Create and activate a virtualenv:
-
-        virtualenv venv
-        source venv/bin/activate
-
-Within the chosen environment, install and configure PulseGuardian:
-
-* Install the requirements:
-
-        pip install -r requirements.txt
-
-* Install the package.  This will ensure you have access to the `pulseguardian`
-  package from anywhere in your virtualenv.
-
-        python setup.py develop
-
-Alternatively, you can use [uv](https://docs.astral.sh/uv/) for faster dependency management:
+Using uv and virtualenv is highly recommended. 
 
     uv venv
     source .venv/bin/activate  # On Windows: .venv\Scripts\activate

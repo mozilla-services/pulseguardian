@@ -29,7 +29,7 @@ services:
       retries: 100
       start_period: 3s
   db-init:
-    image: pulsguardian-base:latest
+    image: pulseguardian-base:latest
     build:
       context: ./
       dockerfile: ./docker/Dockerfile
@@ -52,7 +52,7 @@ services:
       fi
       '
   pulseguardian-web:
-    image: pulsguardian-base:latest
+    image: pulseguardian-base:latest
     build:
       context: ./
       dockerfile: ./docker/Dockerfile
@@ -73,7 +73,7 @@ services:
       - DATABASE_URL=postgresql://postgres@db/postgres
     command: ["python", "pulseguardian/web.py"]
   pulseguardian-guardian:
-    image: pulsguardian-base:latest
+    image: pulseguardian-base:latest
     build:
       context: ./
       dockerfile: ./docker/Dockerfile
