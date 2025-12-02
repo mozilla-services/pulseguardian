@@ -1,14 +1,10 @@
-FROM python:3.9.18-slim-buster
-# postgresql-client assumes a couple man directories are present, and the
-# installation will fail if they aren't.  We need to create these manually
-# because they are not created automatically in the 'slim' image.
-RUN mkdir -p \
-            /usr/share/man/man1 \
-            /usr/share/man/man7
+FROM python:3.10-slim
 RUN apt-get update && apt-get install -y \
+                gcc \
                 libffi-dev \
                 libssl-dev \
                 postgresql-client \
+                python3-dev \
     && rm -rf /var/lib/apt/lists/*
 ENV PYTHONUNBUFFERED 1
 ENV DATABASE_URL postgres://postgres:postgres@db:5432/postgres

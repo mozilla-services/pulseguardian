@@ -1,6 +1,0 @@
-FROM pulseguardian_pulseguardian-base
-ENV FAKE_ACCOUNT fake@example.com
-ENV FLASK_DEBUG_MODE 1
-ENV FLASK_HOST pulseguardian-web
-ENV FLASK_USE_SSL 0
-CMD ["python", "pulseguardian/web.py"]
