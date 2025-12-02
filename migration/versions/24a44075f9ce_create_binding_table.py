@@ -10,21 +10,21 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '24a44075f9ce'
-down_revision = '641f40e01a9'
+revision = "24a44075f9ce"
+down_revision = "641f40e01a9"
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
     op.create_table(
-        'bindings',
-        sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('exchange', sa.String(255)),
-        sa.Column('routing_key', sa.String(255)),
-        sa.Column('queue_name', sa.Unicode(255), sa.ForeignKey('queues.name')),
+        "bindings",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("exchange", sa.String(255)),
+        sa.Column("routing_key", sa.String(255)),
+        sa.Column("queue_name", sa.Unicode(255), sa.ForeignKey("queues.name")),
     )
 
 
 def downgrade():
-    op.drop_table('bindings')
+    op.drop_table("bindings")

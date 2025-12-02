@@ -10,15 +10,15 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '4ea622b0c81d'
-down_revision = '24a44075f9ce'
+revision = "4ea622b0c81d"
+down_revision = "24a44075f9ce"
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
-    op.add_column('queues', sa.Column('unbounded', sa.Boolean, default=False))
+    op.add_column("queues", sa.Column("unbounded", sa.Boolean, default=False))
 
 
 def downgrade():
-    op.drop_column('queues', 'unbounded')
+    op.drop_column("queues", "unbounded")

@@ -10,8 +10,8 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '1ff5c08b2ac'
-down_revision = '4bd0784e2978'
+revision = "1ff5c08b2ac"
+down_revision = "4bd0784e2978"
 branch_labels = None
 depends_on = None
 
@@ -24,10 +24,11 @@ def upgrade():
     # anyway.  In addition: this field and constraint are a no-op since they're
     # not used anymore in the code.
     if bind.engine.name != "sqlite":
-        op.drop_constraint('pulse_users_owner_id_fkey', 'pulse_users', 'foreignkey')
-        op.drop_column('pulse_users', 'owner_id')
+        op.drop_constraint("pulse_users_owner_id_fkey", "pulse_users", "foreignkey")
+        op.drop_column("pulse_users", "owner_id")
 
 
 def downgrade():
-    op.add_column('pulse_users', sa.Column('owner_id', sa.Integer,
-                                           sa.ForeignKey('users.id')))
+    op.add_column(
+        "pulse_users", sa.Column("owner_id", sa.Integer, sa.ForeignKey("users.id"))
+    )

@@ -40,7 +40,17 @@ import os
 
 import sqlalchemy.orm.exc
 import werkzeug.serving
-from flask import abort, Flask, g, jsonify, redirect, render_template, request, session, url_for
+from flask import (
+    abort,
+    Flask,
+    g,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from flask_secure_headers.core import Secure_Headers
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -140,10 +150,7 @@ def load_fake_account(fake_account):
     session["userinfo"] = {"email": fake_account}
     session["fake_account"] = True
 
-    # Check if user already exists in the database, creating it if not.
-    g.user = User.get_by(email=fake_account)
-    if g.user is None:
-        g.user = User.new_user(email=fake_account)
+    g.user = _load_user_from_email(fake_account)
 
 
 def requires_admin(f):
@@ -164,6 +171,25 @@ def current_user(session):
         return None
 
     return User.get_by(email=session["userinfo"]["email"])
+
+
+def _load_user_from_email(email):
+    try:
+        email = email.lower()
+        user = User.get_by(email=email)
+
+        if not user:
+            user = User.new_user(email=email)
+
+        return user
+    except Exception as e:
+        mozdef.log(
+            mozdef.ERROR,
+            mozdef.ACCOUNT_UPDATE,
+            "Failed to load fake account user",
+            details={"error": str(e), "email": email},
+        )
+        return None
 
 
 @app.context_processor
@@ -198,11 +224,7 @@ def load_user():
         g.user = None
         return
 
-    email = session["userinfo"]["email"]
-    g.user = User.get_by(email=email)
-
-    if not g.user:
-        g.user = User.new_user(email=email)
+    g.user = _load_user_from_email(session["userinfo"]["email"])
 
 
 @app.before_request
@@ -260,14 +282,19 @@ def login():
     return authentication.oauth.auth0.authorize_redirect(redirect_uri)
 
 
-@app.route("/callback")
+@app.route("/redirect_uri")
 @sh.wrapper()
 def callback():
     """Handle OAuth callback from Auth0."""
     token = authentication.oauth.auth0.authorize_access_token()
     session["userinfo"] = token["userinfo"]
     session["id_token"] = token["id_token"]
-    # Redirect to register if no accounts, otherwise to account page
+
+    g.user = _load_user_from_email(session["userinfo"]["email"])
+
+    if not g.user:
+        return redirect("/login")
+
     if not g.user.rabbitmq_accounts:
         return redirect("/register")
     return redirect("/rabbitmq_accounts")

@@ -5,6 +5,7 @@
 import functools
 
 from authlib.integrations.flask_client import OAuth
+from authlib.jose import JsonWebKey
 from flask import redirect, session, url_for
 
 from pulseguardian import config
@@ -38,6 +39,7 @@ class OpenIDConnect(object):
         if config.fake_account:
             return FakeOIDCAuthentication()
 
+        # Initialize OAuth without cache - use Flask's session cookies instead
         self.oauth = OAuth(app)
 
         # Register Auth0 as an OAuth provider
@@ -50,6 +52,30 @@ class OpenIDConnect(object):
                 "scope": "openid profile email",
             },
         )
+
+        # Allow HS* tokens by falling back to client_secret when no JWKS key matches.
+        auth0_app = self.oauth.auth0
+
+        def create_load_key_with_hs_fallback():
+            def load_key(header, _):
+                jwk_set = JsonWebKey.import_key_set(auth0_app.fetch_jwk_set())
+                try:
+                    return jwk_set.find_by_kid(
+                        header.get("kid"), use="sig", alg=header.get("alg")
+                    )
+                except ValueError:
+                    alg = header.get("alg", "")
+                    if alg.startswith("HS"):
+                        # TODO: Reconfigure Auth0 to use RS256 instead of HS256
+                        return JsonWebKey.import_key(
+                            config.oidc_client_secret,
+                            {"kty": "oct", "use": "sig", "alg": alg},
+                        )
+                    raise
+
+            return load_key
+
+        auth0_app.create_load_key = create_load_key_with_hs_fallback
 
         return self
 

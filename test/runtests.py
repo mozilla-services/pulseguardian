@@ -745,31 +745,42 @@ class AuthTest(unittest.TestCase):
             config.oidc_client_secret = "test_secret_456"
 
             from pulseguardian import auth
+
             test_auth = auth.OpenIDConnect()
             test_auth.auth(web.app)
 
-            with patch.object(web, 'authentication', test_auth):
-                with patch.object(test_auth.oauth.auth0, 'authorize_redirect') as mock_redirect:
+            with patch.object(web, "authentication", test_auth):
+                with patch.object(
+                    test_auth.oauth.auth0, "authorize_redirect"
+                ) as mock_redirect:
                     from flask import redirect
-                    mock_redirect.return_value = redirect("http://auth0.example.com/authorize")
+
+                    mock_redirect.return_value = redirect(
+                        "http://auth0.example.com/authorize"
+                    )
 
                     with web.app.test_client() as c:
-                        _ = c.get('/login')
+                        _ = c.get("/login")
 
                         self.assertTrue(mock_redirect.called)
                         call_args = mock_redirect.call_args
-                        redirect_uri = call_args[0][0] if call_args[0] else call_args[1].get('redirect_uri')
-                        self.assertIn('/callback', redirect_uri)
+                        redirect_uri = (
+                            call_args[0][0]
+                            if call_args[0]
+                            else call_args[1].get("redirect_uri")
+                        )
+                        self.assertIn("/redirect_uri", redirect_uri)
         finally:
             config.fake_account = original_fake
             config.oidc_domain = original_domain
             config.oidc_client_id = original_client_id
             config.oidc_client_secret = original_client_secret
             from pulseguardian import auth
+
             web.authentication = auth.OpenIDConnect().auth(web.app)
 
     def test_callback_route_handles_token_and_redirects(self):
-        """Test that /callback handles token exchange and redirects to /register for new users"""
+        """Test that /redirect_uri handles token exchange and redirects to /register for new users"""
         original_fake = config.fake_account
         original_domain = config.oidc_domain
         original_client_id = config.oidc_client_id
@@ -782,44 +793,45 @@ class AuthTest(unittest.TestCase):
             config.oidc_client_secret = "test_secret_456"
 
             from pulseguardian import auth
+
             test_auth = auth.OpenIDConnect()
             test_auth.auth(web.app)
 
             mock_token = {
-                'userinfo': {
-                    'email': CONSUMER_EMAIL,
-                    'name': 'Test User'
-                },
-                'id_token': 'mock_id_token_12345'
+                "userinfo": {"email": CONSUMER_EMAIL, "name": "Test User"},
+                "id_token": "mock_id_token_12345",
             }
 
-            with patch.object(web, 'authentication', test_auth):
-                with patch.object(test_auth.oauth.auth0, 'authorize_access_token') as mock_token_func:
+            with patch.object(web, "authentication", test_auth):
+                with patch.object(
+                    test_auth.oauth.auth0, "authorize_access_token"
+                ) as mock_token_func:
                     mock_token_func.return_value = mock_token
 
                     with web.app.test_client() as c:
-                        response = c.get('/callback')
+                        response = c.get("/redirect_uri")
 
                         self.assertTrue(mock_token_func.called)
 
                         with c.session_transaction() as sess:
-                            self.assertIn('userinfo', sess)
-                            self.assertIn('id_token', sess)
-                            self.assertEqual(sess['userinfo'], mock_token['userinfo'])
-                            self.assertEqual(sess['id_token'], mock_token['id_token'])
+                            self.assertIn("userinfo", sess)
+                            self.assertIn("id_token", sess)
+                            self.assertEqual(sess["userinfo"], mock_token["userinfo"])
+                            self.assertEqual(sess["id_token"], mock_token["id_token"])
 
                         self.assertEqual(response.status_code, 302)
-                        self.assertIn('/register', response.location)
+                        self.assertIn("/register", response.location)
         finally:
             config.fake_account = original_fake
             config.oidc_domain = original_domain
             config.oidc_client_id = original_client_id
             config.oidc_client_secret = original_client_secret
             from pulseguardian import auth
+
             web.authentication = auth.OpenIDConnect().auth(web.app)
 
     def test_callback_redirects_to_accounts_when_user_has_accounts(self):
-        """Test that /callback redirects to /rabbitmq_accounts when user has existing accounts"""
+        """Test that /redirect_uri redirects to /rabbitmq_accounts when user has existing accounts"""
         original_fake = config.fake_account
         original_domain = config.oidc_domain
         original_client_id = config.oidc_client_id
@@ -832,38 +844,37 @@ class AuthTest(unittest.TestCase):
             config.oidc_client_secret = "test_secret_456"
 
             RabbitMQAccount.new_user(
-                username="testuser",
-                password="testpass",
-                owners=self.test_user
+                username="testuser", password="testpass", owners=self.test_user
             )
 
             from pulseguardian import auth
+
             test_auth = auth.OpenIDConnect()
             test_auth.auth(web.app)
 
             mock_token = {
-                'userinfo': {
-                    'email': CONSUMER_EMAIL,
-                    'name': 'Test User'
-                },
-                'id_token': 'mock_id_token_12345'
+                "userinfo": {"email": CONSUMER_EMAIL, "name": "Test User"},
+                "id_token": "mock_id_token_12345",
             }
 
-            with patch.object(web, 'authentication', test_auth):
-                with patch.object(test_auth.oauth.auth0, 'authorize_access_token') as mock_token_func:
+            with patch.object(web, "authentication", test_auth):
+                with patch.object(
+                    test_auth.oauth.auth0, "authorize_access_token"
+                ) as mock_token_func:
                     mock_token_func.return_value = mock_token
 
                     with web.app.test_client() as c:
-                        response = c.get('/callback')
+                        response = c.get("/redirect_uri")
 
                         self.assertEqual(response.status_code, 302)
-                        self.assertIn('/rabbitmq_accounts', response.location)
+                        self.assertIn("/rabbitmq_accounts", response.location)
         finally:
             config.fake_account = original_fake
             config.oidc_domain = original_domain
             config.oidc_client_id = original_client_id
             config.oidc_client_secret = original_client_secret
             from pulseguardian import auth
+
             web.authentication = auth.OpenIDConnect().auth(web.app)
 
     def test_oidc_auth_decorator_redirects_unauthenticated(self):
@@ -880,6 +891,7 @@ class AuthTest(unittest.TestCase):
             config.oidc_client_secret = "test_secret_456"
 
             from pulseguardian import auth
+
             test_auth = auth.OpenIDConnect()
             test_auth.auth(web.app)
 
@@ -894,13 +906,14 @@ class AuthTest(unittest.TestCase):
 
                     # Should redirect to login
                     self.assertEqual(response.status_code, 302)
-                    self.assertIn('/login', response.location)
+                    self.assertIn("/login", response.location)
         finally:
             config.fake_account = original_fake
             config.oidc_domain = original_domain
             config.oidc_client_id = original_client_id
             config.oidc_client_secret = original_client_secret
             from pulseguardian import auth
+
             web.authentication = auth.OpenIDConnect().auth(web.app)
             web.oidc = web.authentication
 
@@ -919,6 +932,7 @@ class AuthTest(unittest.TestCase):
 
             from pulseguardian import auth
             from flask import session
+
             test_auth = auth.OpenIDConnect()
             test_auth.auth(web.app)
 
@@ -929,19 +943,17 @@ class AuthTest(unittest.TestCase):
 
             with web.app.test_client() as c:
                 with c.session_transaction() as sess:
-                    sess['userinfo'] = {
-                        'email': CONSUMER_EMAIL,
-                        'name': 'Test User'
-                    }
-                    sess['id_token'] = 'mock_token'
+                    sess["userinfo"] = {"email": CONSUMER_EMAIL, "name": "Test User"}
+                    sess["id_token"] = "mock_token"
 
                 with web.app.test_request_context():
                     from flask import session as request_session
-                    request_session['userinfo'] = {
-                        'email': CONSUMER_EMAIL,
-                        'name': 'Test User'
+
+                    request_session["userinfo"] = {
+                        "email": CONSUMER_EMAIL,
+                        "name": "Test User",
                     }
-                    request_session['id_token'] = 'mock_token'
+                    request_session["id_token"] = "mock_token"
 
                     # Call the decorated function with session
                     response = test_view()
@@ -954,6 +966,7 @@ class AuthTest(unittest.TestCase):
             config.oidc_client_id = original_client_id
             config.oidc_client_secret = original_client_secret
             from pulseguardian import auth
+
             web.authentication = auth.OpenIDConnect().auth(web.app)
             web.oidc = web.authentication
 
@@ -972,6 +985,7 @@ class AuthTest(unittest.TestCase):
 
             from pulseguardian import auth
             from flask import session
+
             test_auth = auth.OpenIDConnect()
             test_auth.auth(web.app)
 
@@ -982,29 +996,31 @@ class AuthTest(unittest.TestCase):
             with web.app.test_client() as c:
                 with web.app.test_request_context():
                     from flask import session as request_session
-                    request_session['userinfo'] = {'email': CONSUMER_EMAIL}
-                    request_session['id_token'] = 'mock_token'
-                    request_session['other_data'] = 'test'
 
-                    self.assertIn('userinfo', request_session)
-                    self.assertIn('id_token', request_session)
+                    request_session["userinfo"] = {"email": CONSUMER_EMAIL}
+                    request_session["id_token"] = "mock_token"
+                    request_session["other_data"] = "test"
+
+                    self.assertIn("userinfo", request_session)
+                    self.assertIn("id_token", request_session)
 
                     response = test_logout_view()
 
-                    self.assertNotIn('userinfo', request_session)
-                    self.assertNotIn('id_token', request_session)
-                    self.assertNotIn('other_data', request_session)
+                    self.assertNotIn("userinfo", request_session)
+                    self.assertNotIn("id_token", request_session)
+                    self.assertNotIn("other_data", request_session)
 
                     self.assertEqual(response.status_code, 302)
-                    self.assertIn('test.auth0.com/v2/logout', response.location)
-                    self.assertIn('client_id=test_client_123', response.location)
-                    self.assertIn('returnTo=', response.location)
+                    self.assertIn("test.auth0.com/v2/logout", response.location)
+                    self.assertIn("client_id=test_client_123", response.location)
+                    self.assertIn("returnTo=", response.location)
         finally:
             config.fake_account = original_fake
             config.oidc_domain = original_domain
             config.oidc_client_id = original_client_id
             config.oidc_client_secret = original_client_secret
             from pulseguardian import auth
+
             web.authentication = auth.OpenIDConnect().auth(web.app)
             web.oidc = web.authentication
 
