@@ -186,7 +186,7 @@ def _load_user_from_email(email):
         mozdef.log(
             mozdef.ERROR,
             mozdef.ACCOUNT_UPDATE,
-            "Failed to load fake account user",
+            "Failed to load user account",
             details={"error": str(e), "email": email},
         )
         return None
@@ -677,7 +677,6 @@ def register_handler():
 @sh.wrapper()
 @oidc.oidc_logout
 def logout_handler():
-    session["userinfo"] = None
     return redirect("/")
 
 
