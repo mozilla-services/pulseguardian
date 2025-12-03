@@ -971,7 +971,7 @@ class AuthTest(unittest.TestCase):
             web.oidc = web.authentication
 
     def test_oidc_logout_decorator_clears_session_and_redirects(self):
-        """Test that oidc_logout decorator clears session and redirects to Auth0 logout"""
+        """Test that oidc_logout decorator clears session"""
         original_fake = config.fake_account
         original_domain = config.oidc_domain
         original_client_id = config.oidc_client_id
@@ -1009,11 +1009,7 @@ class AuthTest(unittest.TestCase):
                     self.assertNotIn("userinfo", request_session)
                     self.assertNotIn("id_token", request_session)
                     self.assertNotIn("other_data", request_session)
-
-                    self.assertEqual(response.status_code, 302)
-                    self.assertIn("test.auth0.com/v2/logout", response.location)
-                    self.assertIn("client_id=test_client_123", response.location)
-                    self.assertIn("returnTo=", response.location)
+                    self.assertEqual(response, "logout_called")
         finally:
             config.fake_account = original_fake
             config.oidc_domain = original_domain

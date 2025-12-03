@@ -85,28 +85,17 @@ class OpenIDConnect(object):
         @functools.wraps(view_func)
         def wrapper(*args, **kwargs):
             if "userinfo" not in session:
-                # Redirect to login route if not authenticated
                 return redirect(url_for("login"))
             return view_func(*args, **kwargs)
 
         return wrapper
 
     def oidc_logout(self, view_func):
-        """Decorator for logout endpoint."""
+        """Decorator for logout endpoint"""
 
         @functools.wraps(view_func)
         def wrapper(*args, **kwargs):
-            # Execute the view function
-            result = view_func(*args, **kwargs)
-
-            # Clear session
             session.clear()
-
-            # Redirect to Auth0 logout endpoint
-            return redirect(
-                f"https://{config.oidc_domain}/v2/logout?"
-                f"client_id={config.oidc_client_id}&"
-                f"returnTo={url_for('index', _external=True)}"
-            )
+            return view_func(*args, **kwargs)
 
         return wrapper
