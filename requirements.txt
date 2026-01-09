@@ -96,7 +96,7 @@ vine==5.1.0
     #   pulseguardian (pyproject.toml)
     #   amqp
     #   kombu
-werkzeug==3.1.4
+werkzeug==3.1.5
     # via
     #   pulseguardian (pyproject.toml)
     #   flask
