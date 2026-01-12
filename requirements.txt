@@ -32,7 +32,7 @@ greenlet==3.2.4
     # via sqlalchemy
 gunicorn==23.0.0
     # via pulseguardian (pyproject.toml)
-idna==2.10
+idna==3.7
     # via requests
 itsdangerous==2.2.0
     # via
