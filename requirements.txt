@@ -87,7 +87,7 @@ typing-extensions==4.15.0
     #   sqlalchemy
 tzdata==2025.2
     # via kombu
-urllib3==2.5.0
+urllib3==2.6.3
     # via
     #   pulseguardian (pyproject.toml)
     #   requests
