@@ -71,7 +71,7 @@ python-dateutil==2.9.0.post0
     # via pulseguardian (pyproject.toml)
 python-editor==1.0.4
     # via pulseguardian (pyproject.toml)
-pytz==2021.1
+pytz==2025.2
     # via mozillapulse
 requests==2.32.5
     # via pulseguardian (pyproject.toml)
