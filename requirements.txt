@@ -65,7 +65,7 @@ packaging==25.0
     #   kombu
 psycopg2-binary==2.9.11
     # via pulseguardian (pyproject.toml)
-pycparser==2.20
+pycparser==2.23
     # via cffi
 python-dateutil==2.9.0.post0
     # via pulseguardian (pyproject.toml)
