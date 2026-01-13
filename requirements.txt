@@ -75,7 +75,7 @@ pytz==2021.1
     # via mozillapulse
 requests==2.32.5
     # via pulseguardian (pyproject.toml)
-six==1.16.0
+six==1.17.0
     # via python-dateutil
 sqlalchemy==2.0.44
     # via
