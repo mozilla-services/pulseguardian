@@ -11,29 +11,29 @@ queues. More information on [the wiki][].
 * Python 3.13+
 * pip or [uv](https://docs.astral.sh/uv/) (to install dependencies)
 * PostgreSQL (for production; testing environments can use sqlite)
-* docker-compose (to stand up a local Docker-based environment)
+* docker (to stand up a local Docker-based environment)
 
 ## Setup
 
 ### Docker Compose
 
 The easiest way to start a local instance of PulseGuardian is via
-[docker-compose][]:
+[docker compose][]:
 
-    $ docker-compose up --build
+    $ docker compose up --build
 
 This will launch four containers: a RabbitMQ instance, a PostGreSQL database,
 the PulseGuardian web process, and the PulseGuardian daemon
 (`guardian.py`).  Pressing control-C will stop all the containers.
-You can also add `-d` to run docker-compose in the background, in
-which case you will need to run `docker-compose down` to stop the containers.
+You can also add `-d` to run docker compose in the background, in
+which case you will need to run `docker compose down` to stop the containers.
 
 Known issue: a local install of PostGreSQL will likely result in a port
 conflict.
 
 The PulseGuardian code is mounted as `/code` in the web and daemon
 containers.  You can edit the code locally and restart the container(s) to
-pick up changes: `docker-compose restart web` and/or `docker-compose
+pick up changes: `docker compose restart web` and/or `docker compose
 restart guardian`.  The RabbitMQ cluster and PulseGuardian database data are
 preserved across restarts as via Docker volumes.
 
@@ -155,7 +155,7 @@ For production, the web app can be run with [gunicorn][] and such.
 ## Testing
 
 TODO: This process should be updated to run the tests with a
-docker-compose environment.
+docker compose environment.
 
 Tests are automatically run against the GitHub repository via [Travis
 CI][]. Before submitting a patch, it is highly recommended that you
@@ -165,7 +165,7 @@ pulseguardian repo.
 For local testing, PulseGuardian uses docker to run its test
 suite. Please follow the [docker installation docs][] on how to
 install it in your system.  Note that these tests are not yet hooked
-up to the environment created with `docker-compose` above.
+up to the environment created with `docker compose` above.
 
 With docker installed and configured appropriately, run
 
@@ -218,7 +218,7 @@ used for all installations, including for local development.  The database URL,
 
 To migrate the database,
 
-* Install the alembic package (if you haven't yet): `pip install -r requirements.txt` (or `uv pip install -r requirements.txt` if using uv)
+* Install the dependencies (if you haven't yet): `uv pip install -e ".[dev]"`
 * Run `alembic upgrade head`
 
 ## Deployment
@@ -229,7 +229,7 @@ To set this up, run `heroku git:remote -a pulseguardian`.
 Then just push the latest `main` branch to the `heroku` remote: `git push heroku main`
 
 [the wiki]: https://wiki.mozilla.org/Auto-tools/Projects/Pulse/PulseGuardian
-[docker-compose]: https://docs.docker.com/compose/
+[docker compose]: https://docs.docker.com/compose/
 [HACKING.md]: https://hg.mozilla.org/automation/mozillapulse/file/tip/HACKING.md
 [Travis CI]: https://travis-ci.org/mozilla/pulseguardian
 [gunicorn]: https://www.digitalocean.com/community/articles/how-to-deploy-python-wsgi-apps-using-gunicorn-http-server-behind-nginx
