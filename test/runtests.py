@@ -778,8 +778,10 @@ class QueryPerformanceTest(unittest.TestCase):
         event.listen(engine, "before_cursor_execute", count_queries)
         try:
             with web.app.test_client() as c:
-                c.application.template_folder = "{}/pulseguardian/templates".format(
-                    os.getcwd()
+                c.application.template_folder = os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                    "pulseguardian",
+                    "templates",
                 )
                 with c.session_transaction() as sess:
                     sess["email"] = CONSUMER_EMAIL
