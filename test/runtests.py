@@ -721,6 +721,91 @@ class WebTest(unittest.TestCase):
             config.reserved_users_regex = None
             config.reserved_users_message = None
 
+class QueryPerformanceTest(unittest.TestCase):
+    """Tests for database query performance (no RabbitMQ required)."""
+
+    def setUp(self):
+        """Initialize DB without calling RabbitMQ management API."""
+        from pulseguardian.model.base import init_db
+
+        init_db()
+        for tbl in [Binding, Queue, RabbitMQAccount, User]:
+            for obj in tbl.get_all():
+                db_session.delete(obj)
+        db_session.commit()
+
+    def test_queues_page_eagerly_loads_relationships(self):
+        """The /queues endpoint must not lazy-load relationships during
+        template rendering.  With lazy loading, each user/account/queue
+        triggers separate SQL queries (N+1), causing gunicorn worker
+        timeouts on production data sets.
+
+        We verify by counting SQL statements: with eager loading the
+        count stays bounded regardless of how many users/accounts/queues
+        exist.
+        """
+        from sqlalchemy import event
+        from pulseguardian.model.base import engine
+
+        # Create an admin user (the one fake_account resolves to)
+        admin_user = User.new_user(email=CONSUMER_EMAIL, admin=True)
+
+        # Create 5 users, each with a rabbitmq account, a queue, and a binding
+        for i in range(5):
+            user = User.new_user(email="user{}@test.com".format(i))
+            acct = RabbitMQAccount.new_user(
+                "user{}".format(i), owners=[user], create_rabbitmq_user=False
+            )
+
+            queue = Queue(name="queue/user{}/test".format(i), owner=acct, size=0)
+            db_session.add(queue)
+            db_session.commit()
+
+            binding = Binding(
+                exchange="exchange/user{}".format(i),
+                routing_key="test.#",
+                queue_name=queue.name,
+            )
+            db_session.add(binding)
+            db_session.commit()
+
+        # Track query count
+        query_count = [0]
+
+        def count_queries(conn, cursor, statement, parameters, context, executemany):
+            query_count[0] += 1
+
+        event.listen(engine, "before_cursor_execute", count_queries)
+        try:
+            with web.app.test_client() as c:
+                c.application.template_folder = "{}/pulseguardian/templates".format(
+                    os.getcwd()
+                )
+                with c.session_transaction() as sess:
+                    sess["email"] = CONSUMER_EMAIL
+                    sess["fake_account"] = True
+                    sess["logged_in"] = True
+
+                # Expire all cached state so the request must query the DB
+                db_session.expire_all()
+
+                response = c.get("/queues")
+                self.assertEqual(response.status_code, 200)
+        finally:
+            event.remove(engine, "before_cursor_execute", count_queries)
+
+        # With 5 users, lazy loading would issue at least:
+        #   1 (users) + 5 (rabbitmq_accounts per user) + 5 (queues per acct)
+        #   + 5 (bindings per queue) = 16+ queries
+        # Eager loading should use a small bounded number of queries
+        # (around 4-5: users, accounts, queues, bindings, plus unowned queues)
+        self.assertLessEqual(
+            query_count[0],
+            10,
+            "Too many queries ({}): relationships are likely lazy-loaded "
+            "(N+1 problem). Use eager loading.".format(query_count[0]),
+        )
+
 
 class AuthTest(unittest.TestCase):
     """Tests for OIDC/authlib authentication flow."""
