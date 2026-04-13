@@ -184,7 +184,9 @@ class PulseGuardian(object):
                     # RabbitMQAccount needs at least one owner as well, but
                     # since we have no way of knowing who really owns it, find
                     # the first admin, and set it to that.
-                    user = User.get_by(admin=True)
+                    user = db_session.execute(
+                        select(User).where(User.admin == True).limit(1)
+                    ).scalar_one_or_none()
                     owner = RabbitMQAccount.new_user(owner_name, owners=user)
 
             mozdef.log(

@@ -53,7 +53,7 @@ from flask import (
 )
 from flask_secure_headers.core import Secure_Headers
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, subqueryload
 from werkzeug.exceptions import NotFound
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -354,19 +354,36 @@ def all_pulse_users():
     )
 
 
-@app.route("/queues")
-@sh.wrapper()
-@oidc.oidc_auth
-def queues():
+def _load_queues_data():
+    """Load users with eagerly-loaded rabbitmq_accounts, queues, and bindings."""
     if g.user.admin:
-        users = User.get_all()
+        users = list(
+            db_session.execute(
+                select(User).options(
+                    subqueryload(User.rabbitmq_accounts)
+                    .subqueryload(RabbitMQAccount.queues)
+                    .subqueryload(Queue.bindings)
+                )
+            ).scalars().unique()
+        )
         no_owner_queues = list(
-            db_session.execute(select(Queue).where(Queue.owner == None)).scalars()
+            db_session.execute(
+                select(Queue)
+                .where(Queue.owner == None)
+                .options(subqueryload(Queue.bindings))
+            ).scalars()
         )
     else:
         users = [current_user(session)]
         no_owner_queues = []
+    return users, no_owner_queues
 
+
+@app.route("/queues")
+@sh.wrapper()
+@oidc.oidc_auth
+def queues():
+    users, no_owner_queues = _load_queues_data()
     return render_template("queues.html", users=users, no_owner_queues=no_owner_queues)
 
 
@@ -374,15 +391,7 @@ def queues():
 @sh.wrapper()
 @oidc.oidc_auth
 def queues_listing():
-    if g.user.admin:
-        users = User.get_all()
-        no_owner_queues = list(
-            db_session.execute(select(Queue).where(Queue.owner == None)).scalars()
-        )
-    else:
-        users = [current_user(session)]
-        no_owner_queues = []
-
+    users, no_owner_queues = _load_queues_data()
     return render_template(
         "queues_listing.html", users=users, no_owner_queues=no_owner_queues
     )
