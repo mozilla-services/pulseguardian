@@ -7,7 +7,7 @@ queues. More information on [the wiki][].
 
 ## Pre-requisites
 
-* RabbitMQ (tested on 3.5.7)
+* RabbitMQ (tested on 4.2.4)
 * Python 3.13+
 * pip or [uv](https://docs.astral.sh/uv/) (to install dependencies)
 * PostgreSQL (for production; testing environments can use sqlite)
