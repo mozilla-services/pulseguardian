@@ -8,7 +8,7 @@ import socket
 import time
 import traceback
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from pulseguardian import config, management as pulse_management, mozdef
 from pulseguardian.model.base import init_db, db_session
@@ -92,18 +92,24 @@ class PulseGuardian(object):
 
         # Filter queues that are in the database but no longer on RabbitMQ.
         alive_queues_names = {q["name"] for q in queues}
-        deleted_queues = {q for q in db_queues if q.name not in alive_queues_names}
+        deleted_queues = [q for q in db_queues if q.name not in alive_queues_names]
 
-        # Delete those queues.
-        for queue in deleted_queues:
+        # Batch delete stale queues and their bindings.
+        if deleted_queues:
+            deleted_names = [q.name for q in deleted_queues]
             mozdef.log(
                 mozdef.NOTICE,
                 mozdef.OTHER,
-                "Queue no longer exists.",
-                details={"queuename": queue.name},
+                "Queues no longer exist.",
+                details={"count": len(deleted_names), "queuenames": deleted_names},
                 tags=["queue"],
             )
-            db_session.delete(queue)
+            db_session.execute(
+                delete(Binding).where(Binding.queue_name.in_(deleted_names))
+            )
+            db_session.execute(
+                delete(Queue).where(Queue.name.in_(deleted_names))
+            )
 
         # Clean up bindings on queues that are not deleted.
         for queue_name in alive_queues_names:
