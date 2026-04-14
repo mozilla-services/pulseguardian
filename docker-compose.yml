@@ -41,11 +41,13 @@ services:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://postgres@db/postgres
+      - FLASK_SECRET_KEY
     command: >
       sh -c '
+      export FLASK_SECRET_KEY=$${FLASK_SECRET_KEY:-$$(uv run python gen_secret_key.py)};
       if [ ! -f /db-init/.initialized ]; then
         echo "Initializing database...";
-        python pulseguardian/dbinit.py && touch /db-init/.initialized;
+        uv run python pulseguardian/dbinit.py && touch /db-init/.initialized;
         echo "Database initialized successfully";
       else
         echo "Database already initialized, skipping...";
@@ -71,7 +73,9 @@ services:
       - FLASK_HOST=pulseguardian-web
       - FLASK_USE_SSL=0
       - DATABASE_URL=postgresql://postgres@db/postgres
-    command: ["python", "pulseguardian/web.py"]
+      - FLASK_SECRET_KEY
+    command: >
+      sh -c 'export FLASK_SECRET_KEY=$${FLASK_SECRET_KEY:-$$(uv run python gen_secret_key.py)}; uv run python pulseguardian/web.py'
   pulseguardian-guardian:
     image: pulseguardian-base:latest
     build:
@@ -86,7 +90,9 @@ services:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://postgres@db/postgres
-    command: ["python", "pulseguardian/guardian.py"]
+      - FLASK_SECRET_KEY
+    command: >
+      sh -c 'export FLASK_SECRET_KEY=$${FLASK_SECRET_KEY:-$$(uv run python gen_secret_key.py)}; uv run python pulseguardian/guardian.py'
 volumes:
   pgdata:
   db-init-marker:
