@@ -1,26 +1,21 @@
-FROM python:3.14-slim
+FROM ghcr.io/astral-sh/uv:python3.14-trixie-slim
 
 RUN apt-get update && apt-get install -y \
-                gcc \
-                libffi-dev \
-                libssl-dev \
-                postgresql-client \
-                python3-dev \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PYTHONUNBUFFERED=1 \
+    UV_PROJECT_ENVIRONMENT=/opt/venv \
     DATABASE_URL=postgres://postgres:postgres@db:5432/postgres \
-    FLASK_SECRET_KEY=GBhQrZfbN9KGMcyLVImGeS2Wtj3SFCdF \
     RABBIT_MANAGEMENT_URL=http://pulse:15672/api/ \
     EMAIL_ENABLED=0
 
 WORKDIR /code
 
-# Upgrade pip to latest version
-RUN pip install --no-cache-dir --upgrade pip
+# Install dependencies first for layer caching
+COPY uv.lock pyproject.toml /code/
+RUN uv sync --frozen --no-install-project
 
 # Copy application code
 COPY . /code/
-
-# Install the application in editable mode
-RUN pip install --no-cache-dir -e .
+RUN uv sync --frozen
