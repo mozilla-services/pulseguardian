@@ -7,6 +7,11 @@
 // confirmation dialog) which should be organized better.  See also
 // dialogs.html.
 
+function errorMessage(message) {
+    console.error(message);
+    alert(message);
+}
+
 function deletableObjectHandler(collectionClass, objectType) {
     $('.' + objectType + 's .delete').click(function() {
         var objectInstance = $(this).closest('.' + objectType);

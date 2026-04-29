@@ -250,7 +250,7 @@ def _csrf_protect():
         else:
             return
 
-        session_csrf_token = session.pop("_csrf_token", None)
+        session_csrf_token = session.get("_csrf_token")
 
         if not session_csrf_token or session_csrf_token != page_csrf_token:
             abort(400)
@@ -289,6 +289,7 @@ def callback():
     token = authentication.oauth.auth0.authorize_access_token()
     session["userinfo"] = token["userinfo"]
     session["id_token"] = token["id_token"]
+    session.pop("_csrf_token", None)
 
     g.user = _load_user_from_email(session["userinfo"]["email"])
 
