@@ -40,6 +40,7 @@ import os
 
 import sqlalchemy.orm.exc
 import werkzeug.serving
+from authlib.integrations.flask_client import OAuthError
 from flask import (
     abort,
     Flask,
@@ -286,7 +287,10 @@ def login():
 @sh.wrapper()
 def callback():
     """Handle OAuth callback from Auth0."""
-    token = authentication.oauth.auth0.authorize_access_token()
+    try:
+        token = authentication.oauth.auth0.authorize_access_token()
+    except OAuthError:
+        return redirect(url_for("login"))
     session["userinfo"] = token["userinfo"]
     session["id_token"] = token["id_token"]
     session.pop("_csrf_token", None)
